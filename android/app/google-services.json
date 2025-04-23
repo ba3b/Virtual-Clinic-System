@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "998151344856",
+    "project_id": "virtual-clinic-system",
+    "storage_bucket": "virtual-clinic-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998151344856:android:e872925d9adc0088207dad",
+        "android_client_info": {
+          "package_name": "com.example.virtual_clinic_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsniStUmvqjK8TLJUITf56B5fj0_jBcrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

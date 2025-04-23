@@ -1,0 +1,329 @@
+import 'package:flutter/material.dart';
+import '../../components/doctor_appointment_card.dart';
+import '../../components/section_header.dart';
+import '../../models/appointment_model.dart';
+import '../../theme/theme.dart';
+import 'appointment_details_screen.dart';
+import 'appointment_history_screen.dart';
+import 'profile_screen.dart';
+import 'virtual_appointment_screen.dart';
+
+class DoctorHomeScreen extends StatefulWidget {
+  const DoctorHomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
+}
+
+class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
+  int _selectedIndex = 0;
+
+  // Sample data for demonstration
+  final List<AppointmentModel> _todayAppointments = [
+    AppointmentModel(
+      appointmentId: '1',
+      patientId: 'P001',
+      doctorId: 'D001',
+      dateTime: DateTime.now().add(const Duration(hours: 1)),
+      type: 'virtual',
+      status: 'upcoming',
+    ),
+    AppointmentModel(
+      appointmentId: '2',
+      patientId: 'P002',
+      doctorId: 'D001',
+      dateTime: DateTime.now().add(const Duration(hours: 3)),
+      type: 'physical',
+      status: 'upcoming',
+    ),
+  ];
+
+  final List<AppointmentModel> _upcomingAppointments = [
+    AppointmentModel(
+      appointmentId: '3',
+      patientId: 'P003',
+      doctorId: 'D001',
+      dateTime: DateTime.now().add(const Duration(days: 1)),
+      type: 'virtual',
+      status: 'upcoming',
+    ),
+    AppointmentModel(
+      appointmentId: '4',
+      patientId: 'P004',
+      doctorId: 'D001',
+      dateTime: DateTime.now().add(const Duration(days: 2)),
+      type: 'physical',
+      status: 'upcoming',
+    ),
+    AppointmentModel(
+      appointmentId: '5',
+      patientId: 'P005',
+      doctorId: 'D001',
+      dateTime: DateTime.now().add(const Duration(days: 3)),
+      type: 'vaccination',
+      status: 'upcoming',
+    ),
+  ];
+
+  // Sample patient names
+  final Map<String, String> _patientNames = {
+    'P001': 'Ahmed Ali',
+    'P002': 'Fatima Mohammed',
+    'P003': 'Khalid Saeed',
+    'P004': 'Sara Abdullah',
+    'P005': 'Omar Ibrahim',
+  };
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+
+      body: _getSelectedScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        selectedItemColor: AppTheme.primaryColor,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'History',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _getSelectedScreen() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildDashboardScreen();
+      case 1:
+        return const AppointmentHistoryScreen();
+      case 2:
+        return const DoctorProfileScreen();
+      default:
+        return _buildDashboardScreen();
+    }
+  }
+
+  Widget _buildDashboardScreen() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildDoctorInfo(),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Today\'s Appointments',
+            subtitle: 'Your schedule for today',
+            actionText: _todayAppointments.isEmpty ? null : 'See All',
+            onActionTap: () {
+              // Navigate to detailed view of today's appointments
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildAppointmentsList(_todayAppointments),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Upcoming Appointments',
+            subtitle: 'Your future schedule',
+            actionText: _upcomingAppointments.isEmpty ? null : 'See All',
+            onActionTap: () {
+              // Navigate to detailed view of upcoming appointments
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildAppointmentsList(_upcomingAppointments),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoctorInfo() {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppTheme.primaryColor, AppTheme.primaryColor.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 36,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dr. Mohammed Hussein',
+                    style: AppTheme.subheadingStyle.copyWith(
+                      color: Colors.white,
+                      fontSize: 20,
+                    ),
+                  ),
+                  Text(
+                    'General Medicine',
+                    style: AppTheme.bodyStyle.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildStatCard('Today', '${_todayAppointments.length}'),
+                      const SizedBox(width: 16),
+                      _buildStatCard('Upcoming', '${_upcomingAppointments.length}'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: AppTheme.bodySmallStyle.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            count,
+            style: AppTheme.bodyStyle.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsList(List<AppointmentModel> appointments) {
+    if (appointments.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 48,
+                color: AppTheme.textSecondaryColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No appointments',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: appointments.length,
+      itemBuilder: (context, index) {
+        final appointment = appointments[index];
+        final patientName = _patientNames[appointment.patientId] ?? 'Unknown Patient';
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: DoctorAppointmentCard(
+            appointment: appointment,
+            patientName: patientName,
+            onTap: () => _navigateToAppointmentDetails(appointment),
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigateToAppointmentDetails(AppointmentModel appointment) {
+    // For virtual appointments that are upcoming, go directly to virtual meeting
+    if (appointment.type.toLowerCase() == 'virtual' && 
+        appointment.status.toLowerCase() == 'upcoming') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DoctorVirtualAppointmentScreen(
+            appointment: appointment,
+            patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
+          ),
+        ),
+      );
+    } else {
+      // For other appointments, show details screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DoctorAppointmentDetailsScreen(
+            appointment: appointment,
+            patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
+          ),
+        ),
+      );
+    }
+  }
+}
