@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../components/appointment_edit_dialog.dart';
 import '../../components/custom_app_bar.dart';
+import '../../components/custom_bottom_nav.dart';
 import '../../components/doctor_selector_dialog.dart';
 import '../../components/section_header.dart';
 import '../../components/staff_appointment_card.dart';
@@ -132,9 +133,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         showBackButton: false,
       ),
       body: _getSelectedScreen(),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
-        selectedItemColor: AppTheme.primaryColor,
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
@@ -144,7 +144,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
+            activeIcon: Icon(Icons.calendar_today_rounded),
             label: 'Appointments',
           ),
           BottomNavigationBarItem(
@@ -153,8 +153,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             label: 'Vaccination',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],

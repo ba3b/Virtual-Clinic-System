@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
 import '../../components/doctor_appointment_card.dart';
 import '../../components/section_header.dart';
 import '../../models/appointment_model.dart';
@@ -85,9 +86,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     return Scaffold(
 
       body: _getSelectedScreen(),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
-        selectedItemColor: AppTheme.primaryColor,
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
@@ -101,8 +101,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             label: 'History',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],

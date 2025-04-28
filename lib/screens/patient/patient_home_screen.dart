@@ -8,6 +8,7 @@ import '../../theme/theme.dart';
 import 'appointment_booking_screen.dart';
 import 'appointment_details_screen.dart';
 import 'appointments_screen.dart';
+import '../notifications_screen.dart';
 import 'profile_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -92,7 +93,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   fontSize: 20,
                 ),
               ),
-              Text(
+              const Text(
                 'King Faisal Medical Complex',
                 style: AppTheme.bodySmallStyle,
               ),
@@ -101,13 +102,21 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           Row(
             children: [
               NotificationBadge(
-                count: 3,
                 child: IconButton(
                   icon: const Icon(Icons.notifications_outlined),
                   onPressed: () {
-                    // TODO: Navigate to notifications screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                    );
                   },
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                  );
+                },
               ),
               const CircleAvatar(
                 radius: 20,
@@ -211,8 +220,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
           child: SectionHeader(
             title: 'Quick Actions',
             subtitle: 'Access common features quickly',
@@ -535,7 +544,24 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
-        onTap: _onNavTap, 
+        onTap: _onNavTap,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today_rounded),
+            label: 'Appointments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
