@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:virtual_clinic_system/screens/patient/prescription_screen.dart';
 import '../../components/appointment_card.dart';
 import '../../components/custom_bottom_nav.dart';
 import '../../components/notification_badge.dart';
@@ -51,6 +52,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         return const AppointmentsScreen();
       case 2:
         return const ProfileScreen();
+      case 3:
+        return const PrescriptionsScreen();
       default:
         return _buildHomeScreen();
     }
@@ -560,6 +563,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             icon: Icon(Icons.person_outline_rounded),
             activeIcon: Icon(Icons.person_rounded),
             label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_outlined),
+            activeIcon: Icon(Icons.list),
+            label: 'Prescriptions',
           ),
         ],
       ),

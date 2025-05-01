@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import '../../components/appointment_edit_dialog.dart';
-import '../../components/custom_app_bar.dart';
-import '../../components/custom_bottom_nav.dart';
-import '../../components/doctor_selector_dialog.dart';
-import '../../components/section_header.dart';
-import '../../components/staff_appointment_card.dart';
-import '../../models/appointment_model.dart';
-import '../../models/user_model.dart';
-import '../../theme/theme.dart';
+import 'package:virtual_clinic_system/components/appointment_edit_dialog.dart';
+import 'package:virtual_clinic_system/components/custom_app_bar.dart';
+import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
+import 'package:virtual_clinic_system/components/doctor_selector_dialog.dart';
+import 'package:virtual_clinic_system/components/notification_badge.dart';
+import 'package:virtual_clinic_system/components/section_header.dart';
+import 'package:virtual_clinic_system/components/staff_appointment_card.dart';
+import 'package:virtual_clinic_system/models/appointment_model.dart';
+import 'package:virtual_clinic_system/models/user_model.dart';
+import 'package:virtual_clinic_system/theme/theme.dart';
+
 import 'appointment_details_screen.dart';
 import 'appointments_screen.dart';
 import 'profile_screen.dart';
+import 'staff_notifications_screen.dart';
 import 'vaccination_screen.dart';
 
 class StaffHomeScreen extends StatefulWidget {
@@ -23,7 +26,6 @@ class StaffHomeScreen extends StatefulWidget {
 class _StaffHomeScreenState extends State<StaffHomeScreen> {
   int _selectedIndex = 0;
 
-  // Sample data for demonstration
   final List<AppointmentModel> _pendingAppointments = [
     AppointmentModel(
       appointmentId: '101',
@@ -67,7 +69,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     ),
   ];
 
-  // Sample patient names
   final Map<String, String> _patientNames = {
     'P101': 'Abdullah Ahmed',
     'P102': 'Sarah Mohammed',
@@ -76,13 +77,11 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     'P105': 'Omar Hassan',
   };
 
-  // Sample doctor names
   final Map<String, String> _doctorNames = {
     'D001': 'Dr. Mohammed Hussein',
     'D002': 'Dr. Fatima Abdullah',
   };
 
-  // Sample available doctors
   final List<DoctorModel> _availableDoctors = [
     DoctorModel(
       userId: 'D001',
@@ -127,10 +126,32 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         title: 'Staff Dashboard',
         backgroundColor: AppTheme.primaryColor,
         showBackButton: false,
+        actions: [
+          NotificationBadge(
+            child: IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const StaffNotificationsScreen()),
+                );
+              },
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const StaffNotificationsScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _getSelectedScreen(),
       bottomNavigationBar: CustomBottomNav(
@@ -197,7 +218,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             subtitle: 'Appointments that need verification',
             actionText: _pendingAppointments.isEmpty ? null : 'See All',
             onActionTap: () {
-              // Navigate to pending appointments screen
               setState(() {
                 _selectedIndex = 1;
               });
@@ -211,7 +231,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             subtitle: 'Upcoming approved appointments',
             actionText: _verifiedAppointments.isEmpty ? null : 'See All',
             onActionTap: () {
-              // Navigate to verified appointments screen
               setState(() {
                 _selectedIndex = 1;
               });
@@ -229,7 +248,10 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.primaryColor, AppTheme.primaryColor.withOpacity(0.8)],
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.8)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -277,10 +299,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Use Wrap instead of Row to handle overflow
                 Wrap(
-                  spacing: 8, // horizontal space between items
-                  runSpacing: 8, // vertical space between lines
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     _buildInfoPill('Pending', '${_pendingAppointments.length}'),
                     _buildInfoPill('Today', '3'),
@@ -354,12 +375,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           Icons.person_add_alt_1_outlined,
           Colors.orange,
           () {
-            // Show doctor assignment screen
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
                 title: const Text('Select Appointment'),
-                content: const Text('Please select an appointment to assign a doctor.'),
+                content: const Text(
+                    'Please select an appointment to assign a doctor.'),
                 actions: [
                   TextButton(
                     onPressed: () {
@@ -427,7 +448,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     );
   }
 
-  Widget _buildAppointmentsList(List<AppointmentModel> appointments, bool isPending) {
+  Widget _buildAppointmentsList(
+      List<AppointmentModel> appointments, bool isPending) {
     if (appointments.isEmpty) {
       return Center(
         child: Padding(
@@ -460,11 +482,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientName = _patientNames[appointment.patientId] ?? 'Unknown Patient';
+        final patientName =
+            _patientNames[appointment.patientId] ?? 'Unknown Patient';
         final doctorName = appointment.doctorId != null
             ? _doctorNames[appointment.doctorId]
             : null;
-        
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
           child: StaffAppointmentCard(
@@ -475,9 +498,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             onAssignDoctor: isPending
                 ? () => _showDoctorAssignmentDialog(appointment)
                 : null,
-            onVerify: isPending
-                ? () => _verifyAppointment(appointment)
-                : null,
+            onVerify: isPending ? () => _verifyAppointment(appointment) : null,
             onEdit: isPending
                 ? () => _showAppointmentEditDialog(appointment)
                 : null,
@@ -496,7 +517,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       MaterialPageRoute(
         builder: (context) => StaffAppointmentDetailsScreen(
           appointment: appointment,
-          patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
+          patientName:
+              _patientNames[appointment.patientId] ?? 'Unknown Patient',
           doctorName: appointment.doctorId != null
               ? _doctorNames[appointment.doctorId]
               : null,
@@ -512,14 +534,13 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       builder: (context) => DoctorSelectorDialog(
         doctors: _availableDoctors,
         onDoctorSelected: (doctor) {
-          // Update the appointment with the selected doctor
           final updatedAppointment = appointment.copyWith(
             doctorId: doctor.userId,
-            status: 'upcoming', // Automatically verify the appointment when a doctor is assigned
+            status: 'upcoming',
           );
-          
+
           _updateAppointment(updatedAppointment);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Doctor "${doctor.name}" assigned successfully'),
@@ -533,13 +554,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   void _verifyAppointment(AppointmentModel appointment) {
     if (appointment.type.toLowerCase() == 'vaccination') {
-      // For vaccination appointments, we can verify without assigning a doctor
       final updatedAppointment = appointment.copyWith(
         status: 'upcoming',
       );
-      
+
       _updateAppointment(updatedAppointment);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Vaccination appointment verified successfully'),
@@ -547,7 +567,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         ),
       );
     } else {
-      // For other appointments, we need to assign a doctor
       _showDoctorAssignmentDialog(appointment);
     }
   }
@@ -558,13 +577,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       builder: (context) => AppointmentEditDialog(
         appointment: appointment,
         onAppointmentUpdated: (newDateTime) {
-          // Update the appointment with the new date and time
           final updatedAppointment = appointment.copyWith(
             dateTime: newDateTime,
           );
-          
+
           _updateAppointment(updatedAppointment);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Appointment updated successfully'),
@@ -594,14 +612,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              
-              // Delete the appointment
+
               setState(() {
                 _pendingAppointments.removeWhere(
-                  (a) => a.appointmentId == appointment.appointmentId
-                );
+                    (a) => a.appointmentId == appointment.appointmentId);
               });
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Appointment deleted successfully'),
@@ -621,17 +637,13 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   void _updateAppointment(AppointmentModel updatedAppointment) {
     setState(() {
-      // Remove from pending if status changed
       if (updatedAppointment.status != 'pending') {
         _pendingAppointments.removeWhere(
-          (a) => a.appointmentId == updatedAppointment.appointmentId
-        );
+            (a) => a.appointmentId == updatedAppointment.appointmentId);
         _verifiedAppointments.add(updatedAppointment);
       } else {
-        // Update in pending list
         final index = _pendingAppointments.indexWhere(
-          (a) => a.appointmentId == updatedAppointment.appointmentId
-        );
+            (a) => a.appointmentId == updatedAppointment.appointmentId);
         if (index != -1) {
           _pendingAppointments[index] = updatedAppointment;
         }

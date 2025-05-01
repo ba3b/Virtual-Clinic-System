@@ -6,13 +6,9 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get current user from FirebaseAuth
   User? get currentUser => _auth.currentUser;
-
-  // Stream of authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Register a new user
   Future<UserModel> registerUser({
     required String email,
     required String password,
@@ -22,7 +18,6 @@ class AuthService {
     required String userType,
   }) async {
     try {
-      // Create user with email and password
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -32,7 +27,6 @@ class AuthService {
         throw Exception('Failed to create user');
       }
 
-      // Create user model
       final UserModel userModel = UserModel(
         userId: userCredential.user!.uid,
         name: name,
@@ -42,39 +36,38 @@ class AuthService {
         userType: userType,
       );
 
-      // Save user data to Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set(userModel.toJson());
 
-      // If user is a patient, create a patient record
       if (userType == 'patient') {
         await _firestore.collection('patients').doc(userCredential.user!.uid).set({
           'patientId': userCredential.user!.uid,
           'medicalHistory': ''
         });
-      }
-      
-      // If user is a doctor, create a doctor record
-      else if (userType == 'doctor') {
+      } else if (userType == 'doctor') {
         await _firestore.collection('doctors').doc(userCredential.user!.uid).set({
           'doctorId': userCredential.user!.uid,
           'specialty': ''
         });
-      }
-      
-      // If user is a staff, create a staff record
-      else if (userType == 'staff') {
+      } else if (userType == 'staff') {
         await _firestore.collection('staff').doc(userCredential.user!.uid).set({
           'staffId': userCredential.user!.uid
         });
       }
 
       return userModel;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        throw Exception('The password provided is too weak.');
+      } else if (e.code == 'email-already-in-use') {
+        throw Exception('The account already exists for that email.');
+      } else {
+        throw Exception('Registration failed: ${e.message}');
+      }
     } catch (e) {
       throw Exception('Registration failed: ${e.toString()}');
     }
   }
 
-  // Login with email and password
   Future<UserModel> loginWithEmailAndPassword({
     required String email,
     required String password,
@@ -89,7 +82,6 @@ class AuthService {
         throw Exception('Failed to sign in');
       }
 
-      // Get user data from Firestore
       final DocumentSnapshot userDoc = await _firestore
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -100,21 +92,29 @@ class AuthService {
       }
 
       return UserModel.fromJson(userDoc.data() as Map<String, dynamic>);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found for that email.');
+      } else if (e.code == 'wrong-password') {
+        throw Exception('Wrong password provided for that user.');
+      } else {
+        throw Exception('Login failed: ${e.message}');
+      }
     } catch (e) {
       throw Exception('Login failed: ${e.toString()}');
     }
   }
 
-  // Reset password
   Future<void> resetPassword({required String email}) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw Exception('Password reset failed: ${e.message}');
     } catch (e) {
       throw Exception('Password reset failed: ${e.toString()}');
     }
   }
 
-  // Logout
   Future<void> logout() async {
     try {
       await _auth.signOut();
@@ -123,7 +123,6 @@ class AuthService {
     }
   }
 
-  // Get user data from Firestore
   Future<UserModel?> getUserData() async {
     try {
       if (currentUser == null) {
@@ -145,7 +144,6 @@ class AuthService {
     }
   }
 
-  // Update user profile
   Future<UserModel> updateUserProfile({
     required String userId,
     String? name,
@@ -161,7 +159,6 @@ class AuthService {
 
       await _firestore.collection('users').doc(userId).update(updateData);
 
-      // Get updated user data
       final DocumentSnapshot userDoc = await _firestore
           .collection('users')
           .doc(userId)

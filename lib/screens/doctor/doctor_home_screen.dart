@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
-import '../../components/doctor_appointment_card.dart';
-import '../../components/section_header.dart';
-import '../../models/appointment_model.dart';
-import '../../theme/theme.dart';
+import 'package:virtual_clinic_system/components/doctor_appointment_card.dart';
+import 'package:virtual_clinic_system/components/notification_badge.dart';
+import 'package:virtual_clinic_system/components/section_header.dart';
+import 'package:virtual_clinic_system/models/appointment_model.dart';
+import 'package:virtual_clinic_system/theme/theme.dart';
+
+
 import 'appointment_details_screen.dart';
 import 'appointment_history_screen.dart';
+import 'doctor_notifications_screen.dart';
 import 'profile_screen.dart';
 import 'virtual_appointment_screen.dart';
 
@@ -19,7 +23,6 @@ class DoctorHomeScreen extends StatefulWidget {
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _selectedIndex = 0;
 
-  // Sample data for demonstration
   final List<AppointmentModel> _todayAppointments = [
     AppointmentModel(
       appointmentId: '1',
@@ -66,7 +69,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     ),
   ];
 
-  // Sample patient names
   final Map<String, String> _patientNames = {
     'P001': 'Ahmed Ali',
     'P002': 'Fatima Mohammed',
@@ -84,7 +86,30 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
+      appBar: AppBar(
+        backgroundColor: AppTheme.primaryColor,
+        title: const Text('Doctor Dashboard'),
+        actions: [
+          NotificationBadge(
+            child: IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DoctorNotificationsScreen()),
+                );
+              },
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DoctorNotificationsScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: _getSelectedScreen(),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
@@ -136,7 +161,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             subtitle: 'Your schedule for today',
             actionText: _todayAppointments.isEmpty ? null : 'See All',
             onActionTap: () {
-              // Navigate to detailed view of today's appointments
             },
           ),
           const SizedBox(height: 16),
@@ -147,7 +171,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             subtitle: 'Your future schedule',
             actionText: _upcomingAppointments.isEmpty ? null : 'See All',
             onActionTap: () {
-              // Navigate to detailed view of upcoming appointments
             },
           ),
           const SizedBox(height: 16),
@@ -301,7 +324,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   void _navigateToAppointmentDetails(AppointmentModel appointment) {
-    // For virtual appointments that are upcoming, go directly to virtual meeting
     if (appointment.type.toLowerCase() == 'virtual' && 
         appointment.status.toLowerCase() == 'upcoming') {
       Navigator.push(
@@ -314,7 +336,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         ),
       );
     } else {
-      // For other appointments, show details screen
       Navigator.push(
         context,
         MaterialPageRoute(
