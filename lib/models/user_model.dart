@@ -1,3 +1,10 @@
+class UserId {
+  final String uid;
+  UserId({
+    required this.uid,
+  });
+}
+
 class UserModel {
   final String userId;
   final String name;
@@ -5,7 +12,6 @@ class UserModel {
   final String phoneNumber;
   final String address;
   final String userType; 
-  final Map<String, dynamic>? additionalData;
 
   UserModel({
     required this.userId,
@@ -14,7 +20,6 @@ class UserModel {
     required this.phoneNumber,
     required this.address,
     required this.userType,
-    this.additionalData,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -25,7 +30,6 @@ class UserModel {
       phoneNumber: json['phoneNumber'] ?? '',
       address: json['address'] ?? '',
       userType: json['userType'] ?? 'patient',
-      additionalData: json['additionalData'],
     );
   }
 
@@ -37,16 +41,13 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'address': address,
       'userType': userType,
-      if (additionalData != null) 'additionalData': additionalData,
     };
   }
 
-  // Create specific user types from the base model
   bool get isPatient => userType == 'patient';
   bool get isDoctor => userType == 'doctor';
   bool get isStaff => userType == 'staff';
 
-  // Copy with method for updating user information
   UserModel copyWith({
     String? userId,
     String? name,
@@ -63,34 +64,25 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       address: address ?? this.address,
       userType: userType ?? this.userType,
-      additionalData: additionalData ?? this.additionalData,
     );
   }
 }
 
-// Extension models for specific user types
 class PatientModel extends UserModel {
-  final String? medicalHistory;
+  final Object? medicalHistory;
 
   PatientModel({
-    required String userId,
-    required String name,
-    required String email,
-    required String phoneNumber,
-    required String address,
+    required super.userId,
+    required super.name,
+    required super.email,
+    required super.phoneNumber,
+    required super.address,
     this.medicalHistory,
-    Map<String, dynamic>? additionalData,
   }) : super(
-          userId: userId,
-          name: name,
-          email: email,
-          phoneNumber: phoneNumber,
-          address: address,
           userType: 'patient',
-          additionalData: additionalData,
         );
 
-  factory PatientModel.fromUserModel(UserModel user, {String? medicalHistory}) {
+  factory PatientModel.fromUserModel(UserModel user, {Object? medicalHistory}) {
     return PatientModel(
       userId: user.userId,
       name: user.name,
@@ -98,7 +90,6 @@ class PatientModel extends UserModel {
       phoneNumber: user.phoneNumber,
       address: user.address,
       medicalHistory: medicalHistory,
-      additionalData: user.additionalData,
     );
   }
 
@@ -114,21 +105,14 @@ class DoctorModel extends UserModel {
   final String specialty;
 
   DoctorModel({
-    required String userId,
-    required String name,
-    required String email,
-    required String phoneNumber,
-    required String address,
+    required super.userId,
+    required super.name,
+    required super.email,
+    required super.phoneNumber,
+    required super.address,
     required this.specialty,
-    Map<String, dynamic>? additionalData,
   }) : super(
-          userId: userId,
-          name: name,
-          email: email,
-          phoneNumber: phoneNumber,
-          address: address,
           userType: 'doctor',
-          additionalData: additionalData,
         );
 
   factory DoctorModel.fromUserModel(UserModel user, {required String specialty}) {
@@ -139,7 +123,6 @@ class DoctorModel extends UserModel {
       phoneNumber: user.phoneNumber,
       address: user.address,
       specialty: specialty,
-      additionalData: user.additionalData,
     );
   }
 
@@ -153,20 +136,13 @@ class DoctorModel extends UserModel {
 
 class StaffModel extends UserModel {
   StaffModel({
-    required String userId,
-    required String name,
-    required String email,
-    required String phoneNumber,
-    required String address,
-    Map<String, dynamic>? additionalData,
+    required super.userId,
+    required super.name,
+    required super.email,
+    required super.phoneNumber,
+    required super.address,
   }) : super(
-          userId: userId,
-          name: name,
-          email: email,
-          phoneNumber: phoneNumber,
-          address: address,
           userType: 'staff',
-          additionalData: additionalData,
         );
 
   factory StaffModel.fromUserModel(UserModel user) {
@@ -176,7 +152,6 @@ class StaffModel extends UserModel {
       email: user.email,
       phoneNumber: user.phoneNumber,
       address: user.address,
-      additionalData: user.additionalData,
     );
   }
 }

@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:virtual_clinic_system/api/auth_service.dart';
+import 'package:virtual_clinic_system/screens/wrapper.dart';
 import '../../components/custom_app_bar.dart';
 import '../../components/custom_text_field.dart';
 import '../../components/common_button.dart';
@@ -14,6 +17,9 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final AuthService _auth = AuthService();
+
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -62,22 +68,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _isLoading = true;
       });
       
-      // This is a placeholder for actual registration logic
-      // In a real app, you would use AuthService to register the user
-      await Future.delayed(const Duration(seconds: 2));
+      User? result = await _auth.register(_nameController.text.trim(), _emailController.text.trim().toLowerCase(), _passwordController.text, 
+        _phoneController.text, _addressController.text, _selectedUserType);
       
       setState(() {
         _isLoading = false;
       });
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful!')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        if(result == null){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration failed. Please try again later.'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You have logged in successfully!'),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const Wrapper()),
+            (Route<dynamic> route) => false,
+          );
+        }
       }
     }
   }

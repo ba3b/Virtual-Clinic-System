@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:virtual_clinic_system/screens/wrapper.dart';
 import 'dart:async';
 import '../../components/app_logo.dart';
 import '../../theme/theme.dart';
-import 'intro_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -39,7 +39,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
     // Navigate to intro screen after delay
     Timer(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const IntroScreen()),
+        MaterialPageRoute(builder: (context) => const Wrapper()),
       );
     });
   }

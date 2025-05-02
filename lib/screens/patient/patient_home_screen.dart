@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:virtual_clinic_system/screens/patient/prescription_screen.dart';
 import '../../components/appointment_card.dart';
@@ -21,7 +22,7 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
-  
+
   // This is sample data for demonstration
   final List<Map<String, dynamic>> _upcomingAppointments = [
     {
@@ -74,7 +75,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           _buildUpcomingAppointments(),
           const SizedBox(height: 24),
           _buildHealthTips(),
-          const SizedBox(height: 60), // Extra space at bottom for navigation bar
+          const SizedBox(
+              height: 60), // Extra space at bottom for navigation bar
         ],
       ),
     );
@@ -110,14 +112,16 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen()),
                     );
                   },
                 ),
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen()),
                   );
                 },
               ),
@@ -127,6 +131,19 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 child: Icon(
                   Icons.person,
                   color: AppTheme.textSecondaryColor,
+                ),
+              ),
+              InkWell(
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                },
+                child: const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: AppTheme.dividerColor,
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: AppTheme.textSecondaryColor,
+                  ),
                 ),
               ),
             ],
@@ -183,7 +200,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AppointmentBookingScreen(),
+                          builder: (context) =>
+                              const AppointmentBookingScreen(),
                         ),
                       );
                     },
@@ -357,7 +375,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AppointmentBookingScreen(),
+                              builder: (context) =>
+                                  const AppointmentBookingScreen(),
                             ),
                           );
                         },
@@ -419,21 +438,24 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             children: [
               _buildHealthTipCard(
                 title: 'Staying Hydrated',
-                description: 'Drink 8 glasses of water daily for optimal health.',
+                description:
+                    'Drink 8 glasses of water daily for optimal health.',
                 iconData: Icons.water_drop_outlined,
                 color: Colors.blue,
               ),
               const SizedBox(width: 16),
               _buildHealthTipCard(
                 title: 'Regular Exercise',
-                description: 'At least 30 minutes of physical activity daily helps maintain health.',
+                description:
+                    'At least 30 minutes of physical activity daily helps maintain health.',
                 iconData: Icons.fitness_center_outlined,
                 color: Colors.green,
               ),
               const SizedBox(width: 16),
               _buildHealthTipCard(
                 title: 'Balanced Diet',
-                description: 'Eat plenty of fruits, vegetables, and whole grains.',
+                description:
+                    'Eat plenty of fruits, vegetables, and whole grains.',
                 iconData: Icons.restaurant_outlined,
                 color: Colors.orange,
               ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:virtual_clinic_system/api/auth_service.dart';
+import 'package:virtual_clinic_system/screens/wrapper.dart';
 import '../../components/app_logo.dart';
 import '../../components/custom_text_field.dart';
 import '../../components/common_button.dart';
@@ -6,11 +8,6 @@ import '../../theme/theme.dart';
 import '../../utils/validators.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
-
-// Placeholder imports for the home screens which will be implemented later
-import '../patient/patient_home_screen.dart';
-import '../doctor/doctor_home_screen.dart';
-import '../staff/staff_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -20,10 +17,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final AuthService _auth = AuthService();
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -45,43 +44,34 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _isLoading = true;
       });
-      
-      // This is a placeholder for actual login logic
-      // In a real app, you would use AuthService to authenticate the user
-      // and navigate to the appropriate home screen based on user type
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // For demo, we'll navigate to different screens based on email
-      String email = _emailController.text.toLowerCase();
-      
+
+      dynamic result = await _auth.signIn(
+        _emailController.text.trim().toLowerCase(),
+        _passwordController.text,
+      );
+
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
-        if (email.contains('patient')) {
-          // Navigate to patient home screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const PatientHomeScreen()),
-          );
-        } else if (email.contains('doctor')) {
-          // Navigate to doctor home screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DoctorHomeScreen()),
-          );
-        } else if (email.contains('staff')) {
-          // Navigate to staff home screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const StaffHomeScreen()),
+        if (result == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login failed. Please check your credentials.'),
+              backgroundColor: AppTheme.errorColor,
+            ),
           );
         } else {
-          // Default to patient
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const PatientHomeScreen()),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You have logged in successfully!'),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const Wrapper()),
+            (Route<dynamic> route) => false,
           );
         }
       }
@@ -123,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Email Field
                 CustomTextField(
                   label: 'Email',
@@ -135,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Password Field
                 CustomTextField(
                   label: 'Password',
@@ -145,7 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                     ),
                     onPressed: _togglePasswordVisibility,
                   ),
@@ -153,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _login(),
                 ),
-                
+
                 // Forgot Password Link
                 Align(
                   alignment: Alignment.centerRight,
@@ -161,7 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen()),
                       );
                     },
                     child: Text(
@@ -174,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Login Button
                 CommonButton(
                   text: 'Login',
@@ -182,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _login,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -195,7 +188,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const RegisterScreen()),
                         );
                       },
                       child: Text(
