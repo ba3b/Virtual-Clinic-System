@@ -1,3 +1,5 @@
+import 'package:virtual_clinic_system/constants/departments.dart';
+
 class UserId {
   final String uid;
   UserId({
@@ -76,6 +78,7 @@ class UserModel {
 
 class PatientModel extends UserModel {
   final Object? medicalHistory;
+  final List<String> eligibility;
 
   PatientModel({
     required super.userId,
@@ -85,11 +88,16 @@ class PatientModel extends UserModel {
     required super.address,
     required super.fcmToken,
     this.medicalHistory,
+    this.eligibility = const [DepartmentConstants.generalMedicine],
   }) : super(
           userType: 'patient',
         );
 
-  factory PatientModel.fromUserModel(UserModel user, {Object? medicalHistory}) {
+  factory PatientModel.fromUserModel(
+    UserModel user, {
+    Object? medicalHistory,
+    List<String>? eligibility,
+  }) {
     return PatientModel(
       userId: user.userId,
       name: user.name,
@@ -98,6 +106,7 @@ class PatientModel extends UserModel {
       address: user.address,
       medicalHistory: medicalHistory,
       fcmToken: user.fcmToken,
+      eligibility: eligibility ?? [DepartmentConstants.generalMedicine],
     );
   }
 
@@ -105,6 +114,7 @@ class PatientModel extends UserModel {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> json = super.toJson();
     json['medicalHistory'] = medicalHistory;
+    json['eligibility'] = eligibility;
     return json;
   }
 }

@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:virtual_clinic_system/api/firestore_service.dart';
 import 'package:virtual_clinic_system/components/appointment_edit_dialog.dart';
 import 'package:virtual_clinic_system/components/custom_app_bar.dart';
 import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
@@ -262,76 +264,103 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildStaffInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.8)
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
+    final user = Provider.of<UserId?>(context);
+
+    return FutureBuilder<UserModel>(
+        future: DatabaseService(uid: user!.uid).getUserDetails(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error loading user data'));
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('No user data found'));
+          }
+
+          final UserModel currentUser = snapshot.data!;
+
+          if (!currentUser.isStaff) {
+            return const Center(
+                child: Text('Error: Only staff can access this page'));
+          }
+
+          final StaffModel staff = currentUser as StaffModel;
+          return Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 36,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome, Sarah',
-                  style: AppTheme.subheadingStyle.copyWith(
-                    color: Colors.white,
-                    fontSize: 20,
-                  ),
-                ),
-                Text(
-                  'Staff Administrator',
-                  style: AppTheme.bodyStyle.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildInfoPill('Pending', '${_pendingAppointments.length}'),
-                    _buildInfoPill('Today', '3'),
-                    _buildInfoPill('Vaccinations', '12'),
-                  ],
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryColor,
+                  AppTheme.primaryColor.withOpacity(0.8)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome, ${staff.name}',
+                        style: AppTheme.subheadingStyle.copyWith(
+                          color: Colors.white,
+                          fontSize: 20,
+                        ),
+                      ),
+                      Text(
+                        'Staff Administrator',
+                        style: AppTheme.bodyStyle.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildInfoPill(
+                              'Pending', '${_pendingAppointments.length}'),
+                          _buildInfoPill('Today', '3'),
+                          _buildInfoPill('Vaccinations', '12'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
   }
 
   Widget _buildInfoPill(String label, String count) {

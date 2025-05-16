@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:virtual_clinic_system/api/firestore_service.dart';
 import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
 import 'package:virtual_clinic_system/components/doctor_appointment_card.dart';
 import 'package:virtual_clinic_system/components/notification_badge.dart';
 import 'package:virtual_clinic_system/components/section_header.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
+import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
 
 import 'appointment_details_screen.dart';
@@ -195,77 +198,105 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _buildDoctorInfo() {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor,
-              AppTheme.primaryColor.withOpacity(0.8)
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
+    final user = Provider.of<UserId?>(context);
+
+    return FutureBuilder<UserModel>(
+        future: DatabaseService(uid: user!.uid).getUserDetails(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error loading user data'));
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('No user data found'));
+          }
+
+          final UserModel currentUser = snapshot.data!;
+
+          if (!currentUser.isDoctor) {
+            return const Center(
+                child: Text('Error: Only doctors can access this page'));
+          }
+
+          final DoctorModel doctor = currentUser as DoctorModel;
+
+          return SafeArea(
+            child: Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.primaryColor.withOpacity(0.8)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 36,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    'Dr. Mohammed Hussein',
-                    style: AppTheme.subheadingStyle.copyWith(
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.person,
                       color: Colors.white,
-                      fontSize: 20,
+                      size: 36,
                     ),
                   ),
-                  Text(
-                    'General Medicine',
-                    style: AppTheme.bodyStyle.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Dr. ${doctor.name}',
+                          style: AppTheme.subheadingStyle.copyWith(
+                            color: Colors.white,
+                            fontSize: 20,
+                          ),
+                        ),
+                        Text(
+                          doctor.specialty,
+                          style: AppTheme.bodyStyle.copyWith(
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildStatCard(
+                                'Today', '${_todayAppointments.length}'),
+                            const SizedBox(width: 16),
+                            _buildStatCard(
+                                'Upcoming', '${_upcomingAppointments.length}'),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildStatCard('Today', '${_todayAppointments.length}'),
-                      const SizedBox(width: 16),
-                      _buildStatCard(
-                          'Upcoming', '${_upcomingAppointments.length}'),
-                    ],
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
+        });
   }
 
   Widget _buildStatCard(String label, String count) {

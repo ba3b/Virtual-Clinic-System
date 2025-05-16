@@ -24,7 +24,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
     // If an initial type is provided, navigate directly to date selection
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialType != null) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => AppointmentDateScreen(
@@ -34,7 +34,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         );
       } else {
         // Otherwise, navigate to type selection
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const AppointmentTypeScreen(),

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:virtual_clinic_system/constants/departments.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 
 class DatabaseService {
@@ -34,12 +35,15 @@ class DatabaseService {
 
       switch (userType) {
         case 'patient':
-          PatientModel patient = PatientModel.fromUserModel(user);
+          PatientModel patient = PatientModel.fromUserModel(
+            user,
+            eligibility: [DepartmentConstants.generalMedicine],
+          );
           userData = patient.toJson();
           break;
         case 'doctor':
           DoctorModel doctor =
-              DoctorModel.fromUserModel(user, specialty: 'General');
+              DoctorModel.fromUserModel(user, specialty: DepartmentConstants.generalMedicine);
           userData = doctor.toJson();
           break;
         case 'staff':
@@ -75,6 +79,8 @@ class DatabaseService {
             address: userData['address'] ?? '',
             medicalHistory: userData['medicalHistory'],
             fcmToken: userData['fcmToken'] ?? '',
+            eligibility: List<String>.from(userData['eligibility'] ??
+                [DepartmentConstants.generalMedicine]),
           );
         case 'doctor':
           return DoctorModel(
@@ -126,6 +132,8 @@ class DatabaseService {
               address: userData['address'] ?? '',
               medicalHistory: userData['medicalHistory'],
               fcmToken: userData['fcmToken'] ?? '',
+              eligibility: List<String>.from(userData['eligibility'] ??
+                  [DepartmentConstants.generalMedicine]),
             );
           case 'doctor':
             return DoctorModel(

@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:virtual_clinic_system/api/firestore_service.dart';
+import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/screens/patient/prescription_screen.dart';
 import '../../components/appointment_card.dart';
 import '../../components/custom_bottom_nav.dart';
@@ -125,21 +128,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   );
                 },
               ),
-              const CircleAvatar(
-                radius: 20,
-                backgroundColor: AppTheme.dividerColor,
-                child: Icon(
-                  Icons.person,
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
               InkWell(
                 onTap: () async {
                   await FirebaseAuth.instance.signOut();
                 },
                 child: const CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppTheme.dividerColor,
+                  backgroundColor: Colors.transparent,
                   child: Icon(
                     Icons.logout_rounded,
                     color: AppTheme.textSecondaryColor,
@@ -154,87 +149,114 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildWelcomeCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 7,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final user = Provider.of<UserId?>(context);
+
+    return FutureBuilder<UserModel>(
+        future: DatabaseService(uid: user!.uid).getUserDetails(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error loading user data'));
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text('No user data found'));
+          }
+
+          final UserModel currentUser = snapshot.data!;
+
+          if (!currentUser.isPatient) {
+            return const Center(
+                child: Text('Error: Only patients can access this page'));
+          }
+
+          final PatientModel patient = currentUser as PatientModel;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    'Welcome, Mohammed!',
-                    style: AppTheme.subheadingStyle.copyWith(
-                      color: Colors.white,
-                      fontSize: 20,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'How are you feeling today?',
-                    style: AppTheme.bodyStyle.copyWith(
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AppointmentBookingScreen(),
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, ${patient.name}!',
+                          style: AppTheme.subheadingStyle.copyWith(
+                            color: Colors.white,
+                            fontSize: 20,
+                          ),
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        const SizedBox(height: 8),
+                        Text(
+                          'How are you feeling today?',
+                          style: AppTheme.bodyStyle.copyWith(
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AppointmentBookingScreen(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppTheme.primaryColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Book Appointment'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Expanded(
+                    flex: 3,
+                    child: Center(
+                      child: Icon(
+                        Icons.health_and_safety_outlined,
+                        color: Colors.white,
+                        size: 64,
                       ),
                     ),
-                    child: const Text('Book Appointment'),
                   ),
                 ],
               ),
             ),
-            const Expanded(
-              flex: 3,
-              child: Center(
-                child: Icon(
-                  Icons.health_and_safety_outlined,
-                  color: Colors.white,
-                  size: 64,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+          );
+        });
   }
 
   Widget _buildQuickActions() {
@@ -257,7 +279,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               const SizedBox(width: 8),
               QuickActionButton(
                 icon: Icons.videocam_rounded,
-                label: 'Virtual Appointment',
+                label: 'Virtual \nAppointment',
                 backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                 iconColor: AppTheme.primaryColor,
                 onTap: () {
@@ -274,7 +296,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               const SizedBox(width: 16),
               QuickActionButton(
                 icon: Icons.person_rounded,
-                label: 'Physical Appointment',
+                label: 'Physical \nAppointment',
                 backgroundColor: AppTheme.secondaryColor.withOpacity(0.1),
                 iconColor: AppTheme.secondaryColor,
                 onTap: () {
