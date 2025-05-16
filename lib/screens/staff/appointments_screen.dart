@@ -108,6 +108,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with 
       phoneNumber: '+966 50 123 4567',
       address: 'Taif',
       specialty: 'General Medicine',
+      fcmToken: '',
     ),
     DoctorModel(
       userId: 'D002',
@@ -116,6 +117,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with 
       phoneNumber: '+966 50 234 5678',
       address: 'Taif',
       specialty: 'Pediatrics',
+      fcmToken: '',
     ),
     DoctorModel(
       userId: 'D003',
@@ -124,6 +126,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with 
       phoneNumber: '+966 50 345 6789',
       address: 'Taif',
       specialty: 'Cardiology',
+      fcmToken: '',
     ),
     DoctorModel(
       userId: 'D004',
@@ -132,6 +135,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with 
       phoneNumber: '+966 50 456 7890',
       address: 'Taif',
       specialty: 'Dermatology',
+      fcmToken: '',
     ),
   ];
 

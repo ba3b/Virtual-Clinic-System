@@ -9,7 +9,7 @@ class AuthService {
     return user != null ? UserId(uid: user.uid) : null;
   }
 
-  Future signIn(String email, String password) async {
+  Future<User?> signIn(String email, String password) async {
     try {
       UserCredential result = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
@@ -21,12 +21,22 @@ class AuthService {
     }
   }
 
-  Future register(String fullName, String email, String password, String phoneNumber, String address, String userType) async {
+  Future<User?> register(String fullName, String email, String password, String phoneNumber, String address, String userType) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
       User? user = result.user;
-      DatabaseService(uid: user!.uid).createUserDocument(result, fullName, phoneNumber, address, userType);
+      
+      if (user != null) {
+        await DatabaseService(uid: user.uid).createUserDocument(
+          result, 
+          fullName, 
+          phoneNumber, 
+          address, 
+          userType
+        );
+      }
+      
       return user;
     } on FirebaseAuthException catch (e) {
       print(e.message);
@@ -34,12 +44,12 @@ class AuthService {
     }
   }
 
-  Future signOut() async {
+  Future<void> signOut() async {
     try {
       return await _auth.signOut();
     } on FirebaseAuthException catch (e) {
       print(e.message);
-      return null;
+      return;
     }
   }
 
@@ -48,10 +58,42 @@ class AuthService {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
       print("Failed to send password reset email: ${e.message}");
+      rethrow;
     }
   }
 
-  Stream<UserId?> get user{
+  // Get current user
+  User? get currentUser => _auth.currentUser;
+
+  // Get current user as UserId
+  UserId? get currentUserId => _userFromFirebaseUser(_auth.currentUser);
+  
+  // Auth state changes stream
+  Stream<UserId?> get user {
     return _auth.authStateChanges().map(_userFromFirebaseUser);
+  }
+  
+  // Get current user model from Firestore
+  Future<UserModel?> getCurrentUserModel() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      try {
+        return await DatabaseService(uid: user.uid).getUserDetails(user.uid);
+      } catch (e) {
+        print("Error getting user model: $e");
+        return null;
+      }
+    }
+    return null;
+  }
+  
+  // Get current user model as stream
+  Stream<UserModel?> getCurrentUserModelStream() {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      return DatabaseService(uid: user.uid).getUserStream(user.uid);
+    }
+    // Return empty stream if no user is logged in
+    return Stream.value(null);
   }
 }

@@ -70,7 +70,7 @@ class _StaffNotificationsScreenState extends State<StaffNotificationsScreen> wit
         ),
       );
     } else if (notification.type == 'verification_request' && notification.additionalData != null) {
-      final appointmentId = notification.additionalData!['appointmentId'];
+      // final appointmentId = notification.additionalData!['appointmentId'];
       
       showDialog(
         context: context,

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
 import 'package:virtual_clinic_system/components/doctor_appointment_card.dart';
@@ -5,7 +6,6 @@ import 'package:virtual_clinic_system/components/notification_badge.dart';
 import 'package:virtual_clinic_system/components/section_header.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
-
 
 import 'appointment_details_screen.dart';
 import 'appointment_history_screen.dart';
@@ -92,22 +92,38 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         actions: [
           NotificationBadge(
             child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon:
+                  const Icon(Icons.notifications_outlined, color: Colors.white),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DoctorNotificationsScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const DoctorNotificationsScreen()),
                 );
               },
             ),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const DoctorNotificationsScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const DoctorNotificationsScreen()),
               );
             },
           ),
           const SizedBox(width: 8),
+          InkWell(
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+            child: const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppTheme.dividerColor,
+              child: Icon(
+                Icons.logout_rounded,
+                color: AppTheme.textSecondaryColor,
+              ),
+            ),
+          ),
         ],
       ),
       body: _getSelectedScreen(),
@@ -160,8 +176,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             title: 'Today\'s Appointments',
             subtitle: 'Your schedule for today',
             actionText: _todayAppointments.isEmpty ? null : 'See All',
-            onActionTap: () {
-            },
+            onActionTap: () {},
           ),
           const SizedBox(height: 16),
           _buildAppointmentsList(_todayAppointments),
@@ -170,8 +185,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             title: 'Upcoming Appointments',
             subtitle: 'Your future schedule',
             actionText: _upcomingAppointments.isEmpty ? null : 'See All',
-            onActionTap: () {
-            },
+            onActionTap: () {},
           ),
           const SizedBox(height: 16),
           _buildAppointmentsList(_upcomingAppointments),
@@ -186,7 +200,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppTheme.primaryColor, AppTheme.primaryColor.withOpacity(0.8)],
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.primaryColor.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -238,7 +255,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     children: [
                       _buildStatCard('Today', '${_todayAppointments.length}'),
                       const SizedBox(width: 16),
-                      _buildStatCard('Upcoming', '${_upcomingAppointments.length}'),
+                      _buildStatCard(
+                          'Upcoming', '${_upcomingAppointments.length}'),
                     ],
                   ),
                 ],
@@ -309,8 +327,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientName = _patientNames[appointment.patientId] ?? 'Unknown Patient';
-        
+        final patientName =
+            _patientNames[appointment.patientId] ?? 'Unknown Patient';
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
           child: DoctorAppointmentCard(
@@ -324,14 +343,15 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   void _navigateToAppointmentDetails(AppointmentModel appointment) {
-    if (appointment.type.toLowerCase() == 'virtual' && 
+    if (appointment.type.toLowerCase() == 'virtual' &&
         appointment.status.toLowerCase() == 'upcoming') {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => DoctorVirtualAppointmentScreen(
             appointment: appointment,
-            patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
+            patientName:
+                _patientNames[appointment.patientId] ?? 'Unknown Patient',
           ),
         ),
       );
@@ -341,7 +361,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         MaterialPageRoute(
           builder: (context) => DoctorAppointmentDetailsScreen(
             appointment: appointment,
-            patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
+            patientName:
+                _patientNames[appointment.patientId] ?? 'Unknown Patient',
           ),
         ),
       );

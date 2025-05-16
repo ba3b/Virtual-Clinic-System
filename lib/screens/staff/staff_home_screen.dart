@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:virtual_clinic_system/components/appointment_edit_dialog.dart';
 import 'package:virtual_clinic_system/components/custom_app_bar.dart';
@@ -90,6 +91,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       phoneNumber: '+966 50 123 4567',
       address: 'Taif',
       specialty: 'General Medicine',
+      fcmToken: '',
     ),
     DoctorModel(
       userId: 'D002',
@@ -98,6 +100,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       phoneNumber: '+966 50 234 5678',
       address: 'Taif',
       specialty: 'Pediatrics',
+      fcmToken: '',
     ),
     DoctorModel(
       userId: 'D003',
@@ -106,6 +109,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       phoneNumber: '+966 50 345 6789',
       address: 'Taif',
       specialty: 'Cardiology',
+      fcmToken: '',
     ),
     DoctorModel(
       userId: 'D004',
@@ -114,6 +118,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       phoneNumber: '+966 50 456 7890',
       address: 'Taif',
       specialty: 'Dermatology',
+      fcmToken: '',
     ),
   ];
 
@@ -151,6 +156,19 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             },
           ),
           const SizedBox(width: 8),
+          InkWell(
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+            child: const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppTheme.dividerColor,
+              child: Icon(
+                Icons.logout_rounded,
+                color: AppTheme.textSecondaryColor,
+              ),
+            ),
+          ),
         ],
       ),
       body: _getSelectedScreen(),

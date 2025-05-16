@@ -11,7 +11,8 @@ class UserModel {
   final String email;
   final String phoneNumber;
   final String address;
-  final String userType; 
+  final String userType;
+  final String fcmToken;
 
   UserModel({
     required this.userId,
@@ -20,6 +21,7 @@ class UserModel {
     required this.phoneNumber,
     required this.address,
     required this.userType,
+    required this.fcmToken,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class UserModel {
       phoneNumber: json['phoneNumber'] ?? '',
       address: json['address'] ?? '',
       userType: json['userType'] ?? 'patient',
+      fcmToken: json['fcmToken'] ?? '',
     );
   }
 
@@ -41,6 +44,7 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'address': address,
       'userType': userType,
+      'fcmToken': fcmToken,
     };
   }
 
@@ -55,6 +59,7 @@ class UserModel {
     String? phoneNumber,
     String? address,
     String? userType,
+    String? fcmToken,
     Map<String, dynamic>? additionalData,
   }) {
     return UserModel(
@@ -64,6 +69,7 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       address: address ?? this.address,
       userType: userType ?? this.userType,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }
@@ -77,6 +83,7 @@ class PatientModel extends UserModel {
     required super.email,
     required super.phoneNumber,
     required super.address,
+    required super.fcmToken,
     this.medicalHistory,
   }) : super(
           userType: 'patient',
@@ -90,6 +97,7 @@ class PatientModel extends UserModel {
       phoneNumber: user.phoneNumber,
       address: user.address,
       medicalHistory: medicalHistory,
+      fcmToken: user.fcmToken,
     );
   }
 
@@ -110,12 +118,14 @@ class DoctorModel extends UserModel {
     required super.email,
     required super.phoneNumber,
     required super.address,
+    required super.fcmToken,
     required this.specialty,
   }) : super(
           userType: 'doctor',
         );
 
-  factory DoctorModel.fromUserModel(UserModel user, {required String specialty}) {
+  factory DoctorModel.fromUserModel(UserModel user,
+      {required String specialty}) {
     return DoctorModel(
       userId: user.userId,
       name: user.name,
@@ -123,6 +133,7 @@ class DoctorModel extends UserModel {
       phoneNumber: user.phoneNumber,
       address: user.address,
       specialty: specialty,
+      fcmToken: user.fcmToken,
     );
   }
 
@@ -141,6 +152,7 @@ class StaffModel extends UserModel {
     required super.email,
     required super.phoneNumber,
     required super.address,
+    required super.fcmToken,
   }) : super(
           userType: 'staff',
         );
@@ -152,6 +164,7 @@ class StaffModel extends UserModel {
       email: user.email,
       phoneNumber: user.phoneNumber,
       address: user.address,
+      fcmToken: user.fcmToken,
     );
   }
 }
