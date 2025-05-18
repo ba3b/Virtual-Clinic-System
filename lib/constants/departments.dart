@@ -10,7 +10,6 @@ class DepartmentConstants {
   static const String obgyn = 'Obstetrics & Gynecology';
   static const String psychiatry = 'Psychiatry';
   static const String endocrinology = 'Endocrinology';
-  static const String dentistry = 'Dentistry';
   
   static const List<String> allDepartments = [
     generalMedicine,
@@ -24,6 +23,5 @@ class DepartmentConstants {
     obgyn,
     psychiatry,
     endocrinology,
-    dentistry,
   ];
 }

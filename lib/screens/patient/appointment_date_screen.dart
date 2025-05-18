@@ -28,7 +28,7 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
   void initState() {
     super.initState();
     // Initialize with tomorrow as default
-    _selectedDate = DateTime.now().add(const Duration(days: 1));
+    _selectedDate = DateTime.now().add(const Duration(days: 2));
     
     // Ensure the selected date is not on a weekend
     if (_selectedDate.weekday == 6) { // Saturday

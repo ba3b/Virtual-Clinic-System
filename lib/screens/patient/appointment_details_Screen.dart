@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../api/firestore_service.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
+import '../../models/appointment_model.dart';
+import '../../models/user_model.dart';
 import '../../theme/theme.dart';
-import 'virtual_appointment_screen.dart';
 
-class AppointmentDetailsScreen extends StatelessWidget {
+class AppointmentDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> appointmentData;
 
   const AppointmentDetailsScreen({
@@ -14,387 +16,330 @@ class AppointmentDetailsScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final bool isVirtual = appointmentData['appointmentType'].toString().toLowerCase() == 'virtual';
+  State<AppointmentDetailsScreen> createState() => _AppointmentDetailsScreenState();
+}
+
+class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _cancelAppointment() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = Provider.of<UserId?>(context, listen: false);
+      if (user == null) {
+        setState(() {
+          _errorMessage = 'User not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final appointmentId = widget.appointmentData['appointmentId'] as String;
+      
+      await DatabaseService(uid: user.uid).cancelAppointment(appointmentId);
+      
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment cancelled successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error cancelling appointment: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatDateTime() {
+    final date = widget.appointmentData['appointmentDate'] as DateTime;
     
+    return '${date.day}/${date.month}/${date.year} at ${_formatTime(date)}';
+  }
+  
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final hourFormatted = hour > 12 ? hour - 12 : hour == 0 ? 12 : hour;
+    final minuteFormatted = minute.toString().padLeft(2, '0');
+    
+    return '$hourFormatted:$minuteFormatted $period';
+  }
+
+  String _getAppointmentTitle() {
+    final type = widget.appointmentData['appointmentType'] as String;
+    
+    if (type == 'vaccination') {
+      return 'Vaccination: ${widget.appointmentData['vaccinationType']}';
+    } else if (type == 'virtual') {
+      return 'Virtual Appointment: ${widget.appointmentData['department']}';
+    } else {
+      return 'Physical Appointment: ${widget.appointmentData['department']}';
+    }
+  }
+
+  Widget _buildStatusChip() {
+    final status = widget.appointmentData['status'] as String;
+    
+    late final Color color;
+    late final IconData icon;
+    
+    switch (status) {
+      case AppointmentModel.statusPending:
+        color = Colors.amber;
+        icon = Icons.pending_outlined;
+        break;
+      case AppointmentModel.statusApproved:
+        color = Colors.green;
+        icon = Icons.check_circle_outline;
+        break;
+      case AppointmentModel.statusRejected:
+        color = Colors.red;
+        icon = Icons.cancel_outlined;
+        break;
+      case AppointmentModel.statusCompleted:
+        color = Colors.blue;
+        icon = Icons.task_alt;
+        break;
+      case AppointmentModel.statusCancelled:
+        color = Colors.grey;
+        icon = Icons.cancel_outlined;
+        break;
+      default:
+        color = Colors.grey;
+        icon = Icons.help_outline;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            status.substring(0, 1).toUpperCase() + status.substring(1),
+            style: AppTheme.bodyStyle.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _canCancelAppointment() {
+    final status = widget.appointmentData['status'] as String;
+    final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime;
+    
+    // Can cancel if pending and at least 24 hours before the appointment
+    return status == AppointmentModel.statusPending && 
+           appointmentDate.difference(DateTime.now()).inHours > 24;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appointmentType = widget.appointmentData['appointmentType'] as String;
+    
+    final iconData = appointmentType == 'virtual'
+        ? Icons.videocam_rounded
+        : appointmentType == 'physical'
+            ? Icons.person_rounded
+            : Icons.healing_rounded;
+
+    final iconColor = appointmentType == 'virtual'
+        ? AppTheme.primaryColor
+        : appointmentType == 'physical'
+            ? Colors.blue
+            : Colors.green;
+            
+    final status = widget.appointmentData['status'] as String;
+
     return Scaffold(
       appBar: const CustomAppBar(
         title: 'Appointment Details',
         backgroundColor: AppTheme.primaryColor,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAppointmentStatusCard(context),
-            const SizedBox(height: 24),
-            _buildAppointmentDetailsSection(),
-            const SizedBox(height: 24),
-            _buildDoctorInfoSection(),
-            const SizedBox(height: 32),
-            CommonButton(
-              text: isVirtual ? 'Join Virtual Appointment' : 'Navigate to Hospital',
-              onPressed: () {
-                if (isVirtual) {
-                  // Navigate to virtual appointment screen with messaging capability
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VirtualAppointmentScreen(
-                        appointmentData: appointmentData,
-                      ),
-                    ),
-                  );
-                } else {
-                  // Handle physical appointment navigation
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Navigation functionality will be implemented next'),
-                    ),
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            CommonButton(
-              text: 'Reschedule Appointment',
-              isOutlined: true,
-              onPressed: () {
-                // TODO: Handle rescheduling
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Rescheduling functionality will be implemented next'),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            CommonButton(
-              text: 'Cancel Appointment',
-              isOutlined: true,
-              backgroundColor: AppTheme.errorColor.withOpacity(0.5),
-              textColor: AppTheme.errorColor,
-              onPressed: () {
-                // TODO: Handle cancellation
-                _showCancelConfirmationDialog(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppointmentStatusCard(BuildContext context) {
-    final DateTime appointmentDate = appointmentData['appointmentDate'];
-    final String status = appointmentData['status'];
-    final String appointmentType = appointmentData['appointmentType'];
-    
-    Color statusColor;
-    switch (status.toLowerCase()) {
-      case 'upcoming':
-        statusColor = AppTheme.primaryColor;
-        break;
-      case 'completed':
-        statusColor = AppTheme.successColor;
-        break;
-      case 'cancelled':
-        statusColor = AppTheme.errorColor;
-        break;
-      default:
-        statusColor = AppTheme.primaryColor;
-    }
-
-    IconData appointmentIcon;
-    switch (appointmentType.toLowerCase()) {
-      case 'virtual':
-        appointmentIcon = Icons.videocam_rounded;
-        break;
-      case 'physical':
-        appointmentIcon = Icons.person_rounded;
-        break;
-      case 'vaccination':
-        appointmentIcon = Icons.healing_rounded;
-        break;
-      default:
-        appointmentIcon = Icons.calendar_today_rounded;
-    }
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: statusColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
+                  color: iconColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  appointmentIcon,
-                  color: statusColor,
-                  size: 28,
+                  iconData,
+                  color: iconColor,
+                  size: 40,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${appointmentType} Appointment',
-                      style: AppTheme.headingStyle.copyWith(
-                        fontSize: 18,
-                        color: statusColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Status: ${status[0].toUpperCase()}${status.substring(1)}',
-                      style: AppTheme.bodyStyle.copyWith(
-                        color: statusColor.withOpacity(0.8),
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 24),
+              Text(
+                _getAppointmentTitle(),
+                style: AppTheme.subheadingStyle.copyWith(
+                  fontSize: 18,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatDateTime(),
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildStatusChip(),
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+              _buildDetailItem(
+                icon: Icons.person_outline,
+                title: 'Doctor',
+                value: widget.appointmentData['doctorName'] as String? ?? 'Not assigned yet',
+              ),
+              _buildDetailItem(
+                icon: Icons.confirmation_number_outlined,
+                title: 'Appointment ID',
+                value: widget.appointmentData['appointmentId'] as String,
+              ),
+              if (status == AppointmentModel.statusApproved && appointmentType == 'virtual')
+                _buildDetailItem(
+                  icon: Icons.videocam_outlined,
+                  title: 'Join Virtual Appointment',
+                  value: 'Click to join',
+                  isButton: true,
+                  onTap: () {
+                    // Navigate to virtual meeting room
+                  },
+                ),
+              const Spacer(),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              if (_canCancelAppointment())
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : CommonButton(
+                        text: 'Cancel Appointment',
+                        onPressed: _cancelAppointment,
+                        backgroundColor: Colors.red,
+                      ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Back'),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildInfoItem(
-                Icons.calendar_today_outlined,
-                'Date',
-                DateFormat('MMM dd, yyyy').format(appointmentDate),
-                statusColor,
-              ),
-              _buildInfoItem(
-                Icons.access_time_rounded,
-                'Time',
-                DateFormat('hh:mm a').format(appointmentDate),
-                statusColor,
-              ),
-              _buildInfoItem(
-                Icons.timer_outlined,
-                'Duration',
-                '30 mins',
-                statusColor,
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
-
-  Widget _buildInfoItem(
-    IconData icon,
-    String title,
-    String value,
-    Color color,
-  ) {
-    return Column(
+  
+  Widget _buildDetailItem({
+    required IconData icon,
+    required String title,
+    required String value,
+    bool isButton = false,
+    VoidCallback? onTap,
+  }) {
+    final content = Row(
       children: [
         Icon(
           icon,
-          color: color,
-          size: 20,
+          color: isButton ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
+          size: 24,
         ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: AppTheme.bodySmallStyle.copyWith(
-            color: AppTheme.textSecondaryColor,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTheme.bodySmallStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+              Text(
+                value,
+                style: AppTheme.bodyStyle.copyWith(
+                  color: isButton ? AppTheme.primaryColor : AppTheme.textPrimaryColor,
+                  fontWeight: isButton ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: AppTheme.bodyStyle.copyWith(
-            fontWeight: FontWeight.w600,
+        if (isButton)
+          const Icon(
+            Icons.arrow_forward_ios,
+            color: AppTheme.primaryColor,
+            size: 16,
           ),
-        ),
       ],
     );
-  }
-
-  Widget _buildAppointmentDetailsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Appointment Details',
-          style: AppTheme.subheadingStyle,
-        ),
-        const SizedBox(height: 16),
-        _buildDetailItem('Appointment ID', '#APT12345'),
-        _buildDetailItem('Department', 'General Medicine'),
-        _buildDetailItem(
-          'Location',
-          appointmentData['appointmentType'].toString().toLowerCase() == 'virtual'
-              ? 'Virtual Meeting (Zoom)'
-              : 'King Faisal Medical Complex, Taif',
-        ),
-        _buildDetailItem('Booked On', 'April 20, 2025'),
-      ],
-    );
-  }
-
-  Widget _buildDetailItem(String label, String value) {
+    
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: AppTheme.bodyStyle.copyWith(
-                color: AppTheme.textSecondaryColor,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTheme.bodyStyle.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDoctorInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Doctor Information',
-          style: AppTheme.subheadingStyle,
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.person,
-                  color: AppTheme.primaryColor,
-                  size: 32,
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: isButton
+          ? InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: content,
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Dr. ${appointmentData['doctorName']}',
-                    style: AppTheme.subheadingStyle.copyWith(
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'General Medicine',
-                    style: AppTheme.bodyStyle.copyWith(
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '4.8',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(120 reviews)',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  void _showCancelConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Appointment'),
-        content: const Text(
-          'Are you sure you want to cancel this appointment? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('No, Keep It'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Appointment canceled successfully'),
-                  backgroundColor: AppTheme.successColor,
-                ),
-              );
-              Navigator.pop(context); // Go back to previous screen
-            },
-            child: Text(
-              'Yes, Cancel',
-              style: TextStyle(
-                color: AppTheme.errorColor,
-              ),
-            ),
-          ),
-        ],
-      ),
+            )
+          : content,
     );
   }
 }

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../components/common_button.dart';
-import '../../components/custom_app_bar.dart';
 import '../../theme/theme.dart';
 
 class AppointmentConfirmationScreen extends StatelessWidget {
@@ -79,6 +77,25 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                 color: AppTheme.textSecondaryColor,
               ),
             ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.amber,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Pending Confirmation',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: Colors.amber.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
@@ -98,6 +115,28 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                 ),
               ],
             ),
+            if (appointmentData['appointmentId'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.confirmation_number_outlined,
+                      color: AppTheme.textSecondaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Appointment ID: ${appointmentData['appointmentId']}',
+                        style: AppTheme.bodySmallStyle.copyWith(
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -107,55 +146,44 @@ class AppointmentConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Appointment Booked',
-        backgroundColor: AppTheme.primaryColor,
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 64,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Appointment Successfully Booked!',
-                style: AppTheme.headingStyle,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Your appointment has been booked and is pending confirmation',
-                style: AppTheme.bodyStyle.copyWith(
-                  color: AppTheme.textSecondaryColor,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 64,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              _buildAppointmentDetails(),
-              const Spacer(),
-              CommonButton(
-                text: 'View My Appointments',
-                onPressed: () {
-                  // Navigate back to appointments tab and clear the stack
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                  // In a real app, you would also switch to the appointments tab
-                  // This would depend on your navigation structure
-                },
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  // Navigate back to home and clear the stack
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                child: const Text('Back to Home'),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Text(
+                  'Appointment Successfully Booked!',
+                  style: AppTheme.headingStyle,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your appointment has been booked and is pending confirmation',
+                  style: AppTheme.bodyStyle.copyWith(
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                _buildAppointmentDetails(),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    // Navigate back to home and clear the stack
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  },
+                  child: const Text('Back to Home'),
+                ),
+                const SizedBox(height: 8),  // Added bottom padding
+              ],
+            ),
           ),
         ),
       ),

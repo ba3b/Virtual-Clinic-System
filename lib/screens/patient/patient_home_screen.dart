@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
+import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/screens/patient/prescription_screen.dart';
 import '../../components/appointment_card.dart';
@@ -25,23 +26,7 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
-
-  // This is sample data for demonstration
-  final List<Map<String, dynamic>> _upcomingAppointments = [
-    {
-      'doctorName': 'John Smith',
-      'appointmentDate': DateTime.now().add(const Duration(days: 1)),
-      'appointmentType': 'Virtual',
-      'status': 'Upcoming',
-    },
-    {
-      'doctorName': 'Sarah Johnson',
-      'appointmentDate': DateTime.now().add(const Duration(days: 3)),
-      'appointmentType': 'Physical',
-      'status': 'Upcoming',
-    },
-  ];
-
+  
   void _onNavTap(int index) {
     setState(() {
       _currentIndex = index;
@@ -334,7 +319,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 backgroundColor: Colors.orange.withOpacity(0.1),
                 iconColor: Colors.orange,
                 onTap: () {
-                  // TODO: Navigate to prescriptions screen
+                  setState(() {
+                    _currentIndex = 3; // Switch to prescriptions tab
+                  });
                 },
               ),
               const SizedBox(width: 16),
@@ -344,7 +331,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 backgroundColor: Colors.purple.withOpacity(0.1),
                 iconColor: Colors.purple,
                 onTap: () {
-                  // TODO: Navigate to medical history screen
+                  // Navigate to medical history screen
                 },
               ),
               const SizedBox(width: 8),
@@ -356,89 +343,157 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildUpcomingAppointments() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: SectionHeader(
-            title: 'Upcoming Appointments',
-            subtitle: 'Your scheduled appointments',
-            actionText: 'See All',
-            onActionTap: () {
-              setState(() {
-                _currentIndex = 1; // Switch to appointments tab
-              });
-            },
-          ),
+  final user = Provider.of<UserId?>(context);
+  
+  if (user == null) {
+    return const Center(child: Text('User not logged in'));
+  }
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SectionHeader(
+          title: 'Upcoming Appointments',
+          subtitle: 'Your scheduled appointments',
+          actionText: 'See All',
+          onActionTap: () {
+            setState(() {
+              _currentIndex = 1; // Switch to appointments tab
+            });
+          },
         ),
-        const SizedBox(height: 16),
-        _upcomingAppointments.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 48,
+      ),
+      const SizedBox(height: 16),
+      StreamBuilder<List<AppointmentModel>>(
+        stream: DatabaseService(uid: user.uid).getPatientAppointments(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
+          
+          final appointments = snapshot.data ?? [];
+          
+          // Filter for upcoming appointments
+          final upcomingAppointments = appointments
+              .where((appointment) => 
+                  appointment.status != AppointmentModel.statusCancelled &&
+                  appointment.status != AppointmentModel.statusRejected &&
+                  appointment.dateTime.isAfter(DateTime.now()))
+              .toList();
+          
+          // Sort by date
+          upcomingAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+          
+          // Take only the next 3 appointments
+          final displayAppointments = upcomingAppointments.take(3).toList();
+          
+          if (displayAppointments.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 48,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No upcoming appointments',
+                      style: AppTheme.bodyStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No upcoming appointments',
-                        style: AppTheme.bodyStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AppointmentBookingScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text('Book an appointment'),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const AppointmentBookingScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Book an appointment'),
+                    ),
+                  ],
                 ),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: _upcomingAppointments.length,
-                itemBuilder: (context, index) {
-                  final appointment = _upcomingAppointments[index];
+              ),
+            );
+          }
+          
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: displayAppointments.length,
+            itemBuilder: (context, index) {
+              final appointment = displayAppointments[index];
+              
+              return FutureBuilder<UserModel?>(
+                future: appointment.doctorId != null
+                    ? DatabaseService(uid: appointment.doctorId!).getUserDetails(appointment.doctorId!)
+                    : Future.value(null),
+                builder: (context, snapshot) {
+                  String doctorName;
+                  if (appointment.doctorId == null) {
+                    doctorName = 'Awaiting Doctor';
+                  } else if (snapshot.connectionState == ConnectionState.waiting) {
+                    doctorName = 'Loading...';
+                  } else if (snapshot.hasError) {
+                    doctorName = 'Doctor Unavailable';
+                  } else if (snapshot.hasData) {
+                    doctorName = 'Dr. ${snapshot.data!.name}';
+                  } else {
+                    doctorName = 'Doctor Assigned';
+                  }
+                  
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: AppointmentCard(
-                      doctorName: appointment['doctorName'],
-                      appointmentDate: appointment['appointmentDate'],
-                      appointmentType: appointment['appointmentType'],
-                      status: appointment['status'],
+                      doctorName: doctorName,
+                      appointmentDate: appointment.dateTime,
+                      appointmentType: appointment.type,
+                      status: appointment.status,
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => AppointmentDetailsScreen(
-                              appointmentData: appointment,
+                              appointmentData: {
+                                'appointmentId': appointment.appointmentId,
+                                'doctorName': doctorName,
+                                'appointmentDate': appointment.dateTime,
+                                'appointmentType': appointment.type,
+                                'status': appointment.status,
+                                'department': appointment.department,
+                                'vaccinationType': appointment.vaccinationType,
+                              },
                             ),
                           ),
                         );
                       },
                     ),
                   );
-                },
-              ),
-      ],
-    );
-  }
+                }
+              );
+            },
+          );
+        },
+      ),
+    ],
+  );
+}
 
   Widget _buildHealthTips() {
     return Column(
@@ -548,7 +603,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () {
-                // TODO: Navigate to full health tip details
+                // Navigate to full health tip details
               },
               style: TextButton.styleFrom(
                 foregroundColor: color,

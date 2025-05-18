@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../api/firestore_service.dart';
 import '../../components/appointment_card.dart';
 import '../../components/custom_app_bar.dart';
+import '../../models/appointment_model.dart';
+import '../../models/user_model.dart';
 import '../../theme/theme.dart';
 import 'appointment_details_screen.dart';
 
@@ -11,176 +15,134 @@ class AppointmentsScreen extends StatefulWidget {
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
 }
 
-class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTickerProviderStateMixin {
+class _AppointmentsScreenState extends State<AppointmentsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = true;
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-  
-  // Sample data for demonstration
-  final List<Map<String, dynamic>> _upcomingAppointments = [
-    {
-      'doctorName': 'Dr. Mohammed Hussein',
-      'appointmentDate': DateTime.now().add(const Duration(days: 2)),
-      'appointmentType': 'Virtual',
-      'status': 'Upcoming',
-    },
-    {
-      'doctorName': 'Dr. Fatima Abdullah',
-      'appointmentDate': DateTime.now().add(const Duration(days: 4)),
-      'appointmentType': 'Physical',
-      'status': 'Upcoming',
-    },
-    {
-      'doctorName': 'Dr. Ahmed Ali',
-      'appointmentDate': DateTime.now().add(const Duration(days: 7)),
-      'appointmentType': 'Vaccination',
-      'status': 'Upcoming',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _completedAppointments = [
-    {
-      'doctorName': 'Dr. Mohammed Hussein',
-      'appointmentDate': DateTime.now().subtract(const Duration(days: 3)),
-      'appointmentType': 'Virtual',
-      'status': 'Completed',
-    },
-    {
-      'doctorName': 'Dr. Ahmed Ali',
-      'appointmentDate': DateTime.now().subtract(const Duration(days: 7)),
-      'appointmentType': 'Physical',
-      'status': 'Completed',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _cancelledAppointments = [
-    {
-      'doctorName': 'Dr. Sarah Mohammed',
-      'appointmentDate': DateTime.now().subtract(const Duration(days: 2)),
-      'appointmentType': 'Virtual',
-      'status': 'Cancelled',
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
-    // Simulate data loading
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-    
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();
     super.dispose();
-  }
-
-  List<Map<String, dynamic>> _getFilteredAppointments(List<Map<String, dynamic>> appointments) {
-    if (_searchQuery.isEmpty) {
-      return appointments;
-    }
-    
-    return appointments.where((appointment) {
-      final doctorName = appointment['doctorName'].toString().toLowerCase();
-      final appointmentType = appointment['appointmentType'].toString().toLowerCase();
-      
-      return doctorName.contains(_searchQuery) ||
-             appointmentType.contains(_searchQuery);
-    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<UserId?>(context);
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please login to view your appointments'),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'My Appointments',
         showBackButton: false,
         backgroundColor: AppTheme.primaryColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // Show filter options dialog
-              _showFilterDialog();
-            },
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: AppTheme.primaryColor,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              tabs: const [
+                Tab(text: 'Upcoming'),
+                Tab(text: 'Completed'),
+                Tab(text: 'Rejected'),
+              ],
+              labelColor: Colors.white, 
+              unselectedLabelColor: Colors.white70,
+              unselectedLabelStyle:
+                  const TextStyle(fontSize: 14), 
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<AppointmentModel>>(
+              stream: DatabaseService(uid: user.uid)
+                  .getPatientAppointments(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading appointments: ${snapshot.error}',
+                          textAlign: TextAlign.center,
+                          style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {});
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final appointments = snapshot.data ?? [];
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Upcoming Appointments Tab
+                    _buildAppointmentsListView(appointments
+                        .where((app) =>
+                            (app.status == AppointmentModel.statusPending ||
+                                app.status ==
+                                    AppointmentModel.statusApproved) &&
+                            app.dateTime.isAfter(DateTime.now()))
+                        .toList()),
+
+                    // Completed Appointments Tab
+                    _buildAppointmentsListView(appointments
+                        .where((app) =>
+                            app.status == AppointmentModel.statusCompleted ||
+                            (app.status == AppointmentModel.statusApproved &&
+                                app.dateTime.isBefore(DateTime.now())))
+                        .toList()),
+
+                    // Rejected Appointments Tab
+                    _buildAppointmentsListView(appointments
+                        .where((app) =>
+                            app.status == AppointmentModel.statusRejected)
+                        .toList()),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  color: AppTheme.primaryColor,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.white,
-                    indicatorWeight: 3,
-                    tabs: const [
-                      Tab(text: 'Upcoming'),
-                      Tab(text: 'Completed'),
-                      Tab(text: 'Cancelled'),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search appointments...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.primaryColor),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildAppointmentsList(_getFilteredAppointments(_upcomingAppointments)),
-                      _buildAppointmentsList(_getFilteredAppointments(_completedAppointments)),
-                      _buildAppointmentsList(_getFilteredAppointments(_cancelledAppointments)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
     );
   }
 
-  Widget _buildAppointmentsList(List<Map<String, dynamic>> appointments) {
+  Widget _buildAppointmentsListView(List<AppointmentModel> appointments) {
     if (appointments.isEmpty) {
       return Center(
         child: Column(
@@ -193,109 +155,76 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
             ),
             const SizedBox(height: 16),
             Text(
-              _searchQuery.isNotEmpty
-                  ? 'No appointments found for "$_searchQuery"'
-                  : 'No appointments',
+              'No appointments',
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
       );
     }
 
+    // Sort appointments by date (most recent first)
+    appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: AppointmentCard(
-            doctorName: appointment['doctorName'],
-            appointmentDate: appointment['appointmentDate'],
-            appointmentType: appointment['appointmentType'],
-            status: appointment['status'],
-            onTap: () => _navigateToAppointmentDetails(appointment),
-          ),
+
+        return FutureBuilder<UserModel?>(
+          future: appointment.doctorId != null
+              ? DatabaseService(uid: appointment.doctorId!).getUserDetails(appointment.doctorId!)
+              : Future.value(null),
+          builder: (context, snapshot) {
+            String doctorName;
+            if (appointment.doctorId == null) {
+              doctorName = 'Awaiting Doctor';
+            } else if (snapshot.connectionState == ConnectionState.waiting) {
+              doctorName = 'Loading...';
+            } else if (snapshot.hasError) {
+              doctorName = 'Doctor Unavailable';
+            } else if (snapshot.hasData) {
+              doctorName = 'Dr. ${snapshot.data!.name}';
+            } else {
+              doctorName = 'Doctor Assigned';
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: AppointmentCard(
+                doctorName: doctorName,
+                appointmentDate: appointment.dateTime,
+                appointmentType: appointment.type,
+                status: appointment.status,
+                onTap: () => _navigateToAppointmentDetails(appointment, doctorName),
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  void _navigateToAppointmentDetails(Map<String, dynamic> appointment) {
+  void _navigateToAppointmentDetails(AppointmentModel appointment, String doctorName) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AppointmentDetailsScreen(
-          appointmentData: appointment,
+          appointmentData: {
+            'appointmentId': appointment.appointmentId,
+            'doctorName': doctorName,
+            'appointmentDate': appointment.dateTime,
+            'appointmentType': appointment.type,
+            'status': appointment.status,
+            'department': appointment.department,
+            'vaccinationType': appointment.vaccinationType,
+          },
         ),
       ),
-    );
-  }
-
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter Appointments'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildFilterOption('All Types', true),
-            _buildFilterOption('Virtual', false),
-            _buildFilterOption('Physical', false),
-            _buildFilterOption('Vaccination', false),
-            const Divider(),
-            _buildFilterOption('All Doctors', true),
-            _buildFilterOption('Dr. Mohammed Hussein', false),
-            _buildFilterOption('Dr. Fatima Abdullah', false),
-            _buildFilterOption('Dr. Ahmed Ali', false),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Apply filter (would be implemented with actual filter logic)
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Filters applied'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-            child: Text(
-              'Apply',
-              style: TextStyle(color: AppTheme.primaryColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterOption(String label, bool isSelected) {
-    return ListTile(
-      title: Text(label),
-      leading: isSelected
-          ? Icon(Icons.radio_button_checked, color: AppTheme.primaryColor)
-          : const Icon(Icons.radio_button_unchecked),
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      onTap: () {
-        // This would update the filter selection in the actual implementation
-        Navigator.pop(context);
-        _showFilterDialog();
-      },
     );
   }
 }

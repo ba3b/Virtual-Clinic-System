@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'package:virtual_clinic_system/constants/departments.dart';
+import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 
 class DatabaseService {
@@ -12,6 +14,9 @@ class DatabaseService {
 
   final CollectionReference usersCollection =
       FirebaseFirestore.instance.collection('Users');
+  final CollectionReference appointmentsCollection =
+      FirebaseFirestore.instance.collection('Appointments');
+
 
   Future<void> createUserDocument(
       UserCredential? userCredential,
@@ -161,5 +166,232 @@ class DatabaseService {
         throw Exception('User document does not exist.');
       }
     });
+  }
+
+  Future<String> createAppointment({
+    required String patientId,
+    required DateTime appointmentDate,
+    required String appointmentTime,
+    required String appointmentType,
+    String? department,
+    String? vaccinationType,
+  }) async {
+    try {
+      final DateFormat timeFormat = DateFormat('h:mm a');
+      final DateTime parsedTime = timeFormat.parse(appointmentTime);
+      
+      final DateTime appointmentDateTime = DateTime(
+        appointmentDate.year,
+        appointmentDate.month,
+        appointmentDate.day,
+        parsedTime.hour,
+        parsedTime.minute,
+      );
+      
+      DocumentReference docRef = appointmentsCollection.doc();
+      
+      // Create appointment model
+      AppointmentModel appointment = AppointmentModel(
+        appointmentId: docRef.id,
+        patientId: patientId,
+        doctorId: null, // Will be assigned by staff
+        status: AppointmentModel.statusPending,
+        dateTime: appointmentDateTime,
+        type: appointmentType,
+        department: appointmentType != AppointmentModel.typeVaccination ? department : null,
+        vaccinationType: appointmentType == AppointmentModel.typeVaccination ? vaccinationType : null,
+      );
+      
+      // Save to Firestore
+      await docRef.set(appointment.toJson());
+      
+      return docRef.id;
+    } catch (e) {
+      print('Error creating appointment: $e');
+      throw Exception('Failed to create appointment: $e');
+    }
+  }
+  
+  // Get appointments for a specific patient
+  Stream<List<AppointmentModel>> getPatientAppointments(String patientId) {
+    return appointmentsCollection
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('dateTime', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return AppointmentModel.fromJson(data);
+      }).toList();
+    });
+  }
+  
+  // Get appointments for a specific doctor
+  Stream<List<AppointmentModel>> getDoctorAppointments(String doctorId) {
+    return appointmentsCollection
+        .where('doctorId', isEqualTo: doctorId)
+        .orderBy('dateTime', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return AppointmentModel.fromJson(data);
+      }).toList();
+    });
+  }
+  
+  // Get all pending appointments (for staff)
+  Stream<List<AppointmentModel>> getPendingAppointments() {
+    return appointmentsCollection
+        .where('status', isEqualTo: AppointmentModel.statusPending)
+        .orderBy('dateTime', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return AppointmentModel.fromJson(data);
+      }).toList();
+    });
+  }
+  
+  // Update appointment status
+  Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+    try {
+      await appointmentsCollection.doc(appointmentId).update({
+        'status': status,
+      });
+    } catch (e) {
+      print('Error updating appointment status: $e');
+      throw Exception('Failed to update appointment status: $e');
+    }
+  }
+  
+  // Assign doctor to appointment
+  Future<void> assignDoctorToAppointment(String appointmentId, String doctorId) async {
+    try {
+      await appointmentsCollection.doc(appointmentId).update({
+        'doctorId': doctorId,
+        'status': AppointmentModel.statusApproved,
+      });
+    } catch (e) {
+      print('Error assigning doctor to appointment: $e');
+      throw Exception('Failed to assign doctor to appointment: $e');
+    }
+  }
+  
+  // Check if slot is available
+Future<bool> isTimeSlotAvailable(
+    DateTime appointmentDate,
+    String appointmentTime,
+    String appointmentType,
+    String? department,
+  ) async {
+    try {
+      // Parse the appointmentTime string to DateTime
+      final DateFormat timeFormat = DateFormat('h:mm a');
+      final DateTime parsedTime = timeFormat.parse(appointmentTime);
+      
+      // Combine date and time
+      final DateTime appointmentDateTime = DateTime(
+        appointmentDate.year,
+        appointmentDate.month,
+        appointmentDate.day,
+        parsedTime.hour,
+        parsedTime.minute,
+      );
+      
+      // Calculate the start and end of the 30-minute window
+      final DateTime slotStart = appointmentDateTime.subtract(const Duration(minutes: 10));
+      final DateTime slotEnd = appointmentDateTime.add(const Duration(minutes: 30));
+      
+      final List<String> activeStatuses = [
+        AppointmentModel.statusPending,
+        AppointmentModel.statusApproved,
+        AppointmentModel.statusCompleted,
+      ];
+      
+      QuerySnapshot snapshot;
+      
+      if (appointmentType != AppointmentModel.typeVaccination && department != null) {
+        snapshot = await appointmentsCollection
+          .where('dateTime', isGreaterThanOrEqualTo: slotStart)
+          .where('dateTime', isLessThan: slotEnd)
+          .where('department', isEqualTo: department)
+          .where('status', whereIn: activeStatuses)
+          .get();
+      } else if (appointmentType == AppointmentModel.typeVaccination) {
+        snapshot = await appointmentsCollection
+          .where('dateTime', isGreaterThanOrEqualTo: slotStart)
+          .where('dateTime', isLessThan: slotEnd)
+          .where('type', isEqualTo: AppointmentModel.typeVaccination)
+          .where('status', whereIn: activeStatuses)
+          .get();
+      } else {
+        snapshot = await appointmentsCollection
+          .where('dateTime', isGreaterThanOrEqualTo: slotStart)
+          .where('dateTime', isLessThan: slotEnd)
+          .where('status', whereIn: activeStatuses)
+          .get();
+      }
+      
+      return snapshot.docs.isEmpty;
+    } catch (e) {
+      print('Error checking slot availability: $e');
+      throw Exception('Failed to check slot availability: $e');
+    }
+  }
+  
+  // Generate time slots for a specific date
+  Future<List<String>> getAvailableTimeSlots(
+    DateTime date,
+    String appointmentType,
+    String? department,
+  ) async {
+    // Define all possible time slots (9 AM to 4 PM, every 30 minutes)
+    final List<String> allTimeSlots = [
+      '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+      '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM',
+      '3:00 PM', '3:30 PM', '4:00 PM',
+    ];
+    
+    List<String> availableSlots = [];
+    
+    // Check availability for each slot
+    for (String timeSlot in allTimeSlots) {
+      bool isAvailable = await isTimeSlotAvailable(
+        date,
+        timeSlot,
+        appointmentType,
+        department,
+      );
+      
+      if (isAvailable) {
+        availableSlots.add(timeSlot);
+      }
+    }
+    
+    return availableSlots;
+  }
+  
+  // Cancel an appointment
+  Future<void> cancelAppointment(String appointmentId) async {
+    try {
+      await appointmentsCollection.doc(appointmentId).update({
+        'status': AppointmentModel.statusCancelled,
+      });
+    } catch (e) {
+      print('Error cancelling appointment: $e');
+      throw Exception('Failed to cancel appointment: $e');
+    }
+  }
+  
+  // Delete an appointment (for staff only)
+  Future<void> deleteAppointment(String appointmentId) async {
+    try {
+      await appointmentsCollection.doc(appointmentId).delete();
+    } catch (e) {
+      print('Error deleting appointment: $e');
+      throw Exception('Failed to delete appointment: $e');
+    }
   }
 }

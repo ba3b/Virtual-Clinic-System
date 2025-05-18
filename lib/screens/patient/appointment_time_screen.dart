@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../api/firestore_service.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
+import '../../models/user_model.dart';
 import '../../theme/theme.dart';
 import 'appointment_confirmation_screen.dart';
 
@@ -24,23 +27,50 @@ class AppointmentTimeScreen extends StatefulWidget {
 
 class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
   String? _selectedTimeSlot;
+  bool _isLoading = true;
+  List<String> _availableTimeSlots = [];
+  String? _errorMessage;
 
-  // This would ideally be fetched from an API based on the selected date and department/vaccination
-  final List<String> _availableTimeSlots = [
-    '9:00 AM',
-    '9:30 AM',
-    '10:00 AM',
-    '10:30 AM',
-    '11:00 AM',
-    '11:30 AM',
-    '12:00 PM',
-    '1:30 PM',
-    '2:00 PM',
-    '2:30 PM',
-    '3:00 PM',
-    '3:30 PM',
-    '4:00 PM',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchAvailableTimeSlots();
+  }
+
+  Future<void> _fetchAvailableTimeSlots() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = Provider.of<UserId?>(context, listen: false);
+      if (user == null) {
+        setState(() {
+          _errorMessage = 'User not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final dbService = DatabaseService(uid: user.uid);
+      final availableSlots = await dbService.getAvailableTimeSlots(
+        widget.appointmentDate,
+        widget.appointmentType,
+        widget.department,
+      );
+
+      setState(() {
+        _availableTimeSlots = availableSlots;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading time slots: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   void _onTimeSlotSelected(String timeSlot) {
     setState(() {
@@ -48,10 +78,44 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
     });
   }
 
-  void _proceedToBookAppointment() {
-    if (_selectedTimeSlot != null) {
+  Future<void> _proceedToBookAppointment() async {
+    if (_selectedTimeSlot == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = Provider.of<UserId?>(context, listen: false);
+      if (user == null) {
+        setState(() {
+          _errorMessage = 'User not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final dbService = DatabaseService(uid: user.uid);
+      
+      // Create the appointment in Firestore
+      final appointmentId = await dbService.createAppointment(
+        patientId: user.uid,
+        appointmentDate: widget.appointmentDate,
+        appointmentTime: _selectedTimeSlot!,
+        appointmentType: widget.appointmentType,
+        department: widget.department,
+        vaccinationType: widget.vaccinationType,
+      );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (!mounted) return;
+
       // Construct the appointment data
       final appointmentData = {
+        'appointmentId': appointmentId,
         'appointmentType': widget.appointmentType,
         'appointmentDate': widget.appointmentDate,
         'appointmentTime': _selectedTimeSlot,
@@ -60,7 +124,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
       };
 
       // Navigate to confirmation screen
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => AppointmentConfirmationScreen(
@@ -68,6 +132,11 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
           ),
         ),
       );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error booking appointment: $e';
+        _isLoading = false;
+      });
     }
   }
 
@@ -111,62 +180,148 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
                 style: AppTheme.subheadingStyle,
               ),
               const SizedBox(height: 24),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 2.5,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+              if (_isLoading)
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(),
                   ),
-                  itemCount: _availableTimeSlots.length,
-                  itemBuilder: (context, index) {
-                    final timeSlot = _availableTimeSlots[index];
-                    final bool isSelected = timeSlot == _selectedTimeSlot;
+                )
+              else if (_errorMessage != null)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _fetchAvailableTimeSlots,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else if (_availableTimeSlots.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.event_busy,
+                          color: AppTheme.textSecondaryColor,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No available time slots for this date.',
+                          textAlign: TextAlign.center,
+                          style: AppTheme.bodyStyle.copyWith(
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Try another date'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2.5,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemCount: _availableTimeSlots.length,
+                    itemBuilder: (context, index) {
+                      final timeSlot = _availableTimeSlots[index];
+                      final bool isSelected = timeSlot == _selectedTimeSlot;
 
-                    return InkWell(
-                      onTap: () => _onTimeSlotSelected(timeSlot),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
+                      return InkWell(
+                        onTap: () => _onTimeSlotSelected(timeSlot),
+                        child: Container(
+                          decoration: BoxDecoration(
                             color: isSelected
                                 ? AppTheme.primaryColor
-                                : Colors.grey.shade300,
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppTheme.primaryColor
+                                  : Colors.grey.shade300,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppTheme.primaryColor.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppTheme.primaryColor.withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            timeSlot,
-                            style: AppTheme.bodyStyle.copyWith(
-                              color:
-                                  isSelected ? Colors.white : AppTheme.textPrimaryColor,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          child: Center(
+                            child: Text(
+                              timeSlot,
+                              style: AppTheme.bodyStyle.copyWith(
+                                color:
+                                    isSelected ? Colors.white : AppTheme.textPrimaryColor,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
               const SizedBox(height: 16),
-              CommonButton(
-                text: 'Book Appointment',
-                onPressed: _selectedTimeSlot != null ? _proceedToBookAppointment : () {},
-              ),
+              if (!_isLoading)
+                CommonButton(
+                  text: 'Book Appointment',
+                  onPressed: _selectedTimeSlot != null ? _proceedToBookAppointment : () {},
+                )
+              else
+                const SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: null,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Processing...'),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

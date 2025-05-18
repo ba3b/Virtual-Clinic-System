@@ -8,7 +8,7 @@ class AppointmentCard extends StatelessWidget {
   final String appointmentType; // "virtual", "physical", or "vaccination"
   final String status; // "upcoming", "completed", "cancelled"
   final VoidCallback? onTap;
-  
+
   const AppointmentCard({
     Key? key,
     required this.doctorName,
@@ -86,7 +86,7 @@ class AppointmentCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Dr. $doctorName',
+                          doctorName,
                           style: AppTheme.bodyStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
