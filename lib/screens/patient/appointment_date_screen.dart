@@ -7,10 +7,14 @@ import 'appointment_time_screen.dart';
 
 class AppointmentDateScreen extends StatefulWidget {
   final String appointmentType;
+  final String? department;
+  final String? vaccinationType;
 
   const AppointmentDateScreen({
     Key? key,
     required this.appointmentType,
+    this.department,
+    this.vaccinationType,
   }) : super(key: key);
 
   @override
@@ -47,21 +51,31 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
         builder: (context) => AppointmentTimeScreen(
           appointmentType: widget.appointmentType,
           appointmentDate: _selectedDate,
+          department: widget.department,
+          vaccinationType: widget.vaccinationType,
         ),
       ),
     );
   }
 
   String _getAppointmentTypeTitle() {
-    switch (widget.appointmentType) {
-      case 'virtual':
-        return 'Virtual Appointment';
-      case 'physical':
-        return 'Physical Appointment';
-      case 'vaccination':
-        return 'Vaccination';
-      default:
-        return 'Appointment';
+    if (widget.appointmentType == 'vaccination' && widget.vaccinationType != null) {
+      return 'Vaccination: ${widget.vaccinationType}';
+    } else if (widget.appointmentType == 'virtual' && widget.department != null) {
+      return 'Virtual: ${widget.department}';
+    } else if (widget.appointmentType == 'physical' && widget.department != null) {
+      return 'Physical: ${widget.department}';
+    } else {
+      switch (widget.appointmentType) {
+        case 'virtual':
+          return 'Virtual Appointment';
+        case 'physical':
+          return 'Physical Appointment';
+        case 'vaccination':
+          return 'Vaccination';
+        default:
+          return 'Appointment';
+      }
     }
   }
 

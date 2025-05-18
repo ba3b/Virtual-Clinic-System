@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../components/custom_app_bar.dart';
 import '../../theme/theme.dart';
-import 'appointment_date_screen.dart';
+import 'appointment_department_screen.dart';
 import 'appointment_type_screen.dart';
+import 'appointment_vaccination_screen.dart';
 
 class AppointmentBookingScreen extends StatefulWidget {
   final String? initialType;
@@ -21,17 +22,27 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   void initState() {
     super.initState();
     
-    // If an initial type is provided, navigate directly to date selection
+    // If an initial type is provided, navigate directly to appropriate screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialType != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AppointmentDateScreen(
-              appointmentType: widget.initialType!,
+        if (widget.initialType == 'vaccination') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AppointmentVaccinationScreen(),
             ),
-          ),
-        );
+          );
+        } else {
+          // For virtual and physical appointments
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AppointmentDepartmentScreen(
+                appointmentType: widget.initialType!,
+              ),
+            ),
+          );
+        }
       } else {
         // Otherwise, navigate to type selection
         Navigator.pushReplacement(

@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
-import '../../components/time_slot_selector.dart';
 import '../../theme/theme.dart';
-import 'appointment_summary_screen.dart';
+import 'appointment_confirmation_screen.dart';
 
 class AppointmentTimeScreen extends StatefulWidget {
   final String appointmentType;
   final DateTime appointmentDate;
+  final String? department;
+  final String? vaccinationType;
 
   const AppointmentTimeScreen({
     Key? key,
     required this.appointmentType,
     required this.appointmentDate,
+    this.department,
+    this.vaccinationType,
   }) : super(key: key);
 
   @override
@@ -21,173 +23,61 @@ class AppointmentTimeScreen extends StatefulWidget {
 }
 
 class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
-  String? _selectedTimeId;
-  final List<TimeSlot> _morningSlots = [];
-  final List<TimeSlot> _afternoonSlots = [];
-  final List<TimeSlot> _eveningSlots = [];
+  String? _selectedTimeSlot;
 
-  @override
-  void initState() {
-    super.initState();
-    _generateTimeSlots();
-  }
+  // This would ideally be fetched from an API based on the selected date and department/vaccination
+  final List<String> _availableTimeSlots = [
+    '9:00 AM',
+    '9:30 AM',
+    '10:00 AM',
+    '10:30 AM',
+    '11:00 AM',
+    '11:30 AM',
+    '12:00 PM',
+    '1:30 PM',
+    '2:00 PM',
+    '2:30 PM',
+    '3:00 PM',
+    '3:30 PM',
+    '4:00 PM',
+  ];
 
-  void _generateTimeSlots() {
-    // Generate morning slots (8:00 AM - 12:00 PM)
-    for (int hour = 8; hour < 12; hour++) {
-      final id = '$hour:00';
-      final time = hour < 12
-          ? '$hour:00 AM'
-          : '${hour - 12 == 0 ? 12 : hour - 12}:00 PM';
-      
-      // Randomly set some slots as unavailable for demo purposes
-      final isAvailable = DateTime.now().millisecondsSinceEpoch % (hour + 1) != 0;
-      
-      _morningSlots.add(TimeSlot(
-        id: id,
-        time: time,
-        isAvailable: isAvailable,
-      ));
-      
-      // Add half-hour slots
-      final halfHourId = '$hour:30';
-      final halfHourTime = hour < 12
-          ? '$hour:30 AM'
-          : '${hour - 12 == 0 ? 12 : hour - 12}:30 PM';
-      
-      final halfHourAvailable = DateTime.now().millisecondsSinceEpoch % (hour + 2) != 0;
-      
-      _morningSlots.add(TimeSlot(
-        id: halfHourId,
-        time: halfHourTime,
-        isAvailable: halfHourAvailable,
-      ));
-    }
-    
-    // Generate afternoon slots (12:00 PM - 4:00 PM)
-    for (int hour = 12; hour < 16; hour++) {
-      final id = '$hour:00';
-      final time = hour < 12
-          ? '$hour:00 AM'
-          : '${hour - 12 == 0 ? 12 : hour - 12}:00 PM';
-      
-      final isAvailable = DateTime.now().millisecondsSinceEpoch % (hour + 1) != 0;
-      
-      _afternoonSlots.add(TimeSlot(
-        id: id,
-        time: time,
-        isAvailable: isAvailable,
-      ));
-      
-      // Add half-hour slots
-      final halfHourId = '$hour:30';
-      final halfHourTime = hour < 12
-          ? '$hour:30 AM'
-          : '${hour - 12 == 0 ? 12 : hour - 12}:30 PM';
-      
-      final halfHourAvailable = DateTime.now().millisecondsSinceEpoch % (hour + 2) != 0;
-      
-      _afternoonSlots.add(TimeSlot(
-        id: halfHourId,
-        time: halfHourTime,
-        isAvailable: halfHourAvailable,
-      ));
-    }
-    
-    // Generate evening slots (4:00 PM - 8:00 PM)
-    for (int hour = 16; hour < 20; hour++) {
-      final id = '$hour:00';
-      final time = hour < 12
-          ? '$hour:00 AM'
-          : '${hour - 12 == 0 ? 12 : hour - 12}:00 PM';
-      
-      final isAvailable = DateTime.now().millisecondsSinceEpoch % (hour + 1) != 0;
-      
-      _eveningSlots.add(TimeSlot(
-        id: id,
-        time: time,
-        isAvailable: isAvailable,
-      ));
-      
-      // Add half-hour slots
-      final halfHourId = '$hour:30';
-      final halfHourTime = hour < 12
-          ? '$hour:30 AM'
-          : '${hour - 12 == 0 ? 12 : hour - 12}:30 PM';
-      
-      final halfHourAvailable = DateTime.now().millisecondsSinceEpoch % (hour + 2) != 0;
-      
-      _eveningSlots.add(TimeSlot(
-        id: halfHourId,
-        time: halfHourTime,
-        isAvailable: halfHourAvailable,
-      ));
-    }
-  }
-
-  void _onTimeSelected(TimeSlot timeSlot) {
+  void _onTimeSlotSelected(String timeSlot) {
     setState(() {
-      _selectedTimeId = timeSlot.id;
+      _selectedTimeSlot = timeSlot;
     });
   }
 
-  void _proceedToNextStep() {
-    if (_selectedTimeId != null) {
-      final selectedTimeSlot = [
-        ..._morningSlots,
-        ..._afternoonSlots,
-        ..._eveningSlots,
-      ].firstWhere((slot) => slot.id == _selectedTimeId);
-      
-      // Parse time from the slot
-      final String timeStr = selectedTimeSlot.time;
-      final bool isPM = timeStr.contains('PM');
-      final List<String> timeParts = timeStr
-          .replaceAll(' AM', '')
-          .replaceAll(' PM', '')
-          .split(':');
-      
-      int hour = int.parse(timeParts[0]);
-      final int minute = int.parse(timeParts[1]);
-      
-      // Convert to 24-hour format
-      if (isPM && hour < 12) {
-        hour += 12;
-      } else if (!isPM && hour == 12) {
-        hour = 0;
-      }
-      
-      // Create appointment date time
-      final DateTime appointmentDateTime = DateTime(
-        widget.appointmentDate.year,
-        widget.appointmentDate.month,
-        widget.appointmentDate.day,
-        hour,
-        minute,
-      );
-      
+  void _proceedToBookAppointment() {
+    if (_selectedTimeSlot != null) {
+      // Construct the appointment data
+      final appointmentData = {
+        'appointmentType': widget.appointmentType,
+        'appointmentDate': widget.appointmentDate,
+        'appointmentTime': _selectedTimeSlot,
+        if (widget.department != null) 'department': widget.department,
+        if (widget.vaccinationType != null) 'vaccinationType': widget.vaccinationType,
+      };
+
+      // Navigate to confirmation screen
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AppointmentSummaryScreen(
-            appointmentType: widget.appointmentType,
-            appointmentDateTime: appointmentDateTime,
+          builder: (context) => AppointmentConfirmationScreen(
+            appointmentData: appointmentData,
           ),
         ),
       );
     }
   }
 
-  String _getAppointmentTypeTitle() {
-    switch (widget.appointmentType) {
-      case 'virtual':
-        return 'Virtual Appointment';
-      case 'physical':
-        return 'Physical Appointment';
-      case 'vaccination':
-        return 'Vaccination';
-      default:
-        return 'Appointment';
+  String _getScreenTitle() {
+    if (widget.appointmentType == 'vaccination') {
+      return 'Vaccination: ${widget.vaccinationType}';
+    } else if (widget.appointmentType == 'virtual') {
+      return 'Virtual: ${widget.department}';
+    } else {
+      return 'Physical: ${widget.department}';
     }
   }
 
@@ -195,7 +85,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: _getAppointmentTypeTitle(),
+        title: _getScreenTitle(),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SafeArea(
@@ -209,74 +99,73 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
                 style: AppTheme.headingStyle,
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    size: 16,
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    DateFormat('EEEE, MMMM d, yyyy').format(widget.appointmentDate),
-                    style: AppTheme.bodyStyle.copyWith(
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                ],
+              Text(
+                'Choose an available time slot for your appointment',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Date: ${widget.appointmentDate.day}/${widget.appointmentDate.month}/${widget.appointmentDate.year}',
+                style: AppTheme.subheadingStyle,
               ),
               const SizedBox(height: 24),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Morning',
-                        style: AppTheme.subheadingStyle.copyWith(
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TimeSlotSelector(
-                        timeSlots: _morningSlots,
-                        onTimeSelected: _onTimeSelected,
-                        selectedTimeId: _selectedTimeId,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Afternoon',
-                        style: AppTheme.subheadingStyle.copyWith(
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TimeSlotSelector(
-                        timeSlots: _afternoonSlots,
-                        onTimeSelected: _onTimeSelected,
-                        selectedTimeId: _selectedTimeId,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Evening',
-                        style: AppTheme.subheadingStyle.copyWith(
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TimeSlotSelector(
-                        timeSlots: _eveningSlots,
-                        onTimeSelected: _onTimeSelected,
-                        selectedTimeId: _selectedTimeId,
-                      ),
-                    ],
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 2.5,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
                   ),
+                  itemCount: _availableTimeSlots.length,
+                  itemBuilder: (context, index) {
+                    final timeSlot = _availableTimeSlots[index];
+                    final bool isSelected = timeSlot == _selectedTimeSlot;
+
+                    return InkWell(
+                      onTap: () => _onTimeSlotSelected(timeSlot),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppTheme.primaryColor
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : Colors.grey.shade300,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppTheme.primaryColor.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            timeSlot,
+                            style: AppTheme.bodyStyle.copyWith(
+                              color:
+                                  isSelected ? Colors.white : AppTheme.textPrimaryColor,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 16),
               CommonButton(
-                text: 'Continue',
-                onPressed: _selectedTimeId != null ? _proceedToNextStep : () {},
+                text: 'Book Appointment',
+                onPressed: _selectedTimeSlot != null ? _proceedToBookAppointment : () {},
               ),
             ],
           ),

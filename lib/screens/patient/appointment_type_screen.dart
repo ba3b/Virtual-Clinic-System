@@ -3,7 +3,8 @@ import '../../components/appointment_type_card.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
 import '../../theme/theme.dart';
-import 'appointment_date_screen.dart';
+import 'appointment_department_screen.dart';
+import 'appointment_vaccination_screen.dart';
 
 class AppointmentTypeScreen extends StatefulWidget {
   const AppointmentTypeScreen({Key? key}) : super(key: key);
@@ -47,14 +48,23 @@ class _AppointmentTypeScreenState extends State<AppointmentTypeScreen> {
 
   void _proceedToNextStep() {
     if (_selectedType != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AppointmentDateScreen(
-            appointmentType: _selectedType!,
+      if (_selectedType == 'vaccination') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AppointmentVaccinationScreen(),
           ),
-        ),
-      );
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AppointmentDepartmentScreen(
+              appointmentType: _selectedType!,
+            ),
+          ),
+        );
+      }
     }
   }
 
