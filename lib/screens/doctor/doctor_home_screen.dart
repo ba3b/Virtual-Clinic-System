@@ -11,10 +11,9 @@ import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
 
 import 'appointment_details_screen.dart';
-import 'appointment_history_screen.dart';
+import 'appointmens_screen.dart';
 import 'doctor_notifications_screen.dart';
 import 'profile_screen.dart';
-import 'virtual_appointment_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({Key? key}) : super(key: key);
@@ -25,65 +24,74 @@ class DoctorHomeScreen extends StatefulWidget {
 
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _selectedIndex = 0;
+  final Map<String, String> _patientNames = {};
+  bool _isLoading = false;
+  List<String> _processedAppointmentIds = [];
 
-  final List<AppointmentModel> _todayAppointments = [
-    AppointmentModel(
-      appointmentId: '1',
-      patientId: 'P001',
-      doctorId: 'D001',
-      dateTime: DateTime.now().add(const Duration(hours: 1)),
-      type: 'virtual',
-      status: 'upcoming',
-    ),
-    AppointmentModel(
-      appointmentId: '2',
-      patientId: 'P002',
-      doctorId: 'D001',
-      dateTime: DateTime.now().add(const Duration(hours: 3)),
-      type: 'physical',
-      status: 'upcoming',
-    ),
-  ];
-
-  final List<AppointmentModel> _upcomingAppointments = [
-    AppointmentModel(
-      appointmentId: '3',
-      patientId: 'P003',
-      doctorId: 'D001',
-      dateTime: DateTime.now().add(const Duration(days: 1)),
-      type: 'virtual',
-      status: 'upcoming',
-    ),
-    AppointmentModel(
-      appointmentId: '4',
-      patientId: 'P004',
-      doctorId: 'D001',
-      dateTime: DateTime.now().add(const Duration(days: 2)),
-      type: 'physical',
-      status: 'upcoming',
-    ),
-    AppointmentModel(
-      appointmentId: '5',
-      patientId: 'P005',
-      doctorId: 'D001',
-      dateTime: DateTime.now().add(const Duration(days: 3)),
-      type: 'vaccination',
-      status: 'upcoming',
-    ),
-  ];
-
-  final Map<String, String> _patientNames = {
-    'P001': 'Ahmed Ali',
-    'P002': 'Fatima Mohammed',
-    'P003': 'Khalid Saeed',
-    'P004': 'Sara Abdullah',
-    'P005': 'Omar Ibrahim',
-  };
-
+  @override
+  void initState() {
+    super.initState();
+  }
+  
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  // Only fetch names for appointments we haven't processed yet
+  void _checkForNewAppointments(List<AppointmentModel> appointments) {
+    if (_isLoading) return;
+    
+    // Create a list of appointment IDs we haven't processed yet
+    final List<AppointmentModel> newAppointments = appointments.where((appointment) {
+      return !_processedAppointmentIds.contains(appointment.appointmentId) && 
+             !_patientNames.containsKey(appointment.patientId);
+    }).toList();
+    
+    if (newAppointments.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchPatientNames(newAppointments);
+      });
+    }
+  }
+
+  Future<void> _fetchPatientNames(List<AppointmentModel> appointments) async {
+    if (_isLoading) return;
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+    
+    Map<String, String> updatedNames = Map.from(_patientNames);
+    List<String> processedIds = List.from(_processedAppointmentIds);
+    
+    for (var appointment in appointments) {
+      // Mark this appointment as processed regardless of success or failure
+      processedIds.add(appointment.appointmentId);
+      
+      if (!updatedNames.containsKey(appointment.patientId)) {
+        try {
+          final patientData = await DatabaseService(uid: appointment.patientId)
+              .getUserDetails(appointment.patientId);
+          
+          updatedNames[appointment.patientId] = patientData.name;
+        } catch (e) {
+          print('Error fetching patient name: $e');
+          updatedNames[appointment.patientId] = 'Unknown Patient';
+        }
+      }
+    }
+    
+    if (mounted) {
+      setState(() {
+        _patientNames.addAll(updatedNames);
+        _processedAppointmentIds = processedIds;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -95,8 +103,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         actions: [
           NotificationBadge(
             child: IconButton(
-              icon:
-                  const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -127,6 +134,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: _getSelectedScreen(),
@@ -140,9 +148,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'History',
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today),
+            label: 'Appointments',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
@@ -159,7 +167,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       case 0:
         return _buildDashboardScreen();
       case 1:
-        return const AppointmentHistoryScreen();
+        return const AppointmentsViewScreen();
       case 2:
         return const DoctorProfileScreen();
       default:
@@ -168,135 +176,182 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _buildDashboardScreen() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDoctorInfo(),
-          const SizedBox(height: 24),
-          SectionHeader(
-            title: 'Today\'s Appointments',
-            subtitle: 'Your schedule for today',
-            actionText: _todayAppointments.isEmpty ? null : 'See All',
-            onActionTap: () {},
-          ),
-          const SizedBox(height: 16),
-          _buildAppointmentsList(_todayAppointments),
-          const SizedBox(height: 24),
-          SectionHeader(
-            title: 'Upcoming Appointments',
-            subtitle: 'Your future schedule',
-            actionText: _upcomingAppointments.isEmpty ? null : 'See All',
-            onActionTap: () {},
-          ),
-          const SizedBox(height: 16),
-          _buildAppointmentsList(_upcomingAppointments),
-        ],
-      ),
+    final user = Provider.of<UserId?>(context);
+    if (user == null) {
+      return const Center(child: Text('User not found. Please log in again.'));
+    }
+
+    return StreamBuilder<UserModel>(
+      stream: DatabaseService(uid: user.uid).getUserStream(user.uid),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (userSnapshot.hasError) {
+          return Center(child: Text('Error loading user data: ${userSnapshot.error}'));
+        }
+
+        if (!userSnapshot.hasData) {
+          return const Center(child: Text('No user data found'));
+        }
+
+        final UserModel currentUser = userSnapshot.data!;
+
+        if (!currentUser.isDoctor) {
+          return const Center(
+              child: Text('Error: Only doctors can access this page'));
+        }
+
+        final DoctorModel doctor = currentUser as DoctorModel;
+        
+        return StreamBuilder<List<AppointmentModel>>(
+          stream: DatabaseService(uid: user.uid).getDoctorAppointments(user.uid),
+          builder: (context, appointmentSnapshot) {
+            if (appointmentSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (appointmentSnapshot.hasError) {
+              return Center(child: Text('Error loading appointments: ${appointmentSnapshot.error}'));
+            }
+
+            final List<AppointmentModel> allAppointments = appointmentSnapshot.data ?? [];
+            
+            _checkForNewAppointments(allAppointments);
+            
+            final List<AppointmentModel> todayAppointments = [];
+            final List<AppointmentModel> upcomingAppointments = [];
+            
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            
+            for (var appointment in allAppointments) {
+              if (appointment.status != AppointmentModel.statusApproved) {
+                continue;
+              }
+              final appointmentDate = DateTime(
+                appointment.dateTime.year,
+                appointment.dateTime.month,
+                appointment.dateTime.day,
+              );
+              if (appointmentDate.isAtSameMomentAs(today)) {
+                todayAppointments.add(appointment);
+              } else if (appointmentDate.isAfter(today)) {
+                upcomingAppointments.add(appointment);
+              }
+            }
+            
+            // Sort appointments by date and time
+            todayAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+            upcomingAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+            
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDoctorInfoWidget(doctor, todayAppointments.length, upcomingAppointments.length),
+                  const SizedBox(height: 24),
+                  SectionHeader(
+                    title: 'Today\'s Appointments',
+                    subtitle: 'Your schedule for today',
+                    actionText: todayAppointments.isEmpty ? null : 'See All',
+                    onActionTap: () {
+                      // Navigate to see all today's appointments
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildAppointmentsList(todayAppointments),
+                  const SizedBox(height: 24),
+                  SectionHeader(
+                    title: 'Upcoming Appointments',
+                    subtitle: 'Your future schedule',
+                    actionText: upcomingAppointments.isEmpty ? null : 'See All',
+                    onActionTap: () {
+                      // Navigate to see all upcoming appointments
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildAppointmentsList(upcomingAppointments),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildDoctorInfo() {
-    final user = Provider.of<UserId?>(context);
-
-    return FutureBuilder<UserModel>(
-        future: DatabaseService(uid: user!.uid).getUserDetails(user.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return const Center(child: Text('Error loading user data'));
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No user data found'));
-          }
-
-          final UserModel currentUser = snapshot.data!;
-
-          if (!currentUser.isDoctor) {
-            return const Center(
-                child: Text('Error: Only doctors can access this page'));
-          }
-
-          final DoctorModel doctor = currentUser as DoctorModel;
-
-          return SafeArea(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.primaryColor.withOpacity(0.8)
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Dr. ${doctor.name}',
-                          style: AppTheme.subheadingStyle.copyWith(
-                            color: Colors.white,
-                            fontSize: 20,
-                          ),
-                        ),
-                        Text(
-                          doctor.specialty,
-                          style: AppTheme.bodyStyle.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _buildStatCard(
-                                'Today', '${_todayAppointments.length}'),
-                            const SizedBox(width: 16),
-                            _buildStatCard(
-                                'Upcoming', '${_upcomingAppointments.length}'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+  Widget _buildDoctorInfoWidget(DoctorModel doctor, int todayCount, int upcomingCount) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.8)
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
             ),
-          );
-        });
+            child: const Icon(
+              Icons.person,
+              color: Colors.white,
+              size: 36,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dr. ${doctor.name}',
+                  style: AppTheme.subheadingStyle.copyWith(
+                    color: Colors.white,
+                    fontSize: 20,
+                  ),
+                ),
+                Text(
+                  doctor.specialty,
+                  style: AppTheme.bodyStyle.copyWith(
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildStatCard('Today', '$todayCount'),
+                    const SizedBox(width: 16),
+                    _buildStatCard('Upcoming', '$upcomingCount'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatCard(String label, String count) {
@@ -358,8 +413,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientName =
-            _patientNames[appointment.patientId] ?? 'Unknown Patient';
+        final patientName = _patientNames[appointment.patientId] ?? 'Loading...';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
@@ -374,29 +428,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   void _navigateToAppointmentDetails(AppointmentModel appointment) {
-    if (appointment.type.toLowerCase() == 'virtual' &&
-        appointment.status.toLowerCase() == 'upcoming') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DoctorVirtualAppointmentScreen(
-            appointment: appointment,
-            patientName:
-                _patientNames[appointment.patientId] ?? 'Unknown Patient',
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DoctorAppointmentDetailsScreen(
+          appointment: appointment,
+          patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
         ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DoctorAppointmentDetailsScreen(
-            appointment: appointment,
-            patientName:
-                _patientNames[appointment.patientId] ?? 'Unknown Patient',
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 }

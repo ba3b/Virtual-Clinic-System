@@ -15,16 +15,14 @@ class DoctorAppointmentCard extends StatelessWidget {
     required this.onTap,
   }) : super(key: key);
 
-  Color _getStatusColor() {
-    switch (appointment.status.toLowerCase()) {
-      case 'upcoming':
+  Color _getTypeColor() {
+    switch (appointment.type.toLowerCase()) {
+      case 'virtual':
         return AppTheme.primaryColor;
-      case 'completed':
-        return AppTheme.successColor;
-      case 'cancelled':
-        return AppTheme.errorColor;
-      case 'pending':
-        return Colors.orange;
+      case 'physical':
+        return Colors.blue;
+      case 'vaccination':
+        return Colors.green;
       default:
         return AppTheme.primaryColor;
     }
@@ -63,12 +61,12 @@ class DoctorAppointmentCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _getStatusColor().withOpacity(0.1),
+                      color: _getTypeColor().withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       _getAppointmentIcon(),
-                      color: _getStatusColor(),
+                      color: _getTypeColor(),
                       size: 24,
                     ),
                   ),
@@ -90,24 +88,21 @@ class DoctorAppointmentCard extends StatelessWidget {
                             color: AppTheme.textSecondaryColor,
                           ),
                         ),
+                        if (appointment.department != null)
+                          Text(
+                            'Department: ${appointment.department}',
+                            style: AppTheme.bodySmallStyle.copyWith(
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+                        if (appointment.vaccinationType != null)
+                          Text(
+                            'Vaccine: ${appointment.vaccinationType}',
+                            style: AppTheme.bodySmallStyle.copyWith(
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
                       ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor().withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      appointment.status[0].toUpperCase() + appointment.status.substring(1),
-                      style: AppTheme.bodySmallStyle.copyWith(
-                        color: _getStatusColor(),
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ),
                 ],
@@ -148,23 +143,6 @@ class DoctorAppointmentCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (appointment.status.toLowerCase() == 'upcoming' && 
-                  appointment.type.toLowerCase() == 'virtual')
-                ElevatedButton.icon(
-                  onPressed: onTap,
-                  icon: const Icon(Icons.videocam_rounded, size: 16),
-                  label: const Text('Join Now'),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: AppTheme.primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    minimumSize: const Size(double.infinity, 36),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
