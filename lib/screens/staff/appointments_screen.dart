@@ -1,190 +1,47 @@
 import 'package:flutter/material.dart';
-import '../../components/custom_app_bar.dart';
-import '../../components/staff_appointment_card.dart';
-import '../../models/appointment_model.dart';
-import '../../models/user_model.dart';
-import '../../theme/theme.dart';
-import 'appointment_details_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:virtual_clinic_system/api/firestore_service.dart';
+import 'package:virtual_clinic_system/components/custom_app_bar.dart';
+import 'package:virtual_clinic_system/components/doctor_selector_dialog.dart';
+import 'package:virtual_clinic_system/components/staff_appointment_card.dart';
+import 'package:virtual_clinic_system/models/appointment_model.dart';
+import 'package:virtual_clinic_system/models/user_model.dart';
+import 'package:virtual_clinic_system/theme/theme.dart';
 
 class StaffAppointmentsScreen extends StatefulWidget {
   const StaffAppointmentsScreen({Key? key}) : super(key: key);
 
   @override
-  State<StaffAppointmentsScreen> createState() => _StaffAppointmentsScreenState();
+  State<StaffAppointmentsScreen> createState() =>
+      _StaffAppointmentsScreenState();
 }
 
-class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with SingleTickerProviderStateMixin {
+class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = true;
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-  
-  // Sample data for demonstration
-  final List<AppointmentModel> _pendingAppointments = [
-    AppointmentModel(
-      appointmentId: '101',
-      patientId: 'P101',
-      dateTime: DateTime.now().add(const Duration(days: 1, hours: 2)),
-      type: 'virtual',
-      status: 'pending',
-    ),
-    AppointmentModel(
-      appointmentId: '102',
-      patientId: 'P102',
-      dateTime: DateTime.now().add(const Duration(days: 1, hours: 4)),
-      type: 'physical',
-      status: 'pending',
-    ),
-    AppointmentModel(
-      appointmentId: '103',
-      patientId: 'P103',
-      dateTime: DateTime.now().add(const Duration(days: 2)),
-      type: 'vaccination',
-      status: 'pending',
-    ),
-  ];
-
-  final List<AppointmentModel> _upcomingAppointments = [
-    AppointmentModel(
-      appointmentId: '104',
-      patientId: 'P104',
-      doctorId: 'D001',
-      dateTime: DateTime.now().add(const Duration(days: 1)),
-      type: 'virtual',
-      status: 'upcoming',
-    ),
-    AppointmentModel(
-      appointmentId: '105',
-      patientId: 'P105',
-      doctorId: 'D002',
-      dateTime: DateTime.now().add(const Duration(days: 2)),
-      type: 'physical',
-      status: 'upcoming',
-    ),
-  ];
-
-  final List<AppointmentModel> _completedAppointments = [
-    AppointmentModel(
-      appointmentId: '106',
-      patientId: 'P106',
-      doctorId: 'D001',
-      dateTime: DateTime.now().subtract(const Duration(days: 2)),
-      type: 'virtual',
-      status: 'completed',
-    ),
-    AppointmentModel(
-      appointmentId: '107',
-      patientId: 'P107',
-      doctorId: 'D002',
-      dateTime: DateTime.now().subtract(const Duration(days: 4)),
-      type: 'physical',
-      status: 'completed',
-    ),
-  ];
-
-  // Sample patient names
-  final Map<String, String> _patientNames = {
-    'P101': 'Abdullah Ahmed',
-    'P102': 'Sarah Mohammed',
-    'P103': 'Khalid Ibrahim',
-    'P104': 'Lina Saleh',
-    'P105': 'Omar Hassan',
-    'P106': 'Fatima Ali',
-    'P107': 'Mohammed Saeed',
-  };
-
-  // Sample doctor names
-  final Map<String, String> _doctorNames = {
-    'D001': 'Dr. Mohammed Hussein',
-    'D002': 'Dr. Fatima Abdullah',
-  };
-
-  // Sample available doctors
-  final List<DoctorModel> _availableDoctors = [
-    DoctorModel(
-      userId: 'D001',
-      name: 'Dr. Mohammed Hussein',
-      email: 'mohammed@example.com',
-      phoneNumber: '+966 50 123 4567',
-      address: 'Taif',
-      specialty: 'General Medicine',
-      fcmToken: '',
-    ),
-    DoctorModel(
-      userId: 'D002',
-      name: 'Dr. Fatima Abdullah',
-      email: 'fatima@example.com',
-      phoneNumber: '+966 50 234 5678',
-      address: 'Taif',
-      specialty: 'Pediatrics',
-      fcmToken: '',
-    ),
-    DoctorModel(
-      userId: 'D003',
-      name: 'Dr. Ahmed Ali',
-      email: 'ahmed@example.com',
-      phoneNumber: '+966 50 345 6789',
-      address: 'Taif',
-      specialty: 'Cardiology',
-      fcmToken: '',
-    ),
-    DoctorModel(
-      userId: 'D004',
-      name: 'Dr. Noura Saeed',
-      email: 'noura@example.com',
-      phoneNumber: '+966 50 456 7890',
-      address: 'Taif',
-      specialty: 'Dermatology',
-      fcmToken: '',
-    ),
-  ];
+  late DatabaseService _databaseService;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
-    // Simulate loading data
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-    
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
+    final user = Provider.of<UserId?>(context, listen: false);
+    _databaseService = DatabaseService(uid: user?.uid ?? '');
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
-  List<AppointmentModel> _getFilteredAppointments(List<AppointmentModel> appointments) {
-    if (_searchQuery.isEmpty) {
-      return appointments;
-    }
-    
-    return appointments.where((appointment) {
-      final patientName = _patientNames[appointment.patientId]?.toLowerCase() ?? '';
-      final doctorName = appointment.doctorId != null
-          ? _doctorNames[appointment.doctorId]?.toLowerCase() ?? ''
-          : '';
-      final appointmentId = appointment.appointmentId.toLowerCase();
-      final appointmentType = appointment.type.toLowerCase();
-      
-      return patientName.contains(_searchQuery) ||
-             doctorName.contains(_searchQuery) ||
-             appointmentId.contains(_searchQuery) ||
-             appointmentType.contains(_searchQuery);
-    }).toList();
+  List<AppointmentModel> _filterAppointmentsByType(
+      List<AppointmentModel> appointments, String type) {
+    return appointments
+        .where((appointment) =>
+            appointment.type.toLowerCase() == type.toLowerCase() &&
+            appointment.status.toLowerCase() == 'pending')
+        .toList();
   }
 
   @override
@@ -195,87 +52,169 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with 
         backgroundColor: AppTheme.primaryColor,
         showBackButton: false,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search appointments...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.primaryColor),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  color: AppTheme.primaryColor,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.white,
-                    indicatorWeight: 3,
-                    tabs: const [
-                      Tab(text: 'Pending'),
-                      Tab(text: 'Upcoming'),
-                      Tab(text: 'Completed'),
+      body: Column(
+        children: [
+          Container(
+            color: AppTheme.primaryColor,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white.withOpacity(0.7),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12, // Smaller font
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 12, // Smaller font
+              ),
+              isScrollable: false,
+              tabs: const [
+                Tab(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.videocam_rounded, size: 24), // Smaller icon
+                      SizedBox(height: 2), // Reduced spacing
+                      Text('Virtual',
+                          style: TextStyle(fontSize: 14)), // Smaller text
                     ],
                   ),
                 ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
+                Tab(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildAppointmentsList(_getFilteredAppointments(_pendingAppointments), true),
-                      _buildAppointmentsList(_getFilteredAppointments(_upcomingAppointments), false),
-                      _buildAppointmentsList(_getFilteredAppointments(_completedAppointments), false),
+                      Icon(Icons.person_rounded, size: 24), // Smaller icon
+                      SizedBox(height: 2), // Reduced spacing
+                      Text('Physical',
+                          style: TextStyle(fontSize: 14)), // Smaller text
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.healing_rounded, size: 24), // Smaller icon
+                      SizedBox(height: 2), // Reduced spacing
+                      Text('Vaccination',
+                          style: TextStyle(
+                              fontSize: 14)), // Even smaller for longer text
                     ],
                   ),
                 ),
               ],
             ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<AppointmentModel>>(
+              stream: _databaseService.getPendingAppointments(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: AppTheme.errorColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading appointments',
+                          style: AppTheme.bodyStyle.copyWith(
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snapshot.error}',
+                          style: AppTheme.bodySmallStyle.copyWith(
+                            color: AppTheme.errorColor,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final allPendingAppointments = snapshot.data ?? [];
+                final virtualAppointments = _filterAppointmentsByType(
+                    allPendingAppointments, 'virtual');
+                final physicalAppointments = _filterAppointmentsByType(
+                    allPendingAppointments, 'physical');
+                final vaccinationAppointments = _filterAppointmentsByType(
+                    allPendingAppointments, 'vaccination');
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAppointmentsList(virtualAppointments, 'virtual'),
+                    _buildAppointmentsList(physicalAppointments, 'physical'),
+                    _buildAppointmentsList(
+                        vaccinationAppointments, 'vaccination'),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildAppointmentsList(List<AppointmentModel> appointments, bool isPending) {
+  Widget _buildAppointmentsList(
+      List<AppointmentModel> appointments, String type) {
     if (appointments.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.event_busy,
-              size: 64,
-              color: AppTheme.textSecondaryColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? 'No appointments found for "$_searchQuery"'
-                  : isPending
-                      ? 'No pending appointments'
-                      : 'No appointments',
-              style: AppTheme.bodyStyle.copyWith(
-                color: AppTheme.textSecondaryColor,
+        child: Padding(
+          padding: const EdgeInsets.all(40.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _getTypeIcon(type),
+                  size: 50,
+                  color: AppTheme.primaryColor.withOpacity(0.6),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                'No pending ${type.toLowerCase()} appointments',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 18,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                type == 'vaccination'
+                    ? 'All vaccination appointments have been processed'
+                    : 'All ${type.toLowerCase()} appointments have been assigned doctors',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -285,122 +224,273 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> with 
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientName = _patientNames[appointment.patientId] ?? 'Unknown Patient';
-        final doctorName = appointment.doctorId != null
-            ? _doctorNames[appointment.doctorId]
-            : null;
-        
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
-          child: StaffAppointmentCard(
-            appointment: appointment,
-            patientName: patientName,
-            doctorName: doctorName,
-            onTap: () => _navigateToAppointmentDetails(appointment, patientName, doctorName),
-            onAssignDoctor: isPending
-                ? () => _navigateToAppointmentDetails(appointment, patientName, doctorName)
-                : null,
-            onVerify: isPending
-                ? () => _verifyAppointment(appointment)
-                : null,
-            onEdit: isPending
-                ? () => _navigateToAppointmentDetails(appointment, patientName, doctorName)
-                : null,
-            onDelete: isPending
-                ? () => _deleteAppointment(appointment)
-                : null,
+          child: FutureBuilder<UserModel>(
+            future: _databaseService.getUserDetails(appointment.patientId),
+            builder: (context, patientSnapshot) {
+              final patientName = patientSnapshot.data?.name ?? 'Loading...';
+
+              return FutureBuilder<UserModel?>(
+                future: appointment.doctorId != null
+                    ? _databaseService.getUserDetails(appointment.doctorId!)
+                    : Future.value(null),
+                builder: (context, doctorSnapshot) {
+                  final doctorName = doctorSnapshot.data?.name;
+
+                  return StaffAppointmentCard(
+                    appointment: appointment,
+                    patientName: patientName,
+                    doctorName: doctorName,
+                    onTap: () {
+                      // You can implement navigation to appointment details if needed
+                    },
+                    onAssignDoctor:
+                        appointment.type != AppointmentModel.typeVaccination
+                            ? () => _showDoctorAssignmentDialog(appointment)
+                            : null,
+                    onVerify:
+                        appointment.type == AppointmentModel.typeVaccination
+                            ? () => _verifyVaccinationAppointment(appointment)
+                            : null,
+                    onReject: () => _showRejectConfirmationDialog(appointment),
+                  );
+                },
+              );
+            },
           ),
         );
       },
     );
   }
 
-  Future<void> _navigateToAppointmentDetails(
-    AppointmentModel appointment,
-    String patientName,
-    String? doctorName,
-  ) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => StaffAppointmentDetailsScreen(
-          appointment: appointment,
-          patientName: patientName,
-          doctorName: doctorName,
-          availableDoctors: _availableDoctors,
+  IconData _getTypeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'virtual':
+        return Icons.videocam_rounded;
+      case 'physical':
+        return Icons.person_rounded;
+      case 'vaccination':
+        return Icons.healing_rounded;
+      default:
+        return Icons.calendar_today_rounded;
+    }
+  }
+
+  Future<void> _showDoctorAssignmentDialog(AppointmentModel appointment) async {
+    try {
+      final filteredDoctors = await _getFilteredDoctors(appointment);
+
+      if (filteredDoctors.isEmpty) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('No Available Doctors'),
+            content: Text(
+              'No doctors found for ${appointment.department ?? appointment.type} specialty.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Get the ScaffoldMessenger reference before showing the dialog
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+      showDialog(
+        context: context,
+        builder: (context) => DoctorSelectorDialog(
+          doctors: filteredDoctors,
+          requiredSpecialty: appointment.department,
+          onDoctorSelected: (doctor) async {
+            // Close the dialog first
+            Navigator.pop(context);
+            
+            try {
+              await _databaseService.assignDoctorToAppointment(
+                  appointment.appointmentId, doctor.userId);
+
+              // Use the stored ScaffoldMessenger reference
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content:
+                      Text('Doctor "${doctor.name}" assigned successfully'),
+                  backgroundColor: AppTheme.successColor,
+                ),
+              );
+            } catch (e) {
+              // Use the stored ScaffoldMessenger reference
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('Error assigning doctor: $e'),
+                  backgroundColor: AppTheme.errorColor,
+                ),
+              );
+            }
+          },
         ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading doctors: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  Future<void> _verifyVaccinationAppointment(
+      AppointmentModel appointment) async {
+    try {
+      await _databaseService.updateAppointmentStatus(
+          appointment.appointmentId, AppointmentModel.statusApproved);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vaccination appointment verified successfully'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error verifying appointment: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<List<DoctorModel>> _getFilteredDoctors(
+      AppointmentModel appointment) async {
+    // For vaccination appointments, return all doctors
+    if (appointment.type.toLowerCase() == 'vaccination') {
+      return await _databaseService.getAllDoctors();
+    }
+
+    // For other appointments, filter by specialty matching department
+    if (appointment.department != null) {
+      return await _databaseService
+          .getDoctorsBySpecialty(appointment.department!);
+    }
+
+    // Fallback to all doctors if no department specified
+    return await _databaseService.getAllDoctors();
+  }
+
+  void _showRejectConfirmationDialog(AppointmentModel appointment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: const [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: AppTheme.errorColor,
+              size: 28,
+            ),
+            SizedBox(width: 12),
+            Text('Reject Appointment'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Are you sure you want to reject this appointment? The patient will be notified of the rejection.',
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.errorColor.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppTheme.errorColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone.',
+                      style: AppTheme.bodySmallStyle.copyWith(
+                        color: AppTheme.errorColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              try {
+                await _databaseService.updateAppointmentStatus(
+                  appointment.appointmentId,
+                  AppointmentModel.statusRejected,
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Appointment rejected successfully'),
+                      backgroundColor: AppTheme.errorColor,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error rejecting appointment: $e'),
+                      backgroundColor: AppTheme.errorColor,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reject'),
+          ),
+        ],
       ),
     );
-    
-    if (result == 'delete') {
-      _deleteAppointment(appointment);
-    } else if (result is AppointmentModel) {
-      _updateAppointment(result);
-    }
-  }
-
-  void _verifyAppointment(AppointmentModel appointment) {
-    // For vaccination appointments or appointments with assigned doctors
-    if (appointment.type.toLowerCase() == 'vaccination' || appointment.doctorId != null) {
-      // Update the appointment status
-      final updatedAppointment = appointment.copyWith(status: 'upcoming');
-      _updateAppointment(updatedAppointment);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Appointment verified successfully'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
-    } else {
-      // For other appointments without a doctor, navigate to details to assign
-      _navigateToAppointmentDetails(
-        appointment,
-        _patientNames[appointment.patientId] ?? 'Unknown Patient',
-        null,
-      );
-    }
-  }
-
-  void _deleteAppointment(AppointmentModel appointment) {
-    setState(() {
-      _pendingAppointments.removeWhere(
-        (a) => a.appointmentId == appointment.appointmentId
-      );
-      _upcomingAppointments.removeWhere(
-        (a) => a.appointmentId == appointment.appointmentId
-      );
-      _completedAppointments.removeWhere(
-        (a) => a.appointmentId == appointment.appointmentId
-      );
-    });
-  }
-
-  void _updateAppointment(AppointmentModel updatedAppointment) {
-    setState(() {
-      // Remove from all lists
-      _pendingAppointments.removeWhere(
-        (a) => a.appointmentId == updatedAppointment.appointmentId
-      );
-      _upcomingAppointments.removeWhere(
-        (a) => a.appointmentId == updatedAppointment.appointmentId
-      );
-      _completedAppointments.removeWhere(
-        (a) => a.appointmentId == updatedAppointment.appointmentId
-      );
-      
-      // Add to appropriate list based on status
-      switch (updatedAppointment.status.toLowerCase()) {
-        case 'pending':
-          _pendingAppointments.add(updatedAppointment);
-          break;
-        case 'upcoming':
-          _upcomingAppointments.add(updatedAppointment);
-          break;
-        case 'completed':
-          _completedAppointments.add(updatedAppointment);
-          break;
-      }
-    });
   }
 }

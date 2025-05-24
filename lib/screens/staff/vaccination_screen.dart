@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../components/common_button.dart';
-import '../../components/custom_app_bar.dart';
-import '../../models/appointment_model.dart';
-import '../../theme/theme.dart';
+import 'package:provider/provider.dart';
+import 'package:virtual_clinic_system/api/firestore_service.dart';
+import 'package:virtual_clinic_system/components/custom_app_bar.dart';
+import 'package:virtual_clinic_system/models/appointment_model.dart';
+import 'package:virtual_clinic_system/models/user_model.dart';
+import 'package:virtual_clinic_system/theme/theme.dart';
 
 class VaccinationScreen extends StatefulWidget {
   const VaccinationScreen({Key? key}) : super(key: key);
@@ -12,145 +14,49 @@ class VaccinationScreen extends StatefulWidget {
   State<VaccinationScreen> createState() => _VaccinationScreenState();
 }
 
-class _VaccinationScreenState extends State<VaccinationScreen> with SingleTickerProviderStateMixin {
+class _VaccinationScreenState extends State<VaccinationScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = true;
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-  
-  // Sample data for vaccination appointments
-  final List<AppointmentModel> _pendingVaccinations = [
-    AppointmentModel(
-      appointmentId: 'V001',
-      patientId: 'P201',
-      dateTime: DateTime.now().add(const Duration(days: 1)),
-      type: 'vaccination',
-      status: 'pending',
-    ),
-    AppointmentModel(
-      appointmentId: 'V002',
-      patientId: 'P202',
-      dateTime: DateTime.now().add(const Duration(days: 2)),
-      type: 'vaccination',
-      status: 'pending',
-    ),
-  ];
-
-  final List<AppointmentModel> _scheduledVaccinations = [
-    AppointmentModel(
-      appointmentId: 'V003',
-      patientId: 'P203',
-      dateTime: DateTime.now().add(const Duration(days: 1, hours: 3)),
-      type: 'vaccination',
-      status: 'upcoming',
-    ),
-    AppointmentModel(
-      appointmentId: 'V004',
-      patientId: 'P204',
-      dateTime: DateTime.now().add(const Duration(days: 3)),
-      type: 'vaccination',
-      status: 'upcoming',
-    ),
-  ];
-
-  final List<AppointmentModel> _completedVaccinations = [
-    AppointmentModel(
-      appointmentId: 'V005',
-      patientId: 'P205',
-      dateTime: DateTime.now().subtract(const Duration(days: 3)),
-      type: 'vaccination',
-      status: 'completed',
-    ),
-    AppointmentModel(
-      appointmentId: 'V006',
-      patientId: 'P206',
-      dateTime: DateTime.now().subtract(const Duration(days: 5)),
-      type: 'vaccination',
-      status: 'completed',
-    ),
-  ];
-
-  // Sample patient details
-  final Map<String, Map<String, dynamic>> _patientDetails = {
-    'P201': {
-      'name': 'Ahmed Khalid',
-      'age': 35,
-      'vaccine': 'COVID-19 Booster',
-    },
-    'P202': {
-      'name': 'Layla Mohammed',
-      'age': 28,
-      'vaccine': 'Seasonal Flu',
-    },
-    'P203': {
-      'name': 'Omar Saeed',
-      'age': 42,
-      'vaccine': 'Hepatitis B',
-    },
-    'P204': {
-      'name': 'Aisha Abdullah',
-      'age': 31,
-      'vaccine': 'Tetanus',
-    },
-    'P205': {
-      'name': 'Hassan Ali',
-      'age': 45,
-      'vaccine': 'COVID-19',
-    },
-    'P206': {
-      'name': 'Fatima Ibrahim',
-      'age': 26,
-      'vaccine': 'Seasonal Flu',
-    },
-  };
+  late DatabaseService _databaseService;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    
-    // Simulate loading data
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-    
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
+    _tabController = TabController(length: 2, vsync: this);
+    final user = Provider.of<UserId?>(context, listen: false);
+    _databaseService = DatabaseService(uid: user?.uid ?? '');
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
-  List<AppointmentModel> _getFilteredAppointments(List<AppointmentModel> appointments) {
-    if (_searchQuery.isEmpty) {
-      return appointments;
-    }
-    
+  List<AppointmentModel> _filterTodayVaccinations(
+      List<AppointmentModel> appointments) {
+    final today = DateTime.now();
     return appointments.where((appointment) {
-      final patientDetails = _patientDetails[appointment.patientId];
-      if (patientDetails == null) {
-        return false;
-      }
-      
-      final patientName = patientDetails['name'].toString().toLowerCase();
-      final vaccine = patientDetails['vaccine'].toString().toLowerCase();
-      final appointmentId = appointment.appointmentId.toLowerCase();
-      
-      return patientName.contains(_searchQuery) ||
-             vaccine.contains(_searchQuery) ||
-             appointmentId.contains(_searchQuery);
+      return appointment.type.toLowerCase() == 'vaccination' &&
+          appointment.status.toLowerCase() == 'approved' &&
+          isSameDay(appointment.dateTime, today);
     }).toList();
+  }
+
+  List<AppointmentModel> _filterCompletedVaccinations(
+      List<AppointmentModel> appointments) {
+    final today = DateTime.now();
+    return appointments.where((appointment) {
+      return appointment.type.toLowerCase() == 'vaccination' &&
+          appointment.status.toLowerCase() == 'completed' &&
+          isSameDay(appointment.dateTime, today);
+    }).toList();
+  }
+
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
   @override
@@ -161,93 +67,153 @@ class _VaccinationScreenState extends State<VaccinationScreen> with SingleTicker
         backgroundColor: AppTheme.primaryColor,
         showBackButton: false,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search vaccinations...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.primaryColor),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  color: AppTheme.primaryColor,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.white,
-                    indicatorWeight: 3,
-                    tabs: const [
-                      Tab(text: 'Pending'),
-                      Tab(text: 'Scheduled'),
-                      Tab(text: 'Completed'),
+      body: Column(
+        children: [
+          Container(
+            color: AppTheme.primaryColor,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white.withOpacity(0.7),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 16,
+              ),
+              tabs: const [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.today_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text('Today'),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildVaccinationsList(_getFilteredAppointments(_pendingVaccinations), 'pending'),
-                      _buildVaccinationsList(_getFilteredAppointments(_scheduledVaccinations), 'scheduled'),
-                      _buildVaccinationsList(_getFilteredAppointments(_completedVaccinations), 'completed'),
+                      Icon(Icons.check_circle_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text('Completed'),
                     ],
                   ),
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Show a dialog to add a new vaccination record
-          _showAddVaccinationDialog();
-        },
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add),
+          ),
+          Expanded(
+            child: StreamBuilder<List<AppointmentModel>>(
+              stream: _databaseService
+                  .getVaccinationAppointments(), // You'll need to add this method
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: AppTheme.errorColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading vaccinations',
+                          style: AppTheme.bodyStyle.copyWith(
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snapshot.error}',
+                          style: AppTheme.bodySmallStyle.copyWith(
+                            color: AppTheme.errorColor,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final allVaccinations = snapshot.data ?? [];
+                final todayVaccinations =
+                    _filterTodayVaccinations(allVaccinations);
+                final completedVaccinations =
+                    _filterCompletedVaccinations(allVaccinations);
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildVaccinationsList(todayVaccinations, true),
+                    _buildVaccinationsList(completedVaccinations, false),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildVaccinationsList(List<AppointmentModel> appointments, String type) {
+  Widget _buildVaccinationsList(
+      List<AppointmentModel> appointments, bool isToday) {
     if (appointments.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.healing_outlined,
-              size: 64,
-              color: AppTheme.textSecondaryColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? 'No vaccinations found for "$_searchQuery"'
-                  : 'No $type vaccinations',
-              style: AppTheme.bodyStyle.copyWith(
-                color: AppTheme.textSecondaryColor,
+        child: Padding(
+          padding: const EdgeInsets.all(40.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isToday ? Icons.today_rounded : Icons.check_circle_rounded,
+                  size: 50,
+                  color: AppTheme.primaryColor.withOpacity(0.6),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                isToday
+                    ? 'No vaccinations scheduled for today'
+                    : 'No completed vaccinations',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 18,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isToday
+                    ? 'All today\'s vaccinations have been completed'
+                    : 'Completed vaccinations will appear here',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -257,398 +223,385 @@ class _VaccinationScreenState extends State<VaccinationScreen> with SingleTicker
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientDetails = _patientDetails[appointment.patientId];
-        
-        if (patientDetails == null) {
-          return Container(); // Skip if patient details not found
-        }
-        
-        return _buildVaccinationCard(appointment, patientDetails, type);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: FutureBuilder<UserModel>(
+            future: _databaseService.getUserDetails(appointment.patientId),
+            builder: (context, patientSnapshot) {
+              final patient = patientSnapshot.data;
+
+              return _buildVaccinationCard(appointment, patient, isToday);
+            },
+          ),
+        );
       },
     );
   }
 
   Widget _buildVaccinationCard(
-    AppointmentModel appointment,
-    Map<String, dynamic> patientDetails,
-    String type,
-  ) {
-    final Color cardColor = type == 'pending'
-        ? Colors.orange
-        : type == 'scheduled'
-            ? AppTheme.primaryColor
-            : AppTheme.successColor;
-    
+      AppointmentModel appointment, UserModel? patient, bool isToday) {
+    final Color cardColor =
+        isToday ? AppTheme.primaryColor : AppTheme.successColor;
+
     return Card(
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: cardColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.healing_rounded,
-                    color: cardColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        patientDetails['name'],
-                        style: AppTheme.subheadingStyle.copyWith(
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Vaccine: ${patientDetails['vaccine']}',
-                        style: AppTheme.bodyStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: cardColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    type[0].toUpperCase() + type.substring(1),
-                    style: AppTheme.bodySmallStyle.copyWith(
+      child: InkWell(
+        onTap: () => _showAppointmentDetailsDialog(appointment, patient),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cardColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.healing_rounded,
                       color: cardColor,
-                      fontWeight: FontWeight.w600,
+                      size: 28,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 16,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat('MMM dd, yyyy').format(appointment.dateTime),
-                      style: AppTheme.bodySmallStyle,
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 16,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat('hh:mm a').format(appointment.dateTime),
-                      style: AppTheme.bodySmallStyle,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (type == 'pending') ...[
-              Row(
-                children: [
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: CommonButton(
-                      text: 'Verify',
-                      onPressed: () => _verifyVaccination(appointment),
-                      backgroundColor: AppTheme.successColor,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          patient?.name ?? 'Loading...',
+                          style: AppTheme.subheadingStyle.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        if (appointment.vaccinationType != null)
+                          Text(
+                            'Vaccine: ${appointment.vaccinationType}',
+                            style: AppTheme.bodyStyle.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: CommonButton(
-                      text: 'Delete',
-                      onPressed: () => _deleteVaccination(appointment),
-                      backgroundColor: AppTheme.errorColor,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cardColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: cardColor.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      isToday ? 'Today' : 'Completed',
+                      style: AppTheme.bodySmallStyle.copyWith(
+                        color: cardColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ] else if (type == 'scheduled') ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: CommonButton(
-                      text: 'Mark as Completed',
-                      onPressed: () => _completeVaccination(appointment),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.dividerColor,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 18,
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          DateFormat('MMM dd, yyyy')
+                              .format(appointment.dateTime),
+                          style: AppTheme.bodyStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 18,
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          DateFormat('hh:mm a').format(appointment.dateTime),
+                          style: AppTheme.bodyStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (isToday) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _markAsCompleted(appointment),
+                    icon: const Icon(Icons.check_circle_outline, size: 20),
+                    label: const Text('Mark as Completed'),
+                    style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.successColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  void _verifyVaccination(AppointmentModel appointment) {
-    // Update the appointment status to 'upcoming'
-    final updatedAppointment = appointment.copyWith(status: 'upcoming');
-    
-    setState(() {
-      _pendingVaccinations.removeWhere(
-        (a) => a.appointmentId == appointment.appointmentId
-      );
-      _scheduledVaccinations.add(updatedAppointment);
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vaccination verified successfully'),
-        backgroundColor: AppTheme.successColor,
-      ),
-    );
-  }
-
-  void _completeVaccination(AppointmentModel appointment) {
-    // Update the appointment status to 'completed'
-    final updatedAppointment = appointment.copyWith(status: 'completed');
-    
-    setState(() {
-      _scheduledVaccinations.removeWhere(
-        (a) => a.appointmentId == appointment.appointmentId
-      );
-      _completedVaccinations.add(updatedAppointment);
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vaccination marked as completed'),
-        backgroundColor: AppTheme.successColor,
-      ),
-    );
-  }
-
-  void _deleteVaccination(AppointmentModel appointment) {
+  void _showAppointmentDetailsDialog(
+      AppointmentModel appointment, UserModel? patient) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Vaccination'),
-        content: const Text(
-          'Are you sure you want to delete this vaccination appointment? This action cannot be undone.',
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              
-              setState(() {
-                _pendingVaccinations.removeWhere(
-                  (a) => a.appointmentId == appointment.appointmentId
-                );
-              });
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Vaccination deleted successfully'),
-                  backgroundColor: AppTheme.successColor,
-                ),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.errorColor,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddVaccinationDialog() {
-    final patientNameController = TextEditingController();
-    final vaccineTypeController = TextEditingController();
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-    TimeOfDay selectedTime = TimeOfDay.now();
-    
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Add Vaccination'),
-          content: SingleChildScrollView(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: patientNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Patient Name',
-                    hintText: 'Enter patient name',
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.healing_rounded,
+                        color: AppTheme.primaryColor,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Vaccination Details',
+                            style: AppTheme.headingStyle.copyWith(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Appointment ID: ${appointment.appointmentId}',
+                            style: AppTheme.bodySmallStyle.copyWith(
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.backgroundColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.dividerColor),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow('Patient Name',
+                          patient?.name ?? 'Loading...', Icons.person),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                          'Email', patient?.email ?? 'Loading...', Icons.email),
+                      const SizedBox(height: 12),
+                      _buildDetailRow('Phone',
+                          patient?.phoneNumber ?? 'Loading...', Icons.phone),
+                      const SizedBox(height: 12),
+                      _buildDetailRow('Address',
+                          patient?.address ?? 'Loading...', Icons.location_on),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: vaccineTypeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Vaccine Type',
-                    hintText: 'Enter vaccine type',
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppTheme.primaryColor.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                          'Vaccine Type',
+                          appointment.vaccinationType ?? 'Not specified',
+                          Icons.healing),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                          'Date',
+                          DateFormat('EEEE, MMMM dd, yyyy')
+                              .format(appointment.dateTime),
+                          Icons.calendar_today),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                          'Time',
+                          DateFormat('hh:mm a').format(appointment.dateTime),
+                          Icons.access_time),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                          'Status',
+                          appointment.status[0].toUpperCase() +
+                              appointment.status.substring(1),
+                          Icons.info),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Select Date:',
-                  style: AppTheme.bodyStyle.copyWith(
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
-                ),
-                ListTile(
-                  title: Text(
-                    DateFormat('EEEE, MMMM d, yyyy').format(selectedDate),
-                    style: AppTheme.bodyStyle,
-                  ),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () async {
-                    final DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 60)),
-                    );
-                    if (pickedDate != null && pickedDate != selectedDate) {
-                      setState(() {
-                        selectedDate = pickedDate;
-                      });
-                    }
-                  },
-                ),
-                Text(
-                  'Select Time:',
-                  style: AppTheme.bodyStyle.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                ListTile(
-                  title: Text(
-                    selectedTime.format(context),
-                    style: AppTheme.bodyStyle,
-                  ),
-                  trailing: const Icon(Icons.access_time),
-                  onTap: () async {
-                    final TimeOfDay? pickedTime = await showTimePicker(
-                      context: context,
-                      initialTime: selectedTime,
-                    );
-                    if (pickedTime != null && pickedTime != selectedTime) {
-                      setState(() {
-                        selectedTime = pickedTime;
-                      });
-                    }
-                  },
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (patientNameController.text.isEmpty || vaccineTypeController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please fill all fields'),
-                      backgroundColor: AppTheme.errorColor,
-                    ),
-                  );
-                  return;
-                }
-                
-                // Create a new appointment
-                final newAppointmentId = 'V${_pendingVaccinations.length + _scheduledVaccinations.length + _completedVaccinations.length + 7}';
-                final newPatientId = 'P${_patientDetails.length + 207}';
-                
-                final appointmentDateTime = DateTime(
-                  selectedDate.year,
-                  selectedDate.month,
-                  selectedDate.day,
-                  selectedTime.hour,
-                  selectedTime.minute,
-                );
-                
-                final newAppointment = AppointmentModel(
-                  appointmentId: newAppointmentId,
-                  patientId: newPatientId,
-                  dateTime: appointmentDateTime,
-                  type: 'vaccination',
-                  status: 'pending',
-                );
-                
-                // Add patient details
-                _patientDetails[newPatientId] = {
-                  'name': patientNameController.text,
-                  'age': 30, // Default age
-                  'vaccine': vaccineTypeController.text,
-                };
-                
-                // Add to pending vaccinations
-                setState(() {
-                  _pendingVaccinations.add(newAppointment);
-                });
-                
-                Navigator.pop(context);
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Vaccination appointment added successfully'),
-                    backgroundColor: AppTheme.successColor,
-                  ),
-                );
-              },
-              child: const Text('Add'),
-            ),
-          ],
         ),
       ),
     );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: AppTheme.primaryColor,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: AppTheme.bodySmallStyle.copyWith(
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: AppTheme.bodyStyle.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _markAsCompleted(AppointmentModel appointment) async {
+    try {
+      await _databaseService.updateAppointmentStatus(
+        appointment.appointmentId,
+        AppointmentModel.statusCompleted,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vaccination marked as completed successfully'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error marking vaccination as completed: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
   }
 }
