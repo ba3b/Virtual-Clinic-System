@@ -16,6 +16,8 @@ class DatabaseService {
       FirebaseFirestore.instance.collection('Users');
   final CollectionReference appointmentsCollection =
       FirebaseFirestore.instance.collection('Appointments');
+  final CollectionReference prescriptionsCollection =
+      FirebaseFirestore.instance.collection('Prescriptions');
 
   Future<void> createUserDocument(
       UserCredential? userCredential,
@@ -81,7 +83,7 @@ class DatabaseService {
             email: userData['email'] ?? '',
             phoneNumber: userData['phoneNumber'] ?? '',
             address: userData['address'] ?? '',
-            medicalHistory: userData['medicalHistory'],
+            medicalHistory: _parseMedicalHistory(userData['medicalHistory']),
             fcmToken: userData['fcmToken'] ?? '',
             eligibility: List<String>.from(userData['eligibility'] ??
                 [DepartmentConstants.generalMedicine]),
@@ -111,6 +113,21 @@ class DatabaseService {
     } else {
       throw Exception('User document does not exist.');
     }
+  }
+
+  List<Map<String, dynamic>>? _parseMedicalHistory(dynamic medicalHistoryData) {
+    if (medicalHistoryData == null) return null;
+
+    if (medicalHistoryData is List) {
+      return medicalHistoryData.map((entry) {
+        if (entry is Map<String, dynamic>) {
+          return Map<String, dynamic>.from(entry);
+        }
+        return <String, dynamic>{};
+      }).toList();
+    }
+
+    return null;
   }
 
   Stream<QuerySnapshot<Object?>> get users {
@@ -364,8 +381,6 @@ class DatabaseService {
       '11:00 AM',
       '11:30 AM',
       '12:00 PM',
-      '12:30 PM',
-      '1:00 PM',
       '1:30 PM',
       '2:00 PM',
       '2:30 PM',
@@ -479,5 +494,103 @@ class DatabaseService {
             return AppointmentModel.fromJson(data);
           }).toList();
         });
+  }
+
+  Future<void> addDiagnosisToMedicalHistory({
+    required String patientId,
+    required String diagnosis,
+    required String appointmentId,
+  }) async {
+    try {
+      final Map<String, dynamic> medicalHistoryEntry = {
+        'timestamp': DateTime.now().toIso8601String(), // Use ISO string format
+        'description': diagnosis,
+        'appointmentId': appointmentId,
+        'type': 'diagnosis',
+      };
+
+      await usersCollection.doc(patientId).update({
+        'medicalHistory': FieldValue.arrayUnion([medicalHistoryEntry])
+      });
+    } catch (e) {
+      print('Error adding diagnosis to medical history: $e');
+      throw Exception('Failed to add diagnosis to medical history: $e');
+    }
+  }
+
+// Method to get patient's medical history
+  Future<List<Map<String, dynamic>>> getPatientMedicalHistory(
+      String patientId) async {
+    try {
+      DocumentSnapshot doc = await usersCollection.doc(patientId).get();
+
+      if (doc.exists) {
+        Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
+        dynamic medicalHistoryData = userData['medicalHistory'];
+
+        if (medicalHistoryData != null && medicalHistoryData is List) {
+          List<Map<String, dynamic>> medicalHistory = [];
+
+          for (var entry in medicalHistoryData) {
+            if (entry is Map<String, dynamic>) {
+              Map<String, dynamic> processedEntry =
+                  Map<String, dynamic>.from(entry);
+              medicalHistory.add(processedEntry);
+            }
+          }
+
+          // Sort by timestamp (most recent first)
+          medicalHistory.sort((a, b) {
+            String timestampA = a['timestamp'] as String? ?? '';
+            String timestampB = b['timestamp'] as String? ?? '';
+
+            try {
+              DateTime dateA = DateTime.parse(timestampA);
+              DateTime dateB = DateTime.parse(timestampB);
+              return dateB.compareTo(dateA);
+            } catch (e) {
+              return 0; 
+            }
+          });
+
+          return medicalHistory;
+        }
+      }
+
+      return [];
+    } catch (e) {
+      print('Error getting patient medical history: $e');
+      throw Exception('Failed to get patient medical history: $e');
+    }
+  }
+
+// Method to create prescription
+  Future<String> createPrescription({
+    required String appointmentId,
+    required String patientId,
+    required String doctorId,
+    required String medicationDetails,
+    required String dosageInstructions,
+  }) async {
+    try {
+      DocumentReference docRef = prescriptionsCollection.doc();
+
+      final Map<String, dynamic> prescriptionData = {
+        'prescriptionId': docRef.id,
+        'appointmentId': appointmentId,
+        'patientId': patientId,
+        'doctorId': doctorId,
+        'medicationDetails': medicationDetails,
+        'dosageInstructions': dosageInstructions,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(prescriptionData);
+
+      return docRef.id;
+    } catch (e) {
+      print('Error creating prescription: $e');
+      throw Exception('Failed to create prescription: $e');
+    }
   }
 }

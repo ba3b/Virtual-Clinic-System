@@ -77,7 +77,7 @@ class UserModel {
 }
 
 class PatientModel extends UserModel {
-  final Object? medicalHistory;
+  final List<Map<String, dynamic>>? medicalHistory;
   final List<String> eligibility;
 
   PatientModel({
@@ -95,7 +95,7 @@ class PatientModel extends UserModel {
 
   factory PatientModel.fromUserModel(
     UserModel user, {
-    Object? medicalHistory,
+    List<Map<String, dynamic>>? medicalHistory,
     List<String>? eligibility,
   }) {
     return PatientModel(

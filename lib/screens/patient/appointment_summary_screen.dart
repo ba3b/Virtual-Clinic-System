@@ -272,7 +272,7 @@ class _AppointmentSummaryScreenState extends State<AppointmentSummaryScreen> {
               _buildInfoItem(
                 Icons.timer_outlined,
                 'Duration',
-                '30 mins',
+                '20 mins',
                 typeColor,
               ),
             ],

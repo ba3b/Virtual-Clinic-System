@@ -185,7 +185,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
               _buildInfoItem(
                 Icons.timer_outlined,
                 'Duration',
-                '30 mins',
+                '20 mins',
               ),
             ],
           ),

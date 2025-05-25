@@ -23,27 +23,31 @@ class AppointmentDateScreen extends StatefulWidget {
 
 class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
   late DateTime _selectedDate;
-  
+
   @override
   void initState() {
     super.initState();
     // Initialize with tomorrow as default
-    _selectedDate = DateTime.now().add(const Duration(days: 2));
-    
-    // Ensure the selected date is not on a weekend
-    if (_selectedDate.weekday == 6) { // Saturday
-      _selectedDate = _selectedDate.add(const Duration(days: 2));
-    } else if (_selectedDate.weekday == 7) { // Sunday
-      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    _selectedDate = DateTime.now().add(const Duration(days: 1));
+
+    // Ensure the selected date is not on a weekend (Friday=5, Saturday=6)
+    if (_selectedDate.weekday == 5) {
+      // Friday
+      _selectedDate =
+          _selectedDate.add(const Duration(days: 2)); // Move to Sunday
+    } else if (_selectedDate.weekday == 6) {
+      // Saturday
+      _selectedDate =
+          _selectedDate.add(const Duration(days: 1)); // Move to Sunday
     }
   }
-  
+
   void _onDateSelected(DateTime date) {
     setState(() {
       _selectedDate = date;
     });
   }
-  
+
   void _proceedToNextStep() {
     Navigator.push(
       context,
@@ -59,11 +63,14 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
   }
 
   String _getAppointmentTypeTitle() {
-    if (widget.appointmentType == 'vaccination' && widget.vaccinationType != null) {
+    if (widget.appointmentType == 'vaccination' &&
+        widget.vaccinationType != null) {
       return 'Vaccination: ${widget.vaccinationType}';
-    } else if (widget.appointmentType == 'virtual' && widget.department != null) {
+    } else if (widget.appointmentType == 'virtual' &&
+        widget.department != null) {
       return 'Virtual: ${widget.department}';
-    } else if (widget.appointmentType == 'physical' && widget.department != null) {
+    } else if (widget.appointmentType == 'physical' &&
+        widget.department != null) {
       return 'Physical: ${widget.department}';
     } else {
       switch (widget.appointmentType) {
@@ -107,7 +114,8 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
               Expanded(
                 child: DatePickerComponent(
                   initialDate: _selectedDate,
-                  firstDate: DateTime.now().add(const Duration(days: 1)),
+                  firstDate: DateTime(DateTime.now().year, DateTime.now().month,
+                      DateTime.now().day + 1),
                   lastDate: DateTime.now().add(const Duration(days: 60)),
                   onDateSelected: _onDateSelected,
                 ),

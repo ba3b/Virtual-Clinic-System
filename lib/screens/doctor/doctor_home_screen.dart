@@ -32,7 +32,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   void initState() {
     super.initState();
   }
-  
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -42,13 +42,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   // Only fetch names for appointments we haven't processed yet
   void _checkForNewAppointments(List<AppointmentModel> appointments) {
     if (_isLoading) return;
-    
+
     // Create a list of appointment IDs we haven't processed yet
-    final List<AppointmentModel> newAppointments = appointments.where((appointment) {
-      return !_processedAppointmentIds.contains(appointment.appointmentId) && 
-             !_patientNames.containsKey(appointment.patientId);
+    final List<AppointmentModel> newAppointments =
+        appointments.where((appointment) {
+      return !_processedAppointmentIds.contains(appointment.appointmentId) &&
+          !_patientNames.containsKey(appointment.patientId);
     }).toList();
-    
+
     if (newAppointments.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _fetchPatientNames(newAppointments);
@@ -58,25 +59,25 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   Future<void> _fetchPatientNames(List<AppointmentModel> appointments) async {
     if (_isLoading) return;
-    
+
     if (mounted) {
       setState(() {
         _isLoading = true;
       });
     }
-    
+
     Map<String, String> updatedNames = Map.from(_patientNames);
     List<String> processedIds = List.from(_processedAppointmentIds);
-    
+
     for (var appointment in appointments) {
       // Mark this appointment as processed regardless of success or failure
       processedIds.add(appointment.appointmentId);
-      
+
       if (!updatedNames.containsKey(appointment.patientId)) {
         try {
           final patientData = await DatabaseService(uid: appointment.patientId)
               .getUserDetails(appointment.patientId);
-          
+
           updatedNames[appointment.patientId] = patientData.name;
         } catch (e) {
           print('Error fetching patient name: $e');
@@ -84,7 +85,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         }
       }
     }
-    
+
     if (mounted) {
       setState(() {
         _patientNames.addAll(updatedNames);
@@ -103,7 +104,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         actions: [
           NotificationBadge(
             child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon:
+                  const Icon(Icons.notifications_outlined, color: Colors.white),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -189,7 +191,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         }
 
         if (userSnapshot.hasError) {
-          return Center(child: Text('Error loading user data: ${userSnapshot.error}'));
+          return Center(
+              child: Text('Error loading user data: ${userSnapshot.error}'));
         }
 
         if (!userSnapshot.hasData) {
@@ -204,28 +207,33 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         }
 
         final DoctorModel doctor = currentUser as DoctorModel;
-        
+
         return StreamBuilder<List<AppointmentModel>>(
-          stream: DatabaseService(uid: user.uid).getDoctorAppointments(user.uid),
+          stream:
+              DatabaseService(uid: user.uid).getDoctorAppointments(user.uid),
           builder: (context, appointmentSnapshot) {
-            if (appointmentSnapshot.connectionState == ConnectionState.waiting) {
+            if (appointmentSnapshot.connectionState ==
+                ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
             if (appointmentSnapshot.hasError) {
-              return Center(child: Text('Error loading appointments: ${appointmentSnapshot.error}'));
+              return Center(
+                  child: Text(
+                      'Error loading appointments: ${appointmentSnapshot.error}'));
             }
 
-            final List<AppointmentModel> allAppointments = appointmentSnapshot.data ?? [];
-            
+            final List<AppointmentModel> allAppointments =
+                appointmentSnapshot.data ?? [];
+
             _checkForNewAppointments(allAppointments);
-            
+
             final List<AppointmentModel> todayAppointments = [];
             final List<AppointmentModel> upcomingAppointments = [];
-            
+
             final now = DateTime.now();
             final today = DateTime(now.year, now.month, now.day);
-            
+
             for (var appointment in allAppointments) {
               if (appointment.status != AppointmentModel.statusApproved) {
                 continue;
@@ -241,24 +249,28 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 upcomingAppointments.add(appointment);
               }
             }
-            
+
             // Sort appointments by date and time
             todayAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-            upcomingAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-            
+            upcomingAppointments
+                .sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDoctorInfoWidget(doctor, todayAppointments.length, upcomingAppointments.length),
+                  _buildDoctorInfoWidget(doctor, todayAppointments.length,
+                      upcomingAppointments.length),
                   const SizedBox(height: 24),
                   SectionHeader(
                     title: 'Today\'s Appointments',
                     subtitle: 'Your schedule for today',
                     actionText: todayAppointments.isEmpty ? null : 'See All',
                     onActionTap: () {
-                      // Navigate to see all today's appointments
+                      setState(() {
+                        _selectedIndex = 1;
+                      });
                     },
                   ),
                   const SizedBox(height: 16),
@@ -269,7 +281,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     subtitle: 'Your future schedule',
                     actionText: upcomingAppointments.isEmpty ? null : 'See All',
                     onActionTap: () {
-                      // Navigate to see all upcoming appointments
+                      setState(() {
+                        _selectedIndex = 1;
+                      });
                     },
                   ),
                   const SizedBox(height: 16),
@@ -283,7 +297,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  Widget _buildDoctorInfoWidget(DoctorModel doctor, int todayCount, int upcomingCount) {
+  Widget _buildDoctorInfoWidget(
+      DoctorModel doctor, int todayCount, int upcomingCount) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -413,7 +428,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientName = _patientNames[appointment.patientId] ?? 'Loading...';
+        final patientName =
+            _patientNames[appointment.patientId] ?? 'Loading...';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
@@ -433,7 +449,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       MaterialPageRoute(
         builder: (context) => DoctorAppointmentDetailsScreen(
           appointment: appointment,
-          patientName: _patientNames[appointment.patientId] ?? 'Unknown Patient',
+          patientName:
+              _patientNames[appointment.patientId] ?? 'Unknown Patient',
         ),
       ),
     );

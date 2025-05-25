@@ -3,7 +3,7 @@ import '../theme/theme.dart';
 
 class CommonButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isOutlined;
   final bool isLoading;
   final double? width;
@@ -13,7 +13,7 @@ class CommonButton extends StatelessWidget {
   const CommonButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.isOutlined = false,
     this.isLoading = false,
     this.width,
@@ -50,6 +50,7 @@ class CommonButton extends StatelessWidget {
                 style: AppTheme.buttonTextStyle.copyWith(
                   color: textColor ?? AppTheme.primaryColor,
                 ),
+                textAlign: TextAlign.center,
               ),
       );
     }
@@ -77,6 +78,7 @@ class CommonButton extends StatelessWidget {
               style: AppTheme.buttonTextStyle.copyWith(
                 color: textColor ?? Colors.white,
               ),
+              textAlign: TextAlign.center,
             ),
     );
   }

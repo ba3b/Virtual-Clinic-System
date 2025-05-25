@@ -1,12 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../api/firestore_service.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
-import '../../components/patient_info_card.dart';
-import '../../components/prescription_form.dart';
 import '../../models/appointment_model.dart';
-import '../../models/patient_detail_model.dart';
+import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import 'diagnosis_writing_page.dart';
 import 'virtual_appointment_screen.dart';
 
 class DoctorAppointmentDetailsScreen extends StatefulWidget {
@@ -25,10 +25,7 @@ class DoctorAppointmentDetailsScreen extends StatefulWidget {
 
 class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetailsScreen> {
   bool _isLoadingPatient = true;
-  bool _isSubmittingPrescription = false;
-  PatientDetailModel? _patientDetail;
-  final TextEditingController _diagnosisController = TextEditingController();
-  bool _showPrescriptionForm = false;
+  PatientModel? _patientDetail;
 
   @override
   void initState() {
@@ -36,31 +33,41 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
     _loadPatientDetails();
   }
 
-  @override
-  void dispose() {
-    _diagnosisController.dispose();
-    super.dispose();
+  Future<void> _loadPatientDetails() async {
+    try {
+      final patientData = await DatabaseService(uid: widget.appointment.patientId)
+          .getUserDetails(widget.appointment.patientId);
+      
+      if (mounted) {
+        setState(() {
+          _patientDetail = patientData as PatientModel;
+          _isLoadingPatient = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading patient details: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPatient = false;
+        });
+      }
+    }
   }
 
-  Future<void> _loadPatientDetails() async {
-    // Simulate API call to get patient details
-    await Future.delayed(const Duration(seconds: 1));
+  bool _canJoinVirtualMeeting() {
+    if (widget.appointment.type.toLowerCase() != 'virtual') {
+      return false;
+    }
+    if (widget.appointment.status.toLowerCase() != 'approved') {
+      return false;
+    }
     
-    // Sample patient data
-    setState(() {
-      _patientDetail = PatientDetailModel(
-        patientId: widget.appointment.patientId,
-        name: widget.patientName,
-        email: 'patient@example.com',
-        phoneNumber: '+966 50 123 4567',
-        address: 'Taif, Saudi Arabia',
-        dateOfBirth: DateTime(1990, 1, 1),
-        gender: 'Male',
-        allergies: ['Penicillin', 'Pollen'],
-        medicalHistory: 'Patient has a history of mild asthma and seasonal allergies.',
-      );
-      _isLoadingPatient = false;
-    });
+    final now = DateTime.now();
+    final appointmentTime = widget.appointment.dateTime;
+    final windowEnd = appointmentTime.add(const Duration(minutes: 20));
+    
+    // Allow joining from appointment time to 20 minutes after
+    return !now.isBefore(appointmentTime) && now.isBefore(windowEnd);
   }
 
   void _handleJoinVirtualMeeting() {
@@ -75,74 +82,112 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
     );
   }
 
-  void _handleSubmitDiagnosis() {
-    if (_diagnosisController.text.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Diagnosis saved successfully')),
-      );
+  void _handleViewMedicalHistory() async {
+    try {
+      // Fetch from database
+      final medicalHistory = await DatabaseService(uid: widget.appointment.patientId)
+          .getPatientMedicalHistory(widget.appointment.patientId);
       
-      setState(() {
-        _showPrescriptionForm = true;
-      });
-    } else {
+      if (medicalHistory.isEmpty) {
+        _showEmptyMedicalHistoryDialog();
+        return;
+      }
+
+      _showMedicalHistoryDialog(medicalHistory);
+    } catch (e) {
+      print('Error loading medical history: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a diagnosis'),
+        SnackBar(
+          content: Text('Error loading medical history: $e'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
     }
   }
 
-  Future<void> _handleSubmitPrescription(String medication, String dosage) async {
-    setState(() {
-      _isSubmittingPrescription = true;
-    });
-    
-    // Simulate API call to save prescription
-    await Future.delayed(const Duration(seconds: 2));
-    
-    setState(() {
-      _isSubmittingPrescription = false;
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prescription submitted successfully')),
-      );
-      
-      // In a real app, you'd navigate back or update the UI
-      Navigator.pop(context);
-    }
-  }
-
-  void _handleViewMedicalHistory() {
-    // Show a dialog or navigate to medical history screen
+  void _showMedicalHistoryDialog(List<Map<String, dynamic>> medicalHistory) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Medical History'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _patientDetail?.medicalHistory ?? 'No medical history available',
-                style: AppTheme.bodyStyle,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Past Appointments',
-                style: AppTheme.subheadingStyle,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'The patient has had 3 previous appointments in the last 6 months.',
-                style: AppTheme.bodyStyle,
-              ),
-            ],
-          ),
+        title: Row(
+          children: [
+            const Icon(Icons.history, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            const Text('Medical History'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: medicalHistory.isEmpty
+              ? const Center(
+                  child: Text('No medical history available'),
+                )
+              : ListView.builder(
+                  itemCount: medicalHistory.length,
+                  itemBuilder: (context, index) {
+                    final entry = medicalHistory[index];
+                    final timestamp = entry['timestamp'];
+                    final description = entry['description'] as String? ?? 'No description';
+                    final type = entry['type'] as String? ?? 'diagnosis';
+                    
+                    DateTime? entryDate;
+                    if (timestamp is Timestamp) {
+                      entryDate = timestamp.toDate();
+                    } else if (timestamp is DateTime) {
+                      entryDate = timestamp;
+                    } else if (timestamp is String) {
+                      try {
+                        entryDate = DateTime.parse(timestamp);
+                      } catch (e) {
+                        print('Error parsing timestamp: $e');
+                      }
+                    }
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  type == 'diagnosis' ? Icons.medical_services : Icons.note_alt,
+                                  size: 16,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  type.toUpperCase(),
+                                  style: AppTheme.bodySmallStyle.copyWith(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (entryDate != null)
+                                  Text(
+                                    '${entryDate.day}/${entryDate.month}/${entryDate.year}',
+                                    style: AppTheme.bodySmallStyle.copyWith(
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              description,
+                              style: AppTheme.bodyStyle,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ),
         actions: [
           TextButton(
@@ -154,10 +199,49 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
     );
   }
 
+  void _showEmptyMedicalHistoryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Medical History'),
+        content: const Text('No medical history available for this patient.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleWriteDiagnosis() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DiagnosisWritingPage(
+          appointment: widget.appointment,
+          patientName: widget.patientName,
+        ),
+      ),
+    );
+  }
+
+  bool _canWriteDiagnosis() {
+  if (widget.appointment.status.toLowerCase() != 'approved') {
+    return false;
+  }
+  
+  final now = DateTime.now();
+  final appointmentTime = widget.appointment.dateTime;
+  
+  return !now.isBefore(appointmentTime);
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'Appointment Details',
         backgroundColor: AppTheme.primaryColor,
       ),
@@ -168,158 +252,68 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildAppointmentHeader(),
-                  const SizedBox(height: 24),
-                  if (_patientDetail != null) ...[
-                    PatientInfoCard(
-                      patient: _patientDetail!,
-                      onViewMedicalHistory: _handleViewMedicalHistory,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  _buildDiagnosisSection(),
-                  const SizedBox(height: 24),
-                  if (_showPrescriptionForm) ...[
-                    PrescriptionForm(
-                      onSubmit: _handleSubmitPrescription,
-                      isLoading: _isSubmittingPrescription,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  if (!_showPrescriptionForm && widget.appointment.type.toLowerCase() == 'virtual' && 
-                      widget.appointment.status.toLowerCase() == 'upcoming') ...[
+                  // Join Virtual Meeting Button (if applicable)
+                  if (_canJoinVirtualMeeting()) ...[
                     CommonButton(
                       text: 'Join Virtual Meeting',
                       onPressed: _handleJoinVirtualMeeting,
+                      backgroundColor: AppTheme.primaryColor,
                     ),
                     const SizedBox(height: 16),
                   ],
+            
+                  // Appointment Info Component
+                  _AppointmentInfoCard(appointment: widget.appointment),
+                  const SizedBox(height: 16),
+                  
+                  // Patient Details Component
+                  if (_patientDetail != null)
+                    _PatientDetailsCard(patient: _patientDetail!),
+                  const SizedBox(height: 24),
+                  
+                  // Action Buttons
+                  CommonButton(
+                    text: 'View Medical History',
+                    onPressed: _handleViewMedicalHistory,
+                    backgroundColor: Colors.blue,
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Only show Write Diagnosis if appointment is approved
+                  if (_canWriteDiagnosis())
+                    CommonButton(
+                      text: 'Write Diagnosis',
+                      onPressed: _handleWriteDiagnosis,
+                      backgroundColor: AppTheme.primaryColor,
+                    ),
                 ],
               ),
             ),
     );
   }
+}
 
-  Widget _buildAppointmentHeader() {
-    IconData appointmentIcon;
-    Color appointmentColor;
-    
-    switch (widget.appointment.type.toLowerCase()) {
+class _AppointmentInfoCard extends StatelessWidget {
+  final AppointmentModel appointment;
+
+  const _AppointmentInfoCard({required this.appointment});
+
+  Color _getTypeColor() {
+    switch (appointment.type.toLowerCase()) {
       case 'virtual':
-        appointmentIcon = Icons.videocam_rounded;
-        appointmentColor = AppTheme.primaryColor;
-        break;
+        return AppTheme.primaryColor;
       case 'physical':
-        appointmentIcon = Icons.person_rounded;
-        appointmentColor = Colors.blue;
-        break;
+        return Colors.blue;
       case 'vaccination':
-        appointmentIcon = Icons.healing_rounded;
-        appointmentColor = Colors.green;
-        break;
+        return Colors.green;
       default:
-        appointmentIcon = Icons.calendar_today_rounded;
-        appointmentColor = AppTheme.primaryColor;
+        return AppTheme.primaryColor;
     }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: appointmentColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: appointmentColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: appointmentColor.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  appointmentIcon,
-                  color: appointmentColor,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${widget.appointment.type[0].toUpperCase()}${widget.appointment.type.substring(1)} Appointment',
-                      style: AppTheme.headingStyle.copyWith(
-                        fontSize: 18,
-                        color: appointmentColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ID: ${widget.appointment.appointmentId}',
-                      style: AppTheme.bodyStyle.copyWith(
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _getStatusColor().withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  widget.appointment.status[0].toUpperCase() + widget.appointment.status.substring(1),
-                  style: AppTheme.bodySmallStyle.copyWith(
-                    color: _getStatusColor(),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildInfoItem(
-                Icons.calendar_today_outlined,
-                'Date',
-                DateFormat('MMM dd, yyyy').format(widget.appointment.dateTime),
-              ),
-              _buildInfoItem(
-                Icons.access_time_rounded,
-                'Time',
-                DateFormat('hh:mm a').format(widget.appointment.dateTime),
-              ),
-              _buildInfoItem(
-                Icons.timer_outlined,
-                'Duration',
-                '30 mins',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   Color _getStatusColor() {
-    switch (widget.appointment.status.toLowerCase()) {
-      case 'upcoming':
+    switch (appointment.status.toLowerCase()) {
+      case 'approved':
         return AppTheme.primaryColor;
       case 'completed':
         return AppTheme.successColor;
@@ -330,6 +324,109 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
       default:
         return AppTheme.primaryColor;
     }
+  }
+
+  IconData _getTypeIcon() {
+    switch (appointment.type.toLowerCase()) {
+      case 'virtual':
+        return Icons.videocam_rounded;
+      case 'physical':
+        return Icons.person_rounded;
+      case 'vaccination':
+        return Icons.healing_rounded;
+      default:
+        return Icons.calendar_today_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _getTypeColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _getTypeIcon(),
+                    color: _getTypeColor(),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${appointment.type[0].toUpperCase()}${appointment.type.substring(1)} Appointment',
+                        style: AppTheme.subheadingStyle.copyWith(fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'ID: ${appointment.appointmentId}',
+                        style: AppTheme.bodySmallStyle.copyWith(
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    appointment.status[0].toUpperCase() + appointment.status.substring(1),
+                    style: AppTheme.bodySmallStyle.copyWith(
+                      color: _getStatusColor(),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildInfoItem(
+                  Icons.calendar_today_outlined,
+                  'Date',
+                  '${appointment.dateTime.day}/${appointment.dateTime.month}/${appointment.dateTime.year}',
+                ),
+                _buildInfoItem(
+                  Icons.access_time_rounded,
+                  'Time',
+                  '${appointment.dateTime.hour.toString().padLeft(2, '0')}:${appointment.dateTime.minute.toString().padLeft(2, '0')}',
+                ),
+                _buildInfoItem(
+                  Icons.timer_outlined,
+                  'Duration',
+                  '20 mins',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildInfoItem(IconData icon, String label, String value) {
@@ -357,56 +454,100 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
       ],
     );
   }
+}
 
-  Widget _buildDiagnosisSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+class _PatientDetailsCard extends StatelessWidget {
+  final PatientModel patient;
+
+  const _PatientDetailsCard({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Patient Diagnosis',
-            style: AppTheme.subheadingStyle,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _diagnosisController,
-            maxLines: 4,
-            decoration: InputDecoration(
-              hintText: 'Enter your diagnosis and notes here...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.dividerColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.dividerColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.primaryColor),
-              ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.person,
+                    color: AppTheme.primaryColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        patient.name,
+                        style: AppTheme.subheadingStyle.copyWith(fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Patient ID: ${patient.userId}',
+                        style: AppTheme.bodySmallStyle.copyWith(
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          CommonButton(
-            text: 'Save Diagnosis',
-            onPressed: _handleSubmitDiagnosis,
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailItem('Age', '25 years'), // Placeholder
+                ),
+                Expanded(
+                  child: _buildDetailItem('Gender', 'Male'), // Placeholder
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildDetailItem('Phone', patient.phoneNumber),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTheme.bodySmallStyle.copyWith(
+            color: AppTheme.textSecondaryColor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: AppTheme.bodyStyle.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

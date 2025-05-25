@@ -24,26 +24,25 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
   late DateTime _selectedDate;
   late PageController _pageController;
   late int _currentMonthPage;
-  
+
   final Map<int, String> _weekdayNames = {
+    7: 'Sun',
     1: 'Mon',
     2: 'Tue',
     3: 'Wed',
     4: 'Thu',
-    5: 'Fri',
-    6: 'Sat',
-    7: 'Sun',
   };
 
   @override
   void initState() {
     super.initState();
     _selectedDate = widget.initialDate;
-    
+
     // Calculate the difference in months between firstDate and initialDate
-    _currentMonthPage = (widget.initialDate.year - widget.firstDate.year) * 12 + 
-                        widget.initialDate.month - widget.firstDate.month;
-    
+    _currentMonthPage = (widget.initialDate.year - widget.firstDate.year) * 12 +
+        widget.initialDate.month -
+        widget.firstDate.month;
+
     _pageController = PageController(initialPage: _currentMonthPage);
   }
 
@@ -55,19 +54,29 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
 
   bool _isSelectedDate(DateTime date) {
     return date.year == _selectedDate.year &&
-           date.month == _selectedDate.month &&
-           date.day == _selectedDate.day;
+        date.month == _selectedDate.month &&
+        date.day == _selectedDate.day;
   }
 
   bool _isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year &&
-           date.month == now.month &&
-           date.day == now.day;
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   bool _isInRange(DateTime date) {
-    return !date.isBefore(widget.firstDate) && !date.isAfter(widget.lastDate);
+    // Check if date is within the allowed date range
+    if (date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate)) {
+      return false;
+    }
+
+    // Check if date is not a weekend (Friday=5, Saturday=6)
+    if (date.weekday == 5 || date.weekday == 6) {
+      return false;
+    }
+
+    return true;
   }
 
   void _selectDate(DateTime date) {
@@ -98,11 +107,12 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
             itemBuilder: (context, index) {
               // Calculate the month and year for this page
               final DateTime firstDateOfMonth = DateTime(
-                widget.firstDate.year + (widget.firstDate.month + index - 1) ~/ 12,
+                widget.firstDate.year +
+                    (widget.firstDate.month + index - 1) ~/ 12,
                 (widget.firstDate.month + index - 1) % 12 + 1,
                 1,
               );
-              
+
               return _buildMonthCalendar(firstDateOfMonth);
             },
           ),
@@ -113,11 +123,12 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
 
   Widget _buildMonthNavigation() {
     final DateTime currentMonth = DateTime(
-      widget.firstDate.year + (widget.firstDate.month + _currentMonthPage - 1) ~/ 12,
+      widget.firstDate.year +
+          (widget.firstDate.month + _currentMonthPage - 1) ~/ 12,
       (widget.firstDate.month + _currentMonthPage - 1) % 12 + 1,
       1,
     );
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -152,40 +163,63 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
   Widget _buildWeekdayHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: List.generate(7, (index) {
-        // Start with Monday (1) as index 0
-        final int weekday = index + 1 > 7 ? index + 1 - 7 : index + 1;
-        return SizedBox(
+      children: [
+        // Sunday
+        SizedBox(
           width: 40,
           child: Text(
-            _weekdayNames[weekday]!,
+            'Sun',
             style: AppTheme.bodySmallStyle.copyWith(
               fontWeight: FontWeight.w600,
               color: AppTheme.textSecondaryColor,
             ),
             textAlign: TextAlign.center,
           ),
-        );
-      }),
+        ),
+        // Monday to Thursday
+        ...List.generate(4, (index) {
+          final int weekday =
+              index + 1; // Monday=1, Tuesday=2, Wednesday=3, Thursday=4
+          return SizedBox(
+            width: 40,
+            child: Text(
+              _weekdayNames[weekday]!,
+              style: AppTheme.bodySmallStyle.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }),
+        // Empty spaces for Friday and Saturday (to maintain grid alignment)
+        const SizedBox(width: 40),
+        const SizedBox(width: 40),
+      ],
     );
   }
 
   Widget _buildMonthCalendar(DateTime firstDayOfMonth) {
-    // Determine the first date to display (might be from the previous month)
+    // Determine the first date to display (start from Sunday of the week)
     final int firstWeekday = firstDayOfMonth.weekday;
-    final DateTime firstDisplayedDate = firstDayOfMonth.subtract(Duration(days: firstWeekday - 1));
-    
+    final int daysToSubtract = firstWeekday == 7
+        ? 0
+        : firstWeekday; // If Sunday, no subtraction needed
+    final DateTime firstDisplayedDate =
+        firstDayOfMonth.subtract(Duration(days: daysToSubtract));
+
     // Determine the last date of the month
     final DateTime lastDayOfMonth = DateTime(
       firstDayOfMonth.year,
       firstDayOfMonth.month + 1,
       0,
     );
-    
+
     // Determine how many weeks to display
-    final int daysToShow = (lastDayOfMonth.difference(firstDisplayedDate).inDays + 1);
+    final int daysToShow =
+        (lastDayOfMonth.difference(firstDisplayedDate).inDays + 1);
     final int weeksToShow = (daysToShow / 7).ceil();
-    
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -197,7 +231,7 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
       itemBuilder: (context, index) {
         final DateTime date = firstDisplayedDate.add(Duration(days: index));
         final bool isCurrentMonth = date.month == firstDayOfMonth.month;
-        
+
         return _buildDateCell(date, isCurrentMonth);
       },
     );
@@ -207,7 +241,7 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
     final bool isSelected = _isSelectedDate(date);
     final bool isToday = _isToday(date);
     final bool isInRange = _isInRange(date);
-    
+
     return GestureDetector(
       onTap: isCurrentMonth && isInRange ? () => _selectDate(date) : null,
       child: Container(
