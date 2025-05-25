@@ -62,10 +62,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 Tab(text: 'Completed'),
                 Tab(text: 'Rejected'),
               ],
-              labelColor: Colors.white, 
+              labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
-              unselectedLabelStyle:
-                  const TextStyle(fontSize: 14), 
+              unselectedLabelStyle: const TextStyle(fontSize: 14),
             ),
           ),
           Expanded(
@@ -116,7 +115,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                             (app.status == AppointmentModel.statusPending ||
                                 app.status ==
                                     AppointmentModel.statusApproved) &&
-                            app.dateTime.isAfter(DateTime.now()))
+                            app.dateTime.isAfter(DateTime.now()
+                                .subtract(const Duration(minutes: 20))))
                         .toList()),
 
                     // Completed Appointments Tab
@@ -175,9 +175,26 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       itemBuilder: (context, index) {
         final appointment = appointments[index];
 
+        // Handle vaccination appointments differently
+        if (appointment.type == AppointmentModel.typeVaccination) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: AppointmentCard(
+              doctorName: appointment.vaccinationType ?? 'Vaccination',
+              appointmentDate: appointment.dateTime,
+              appointmentType: appointment.type,
+              status: appointment.status,
+              onTap: () => _navigateToAppointmentDetails(
+                  appointment, appointment.vaccinationType ?? 'Vaccination'),
+            ),
+          );
+        }
+
+        // Handle regular appointments with doctor assignment
         return FutureBuilder<UserModel?>(
           future: appointment.doctorId != null
-              ? DatabaseService(uid: appointment.doctorId!).getUserDetails(appointment.doctorId!)
+              ? DatabaseService(uid: appointment.doctorId!)
+                  .getUserDetails(appointment.doctorId!)
               : Future.value(null),
           builder: (context, snapshot) {
             String doctorName;
@@ -200,7 +217,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 appointmentDate: appointment.dateTime,
                 appointmentType: appointment.type,
                 status: appointment.status,
-                onTap: () => _navigateToAppointmentDetails(appointment, doctorName),
+                onTap: () =>
+                    _navigateToAppointmentDetails(appointment, doctorName),
               ),
             );
           },
@@ -209,7 +227,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     );
   }
 
-  void _navigateToAppointmentDetails(AppointmentModel appointment, String doctorName) {
+  void _navigateToAppointmentDetails(
+      AppointmentModel appointment, String doctorName) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -222,6 +241,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             'status': appointment.status,
             'department': appointment.department,
             'vaccinationType': appointment.vaccinationType,
+            'doctorId': appointment.doctorId,
+            'patientId': appointment.patientId,
           },
         ),
       ),

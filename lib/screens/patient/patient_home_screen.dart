@@ -26,7 +26,7 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
-  
+
   void _onNavTap(int index) {
     setState(() {
       _currentIndex = index;
@@ -343,157 +343,162 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildUpcomingAppointments() {
-  final user = Provider.of<UserId?>(context);
-  
-  if (user == null) {
-    return const Center(child: Text('User not logged in'));
-  }
-  
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: SectionHeader(
-          title: 'Upcoming Appointments',
-          subtitle: 'Your scheduled appointments',
-          actionText: 'See All',
-          onActionTap: () {
-            setState(() {
-              _currentIndex = 1; // Switch to appointments tab
-            });
-          },
+    final user = Provider.of<UserId?>(context);
+
+    if (user == null) {
+      return const Center(child: Text('User not logged in'));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SectionHeader(
+            title: 'Upcoming Appointments',
+            subtitle: 'Your scheduled appointments',
+            actionText: 'See All',
+            onActionTap: () {
+              setState(() {
+                _currentIndex = 1; // Switch to appointments tab
+              });
+            },
+          ),
         ),
-      ),
-      const SizedBox(height: 16),
-      StreamBuilder<List<AppointmentModel>>(
-        stream: DatabaseService(uid: user.uid).getPatientAppointments(user.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          }
-          
-          final appointments = snapshot.data ?? [];
-          
-          // Filter for upcoming appointments
-          final upcomingAppointments = appointments
-              .where((appointment) => 
-                  appointment.status != AppointmentModel.statusCancelled &&
-                  appointment.status != AppointmentModel.statusRejected &&
-                  appointment.dateTime.isAfter(DateTime.now()))
-              .toList();
-          
-          // Sort by date
-          upcomingAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-          
-          // Take only the next 3 appointments
-          final displayAppointments = upcomingAppointments.take(3).toList();
-          
-          if (displayAppointments.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 48,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No upcoming appointments',
-                      style: AppTheme.bodyStyle.copyWith(
+        const SizedBox(height: 16),
+        StreamBuilder<List<AppointmentModel>>(
+          stream:
+              DatabaseService(uid: user.uid).getPatientAppointments(user.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
+
+            final appointments = snapshot.data ?? [];
+
+            // Filter for upcoming appointments
+            final upcomingAppointments = appointments
+                .where((appointment) =>
+                    appointment.status != AppointmentModel.statusCancelled &&
+                    appointment.status != AppointmentModel.statusRejected &&
+                    appointment.dateTime.isAfter(
+                        DateTime.now().subtract(const Duration(minutes: 20))))
+                .toList();
+
+            // Sort by date
+            upcomingAppointments
+                .sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+            // Take only the next 3 appointments
+            final displayAppointments = upcomingAppointments.take(3).toList();
+
+            if (displayAppointments.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 48,
                         color: AppTheme.textSecondaryColor,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const AppointmentBookingScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text('Book an appointment'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: displayAppointments.length,
-            itemBuilder: (context, index) {
-              final appointment = displayAppointments[index];
-              
-              return FutureBuilder<UserModel?>(
-                future: appointment.doctorId != null
-                    ? DatabaseService(uid: appointment.doctorId!).getUserDetails(appointment.doctorId!)
-                    : Future.value(null),
-                builder: (context, snapshot) {
-                  String doctorName;
-                  if (appointment.doctorId == null) {
-                    doctorName = 'Awaiting Doctor';
-                  } else if (snapshot.connectionState == ConnectionState.waiting) {
-                    doctorName = 'Loading...';
-                  } else if (snapshot.hasError) {
-                    doctorName = 'Doctor Unavailable';
-                  } else if (snapshot.hasData) {
-                    doctorName = 'Dr. ${snapshot.data!.name}';
-                  } else {
-                    doctorName = 'Doctor Assigned';
-                  }
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: AppointmentCard(
-                      doctorName: doctorName,
-                      appointmentDate: appointment.dateTime,
-                      appointmentType: appointment.type,
-                      status: appointment.status,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AppointmentDetailsScreen(
-                              appointmentData: {
-                                'appointmentId': appointment.appointmentId,
-                                'doctorName': doctorName,
-                                'appointmentDate': appointment.dateTime,
-                                'appointmentType': appointment.type,
-                                'status': appointment.status,
-                                'department': appointment.department,
-                                'vaccinationType': appointment.vaccinationType,
-                              },
+                      const SizedBox(height: 16),
+                      Text(
+                        'No upcoming appointments',
+                        style: AppTheme.bodyStyle.copyWith(
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AppointmentBookingScreen(),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }
+                          );
+                        },
+                        child: const Text('Book an appointment'),
+                      ),
+                    ],
+                  ),
+                ),
               );
-            },
-          );
-        },
-      ),
-    ],
-  );
-}
+            }
+
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: displayAppointments.length,
+              itemBuilder: (context, index) {
+                final appointment = displayAppointments[index];
+
+                return FutureBuilder<UserModel?>(
+                    future: appointment.doctorId != null
+                        ? DatabaseService(uid: appointment.doctorId!)
+                            .getUserDetails(appointment.doctorId!)
+                        : Future.value(null),
+                    builder: (context, snapshot) {
+                      String doctorName;
+                      if (appointment.doctorId == null) {
+                        doctorName = 'Awaiting Doctor';
+                      } else if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        doctorName = 'Loading...';
+                      } else if (snapshot.hasError) {
+                        doctorName = 'Doctor Unavailable';
+                      } else if (snapshot.hasData) {
+                        doctorName = 'Dr. ${snapshot.data!.name}';
+                      } else {
+                        doctorName = 'Doctor Assigned';
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: AppointmentCard(
+                          doctorName: doctorName,
+                          appointmentDate: appointment.dateTime,
+                          appointmentType: appointment.type,
+                          status: appointment.status,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AppointmentDetailsScreen(
+                                  appointmentData: {
+                                    'appointmentId': appointment.appointmentId,
+                                    'doctorName': doctorName,
+                                    'appointmentDate': appointment.dateTime,
+                                    'appointmentType': appointment.type,
+                                    'status': appointment.status,
+                                    'department': appointment.department,
+                                    'vaccinationType':
+                                        appointment.vaccinationType,
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    });
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _buildHealthTips() {
     return Column(
