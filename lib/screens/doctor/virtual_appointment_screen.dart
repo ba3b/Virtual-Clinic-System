@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../api/firestore_service.dart';
 import '../../components/custom_app_bar.dart';
-import '../../components/prescription_form.dart';
 import '../../models/appointment_model.dart';
+import '../../models/message_model.dart';
+import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../video_call_screen.dart';
 
 class DoctorVirtualAppointmentScreen extends StatefulWidget {
   final AppointmentModel appointment;
@@ -18,179 +23,310 @@ class DoctorVirtualAppointmentScreen extends StatefulWidget {
   State<DoctorVirtualAppointmentScreen> createState() => _DoctorVirtualAppointmentScreenState();
 }
 
-class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmentScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmentScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final TextEditingController _diagnosisController = TextEditingController();
-  bool _isSubmittingPrescription = false;
-  bool _showPrescription = false;
-  bool _isMeetingActive = false;
+  final ScrollController _scrollController = ScrollController();
   
-  // Sample messages for demonstration
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'sender': 'patient',
-      'message': 'Hello doctor, I\'ve been having a headache for two days now.',
-      'time': DateTime.now().subtract(const Duration(minutes: 5)),
-    },
-    {
-      'sender': 'doctor',
-      'message': 'I see. Have you taken any medication for it?',
-      'time': DateTime.now().subtract(const Duration(minutes: 4)),
-    },
-    {
-      'sender': 'patient',
-      'message': 'Just some over-the-counter painkillers, but they didn\'t help much.',
-      'time': DateTime.now().subtract(const Duration(minutes: 2)),
-    },
-  ];
-
+  bool _isLoading = false;
+  bool _isSendingMessage = false;
+  String? _currentUserId;
+  String? _currentUserType = 'doctor';
+  String? _currentUserName;
+  String? _error;
+  UserModel? _currentUser;
+  UserModel? _patientUser;
+  Timer? _sessionTimer;
+  bool _sessionExpired = false;
+  
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _initializeChat();
+    _startSessionMonitoring();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _messageController.dispose();
-    _diagnosisController.dispose();
-    super.dispose();
-  }
+  Future<void> _initializeChat() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isNotEmpty) {
-      setState(() {
-        _messages.add({
-          'sender': 'doctor',
-          'message': _messageController.text,
-          'time': DateTime.now(),
+    try {
+      // Get current user info from Provider
+      final user = Provider.of<UserId?>(context, listen: false);
+      if (user == null) {
+        setState(() {
+          _error = 'User not logged in';
+          _isLoading = false;
         });
-        _messageController.clear();
+        return;
+      }
+
+      _currentUserId = user.uid;
+
+      // Get current user details (doctor)
+      _currentUser = await DatabaseService(uid: user.uid).getUserDetails(user.uid);
+      _currentUserType = _currentUser!.userType;
+      _currentUserName = _currentUser!.name;
+
+      // Verify this is a doctor
+      if (_currentUserType != 'doctor') {
+        setState(() {
+          _error = 'Only doctors can access this screen';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Get patient details
+      try {
+        _patientUser = await DatabaseService(uid: widget.appointment.patientId)
+            .getUserDetails(widget.appointment.patientId);
+      } catch (e) {
+        print('Error loading patient details: $e');
+        // Continue without patient details, use the name from props
+      }
+
+      // Mark messages as read when opening the chat
+      await _markMessagesAsRead();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error initializing chat: $e');
+      setState(() {
+        _error = 'Error loading chat: $e';
+        _isLoading = false;
       });
     }
   }
 
-  void _startMeeting() {
-    setState(() {
-      _isMeetingActive = true;
+  void _startSessionMonitoring() {
+    _sessionTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted && !_sessionExpired) {
+        final now = DateTime.now();
+        final sessionEndTime = widget.appointment.dateTime.add(const Duration(minutes: 20));
+        
+        if (now.isAfter(sessionEndTime)) {
+          _handleSessionExpired();
+        }
+      }
     });
   }
 
-  void _endMeeting() {
+  void _handleSessionExpired() {
+    if (_sessionExpired) return;
+    
     setState(() {
-      _isMeetingActive = false;
+      _sessionExpired = true;
     });
+    
+    _sessionTimer?.cancel();
     
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('End Consultation?'),
-        content: const Text('Would you like to save the diagnosis and proceed to prescription?'),
+        title: const Row(
+          children: [
+            Icon(Icons.access_time, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Session Expired'),
+          ],
+        ),
+        content: const Text(
+          'The virtual appointment session has ended. You will be redirected back to the appointment details.',
+        ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Go back to appointment details
             },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _showPrescription = true;
-                _tabController.animateTo(2); // Switch to diagnosis tab
-              });
-            },
-            child: const Text('Proceed'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _handleSubmitPrescription(String medication, String dosage) async {
-    setState(() {
-      _isSubmittingPrescription = true;
-    });
-    
-    // Simulate API call to save prescription
-    await Future.delayed(const Duration(seconds: 2));
-    
-    setState(() {
-      _isSubmittingPrescription = false;
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prescription submitted successfully')),
-      );
-      
-      Navigator.pop(context);
+  Future<void> _markMessagesAsRead() async {
+    if (_currentUserId != null) {
+      try {
+        await DatabaseService(uid: _currentUserId!)
+            .markAppointmentMessagesAsRead(
+                widget.appointment.appointmentId, _currentUserId!);
+      } catch (e) {
+        print('Error marking messages as read: $e');
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Virtual Appointment',
-        backgroundColor: AppTheme.primaryColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              // Show appointment info
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Appointment Info'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildInfoRow('Patient', widget.patientName),
-                      _buildInfoRow('Appointment ID', widget.appointment.appointmentId),
-                      _buildInfoRow('Status', widget.appointment.status),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
-            },
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    _sessionTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    if (_sessionExpired) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session has expired. Cannot send messages.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    if (_messageController.text.trim().isEmpty || _isSendingMessage || _currentUser == null) return;
+
+    final messageContent = _messageController.text.trim();
+    _messageController.clear();
+
+    setState(() {
+      _isSendingMessage = true;
+    });
+
+    try {
+      final message = MessageModel(
+        messageId: '', // Will be generated by Firestore
+        appointmentId: widget.appointment.appointmentId,
+        senderId: _currentUserId!,
+        senderName: 'Dr. $_currentUserName',
+        senderType: _currentUserType!,
+        content: messageContent,
+        timestamp: DateTime.now(),
+        isRead: false,
+      );
+
+      await DatabaseService(uid: _currentUserId!).sendMessage(message);
+
+      // Scroll to bottom after sending
+      _scrollToBottom();
+    } catch (e) {
+      print('Error sending message: $e');
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: $e'),
+            backgroundColor: Colors.red,
           ),
-        ],
+        );
+        // Restore the message text
+        _messageController.text = messageContent;
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingMessage = false;
+        });
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _startVideoCall() {
+    if (_sessionExpired) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session has expired. Cannot start video call.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    final appointmentData = {
+      'appointmentId': widget.appointment.appointmentId,
+      'patientName': widget.patientName,
+      'doctorName': 'Dr. $_currentUserName',
+    };
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoCallScreen(
+          appointmentData: appointmentData,
+          isAudioOnly: false,
+        ),
       ),
-      body: Column(
-        children: [
-          Container(
-            color: AppTheme.primaryColor,
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              tabs: const [
-                Tab(text: 'Video Call'),
-                Tab(text: 'Messages'),
-                Tab(text: 'Diagnosis'),
-              ],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildVideoCallTab(),
-                _buildMessagesTab(),
-                _buildDiagnosisTab(),
-              ],
-            ),
+    );
+  }
+
+  void _startAudioCall() {
+    if (_sessionExpired) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session has expired. Cannot start audio call.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    final appointmentData = {
+      'appointmentId': widget.appointment.appointmentId,
+      'patientName': widget.patientName,
+      'doctorName': 'Dr. $_currentUserName',
+    };
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoCallScreen(
+          appointmentData: appointmentData,
+          isAudioOnly: true,
+        ),
+      ),
+    );
+  }
+
+  void _showPatientInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.person, color: AppTheme.primaryColor),
+            SizedBox(width: 8),
+            Text('Patient Information'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow('Name', widget.patientName),
+            _buildInfoRow('Patient ID', widget.appointment.patientId),
+            _buildInfoRow('Appointment Type', widget.appointment.type),
+            if (widget.appointment.department != null)
+              _buildInfoRow('Department', widget.appointment.department!),
+            _buildInfoRow('Status', widget.appointment.status),
+            if (_patientUser != null) ...[
+              _buildInfoRow('Phone', _patientUser!.phoneNumber),
+              _buildInfoRow('Email', _patientUser!.email),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -199,16 +335,17 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 80,
             child: Text(
               '$label:',
-              style: AppTheme.bodyStyle.copyWith(
-                fontWeight: FontWeight.bold,
+              style: AppTheme.bodySmallStyle.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondaryColor,
               ),
             ),
           ),
@@ -223,359 +360,461 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
     );
   }
 
-  Widget _buildVideoCallTab() {
-    return Column(
-      children: [
-        Expanded(
-          child: Container(
-            color: Colors.black,
-            child: Center(
-              child: _isMeetingActive
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.videocam,
-                          size: 64,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Video call with ${widget.patientName}',
-                          style: AppTheme.headingStyle.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Call in progress...',
-                          style: AppTheme.bodyStyle.copyWith(
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.videocam_off,
-                          size: 64,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Video call not started',
-                          style: AppTheme.headingStyle.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Press the button below to start the meeting',
-                          style: AppTheme.bodyStyle.copyWith(
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: const CustomAppBar(
+          title: 'Virtual Consultation',
+          backgroundColor: AppTheme.primaryColor,
         ),
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: const CustomAppBar(
+          title: 'Virtual Consultation',
+          backgroundColor: AppTheme.primaryColor,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildCallButton(
-                icon: Icons.mic,
-                label: 'Mute',
-                color: Colors.grey,
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red,
               ),
-              _buildCallButton(
-                icon: _isMeetingActive ? Icons.call_end : Icons.call,
-                label: _isMeetingActive ? 'End' : 'Start',
-                color: _isMeetingActive ? Colors.red : Colors.green,
-                onTap: _isMeetingActive ? _endMeeting : _startMeeting,
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: AppTheme.bodyStyle.copyWith(color: Colors.red),
               ),
-              _buildCallButton(
-                icon: Icons.videocam,
-                label: 'Camera',
-                color: Colors.grey,
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _error = null;
+                  });
+                  _initializeChat();
+                },
+                child: const Text('Retry'),
               ),
             ],
           ),
         ),
-      ],
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: CustomAppBar(
+        title: 'Virtual Consultation',
+        backgroundColor: AppTheme.primaryColor,
+        actions: [
+          // Patient Info Button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: IconButton(
+              onPressed: _showPatientInfo,
+              icon: const Icon(
+                Icons.info_outline,
+                color: Colors.white,
+                size: 22,
+              ),
+              tooltip: 'Patient Information',
+            ),
+          ),
+          // Audio Call Button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: _sessionExpired 
+                  ? Colors.grey.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: IconButton(
+              onPressed: _sessionExpired ? null : _startAudioCall,
+              icon: Icon(
+                Icons.phone,
+                color: _sessionExpired ? Colors.grey : Colors.white,
+                size: 22,
+              ),
+              tooltip: _sessionExpired ? 'Session expired' : 'Start Audio Call',
+            ),
+          ),
+          // Video Call Button
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: _sessionExpired 
+                  ? Colors.grey.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: IconButton(
+              onPressed: _sessionExpired ? null : _startVideoCall,
+              icon: Icon(
+                Icons.videocam,
+                color: _sessionExpired ? Colors.grey : Colors.white,
+                size: 22,
+              ),
+              tooltip: _sessionExpired ? 'Session expired' : 'Start Video Call',
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Appointment Info Header
+          _buildAppointmentHeader(),
+          
+          // Messages List
+          Expanded(
+            child: _buildMessagesList(),
+          ),
+          
+          // Message Input
+          _buildMessageInput(),
+        ],
+      ),
     );
   }
 
-  Widget _buildCallButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildAppointmentHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _sessionExpired ? Colors.grey[100] : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: color,
+              color: AppTheme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
+            child: const Icon(
+              Icons.person,
+              color: AppTheme.primaryColor,
               size: 24,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: AppTheme.bodySmallStyle,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.patientName,
+                  style: AppTheme.subheadingStyle.copyWith(fontSize: 16),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _sessionExpired ? Colors.red : Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _sessionExpired ? 'Session Ended' : 'Online',
+                      style: AppTheme.bodySmallStyle.copyWith(
+                        color: _sessionExpired ? Colors.red : Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  widget.appointment.type.toUpperCase(),
+                  style: AppTheme.bodySmallStyle.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _sessionExpired 
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _sessionExpired ? 'EXPIRED' : 'ACTIVE',
+                  style: AppTheme.bodySmallStyle.copyWith(
+                    color: _sessionExpired ? Colors.red : Colors.green,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMessagesTab() {
-    return Column(
-      children: [
-        Expanded(
-          child: _messages.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.message_outlined,
-                        size: 64,
-                        color: AppTheme.textSecondaryColor.withOpacity(0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No messages yet',
-                        style: AppTheme.bodyStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start the conversation with your patient',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  reverse: true,
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final message = _messages[_messages.length - 1 - index];
-                    final bool isDoctor = message['sender'] == 'doctor';
-                    
-                    return Align(
-                      alignment: isDoctor ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDoctor
-                              ? AppTheme.primaryColor.withOpacity(0.1)
-                              : AppTheme.surfaceColor,
-                          borderRadius: BorderRadius.circular(16).copyWith(
-                            bottomRight: isDoctor ? const Radius.circular(0) : null,
-                            bottomLeft: isDoctor ? null : const Radius.circular(0),
-                          ),
-                          border: Border.all(
-                            color: isDoctor
-                                ? AppTheme.primaryColor.withOpacity(0.3)
-                                : AppTheme.dividerColor,
-                            width: 1,
-                          ),
-                        ),
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.75,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              message['message'],
-                              style: AppTheme.bodyStyle,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _formatTime(message['time']),
-                              style: AppTheme.bodySmallStyle.copyWith(
-                                color: AppTheme.textSecondaryColor,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 1,
-                blurRadius: 3,
-                offset: const Offset(0, -1),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      hintStyle: AppTheme.bodySmallStyle.copyWith(
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: AppTheme.backgroundColor,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: _sendMessage,
-                  borderRadius: BorderRadius.circular(24),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildMessagesList() {
+    return StreamBuilder<List<MessageModel>>(
+      stream: DatabaseService(uid: _currentUserId!)
+          .getAppointmentMessages(widget.appointment.appointmentId),
+      builder: (context, snapshot) {
+        // Only show loading indicator on initial load, not on updates
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-  Widget _buildDiagnosisTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.dividerColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+        if (snapshot.hasError) {
+          return Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Patient Diagnosis',
-                  style: AppTheme.subheadingStyle,
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red,
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _diagnosisController,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: 'Enter your diagnosis and notes here...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.dividerColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.dividerColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryColor),
-                    ),
-                  ),
+                Text(
+                  'Error loading messages: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                  style: AppTheme.bodyStyle.copyWith(color: Colors.red),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    if (_diagnosisController.text.isNotEmpty) {
-                      setState(() {
-                        _showPrescription = true;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Diagnosis saved')),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter a diagnosis'),
-                          backgroundColor: AppTheme.errorColor,
-                        ),
-                      );
-                    }
+                    setState(() {});
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Save Diagnosis'),
+                  child: const Text('Retry'),
                 ),
               ],
             ),
+          );
+        }
+
+        final messages = snapshot.data ?? [];
+
+        if (messages.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _sessionExpired 
+                      ? 'Session has ended'
+                      : 'Start consultation with ${widget.patientName}',
+                  style: AppTheme.subheadingStyle.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _sessionExpired 
+                      ? 'This consultation session has expired'
+                      : 'Send a message or start a video call',
+                  style: AppTheme.bodyStyle.copyWith(
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Mark messages as read when they're loaded
+        if (!_sessionExpired) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _markMessagesAsRead();
+            _scrollToBottom();
+          });
+        }
+
+        return ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: messages.length,
+          itemBuilder: (context, index) {
+            final message = messages[index];
+            final isCurrentUser = message.senderId == _currentUserId;
+            final showTimestamp = index == 0 ||
+                messages[index - 1].timestamp.difference(message.timestamp).inMinutes.abs() > 5;
+
+            return Column(
+              children: [
+                if (showTimestamp) _buildTimestamp(message.timestamp),
+                _buildMessageBubble(message, isCurrentUser),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTimestamp(DateTime timestamp) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(
+        _formatTimestamp(timestamp),
+        style: AppTheme.bodySmallStyle.copyWith(
+          color: Colors.grey[500],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(MessageModel message, bool isCurrentUser) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isCurrentUser) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.blue,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isCurrentUser ? AppTheme.primaryColor : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isCurrentUser ? 20 : 4),
+                  bottomRight: Radius.circular(isCurrentUser ? 4 : 20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isCurrentUser && message.senderName.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        message.senderName,
+                        style: AppTheme.bodySmallStyle.copyWith(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    message.content,
+                    style: AppTheme.bodyStyle.copyWith(
+                      color: isCurrentUser ? Colors.white : AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatMessageTime(message.timestamp),
+                        style: AppTheme.bodySmallStyle.copyWith(
+                          color: isCurrentUser 
+                              ? Colors.white.withOpacity(0.8)
+                              : Colors.grey[500],
+                          fontSize: 11,
+                        ),
+                      ),
+                      if (isCurrentUser) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          message.isRead ? Icons.done_all : Icons.done,
+                          color: Colors.white.withOpacity(0.8),
+                          size: 14,
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-          if (_showPrescription) ...[
-            const SizedBox(height: 24),
-            PrescriptionForm(
-              onSubmit: _handleSubmitPrescription,
-              isLoading: _isSubmittingPrescription,
+          if (isCurrentUser) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.local_hospital,
+                color: AppTheme.primaryColor,
+                size: 16,
+              ),
             ),
           ],
         ],
@@ -583,14 +822,100 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
     );
   }
 
-  String _formatTime(DateTime dateTime) {
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _sessionExpired ? Colors.grey[300] : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _sessionExpired ? Colors.grey[200] : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  enabled: !_sessionExpired,
+                  decoration: InputDecoration(
+                    hintText: _sessionExpired 
+                        ? 'Session expired' 
+                        : 'Type your message to ${widget.patientName}...',
+                    hintStyle: AppTheme.bodyStyle.copyWith(
+                      color: Colors.grey[500],
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  maxLines: null,
+                  textCapitalization: TextCapitalization.sentences,
+                  onSubmitted: (_) => _sendMessage(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: _sessionExpired
+                    ? Colors.grey
+                    : (_isSendingMessage 
+                        ? AppTheme.primaryColor.withOpacity(0.6)
+                        : AppTheme.primaryColor),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: _sessionExpired || _isSendingMessage ? null : _sendMessage,
+                icon: _isSendingMessage
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
-    if (dateTime.day == now.day &&
-        dateTime.month == now.month &&
-        dateTime.year == now.year) {
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == today.subtract(const Duration(days: 1))) {
+      return 'Yesterday';
     } else {
-      return '${dateTime.day}/${dateTime.month} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
+  }
+
+  String _formatMessageTime(DateTime timestamp) {
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
 }

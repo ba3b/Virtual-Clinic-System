@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:virtual_clinic_system/screens/patient/virtual_appointment_screen.dart';
 import '../../api/firestore_service.dart';
 import '../../components/custom_app_bar.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import 'dart:async';
 
 class AppointmentDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> appointmentData;
@@ -16,7 +18,8 @@ class AppointmentDetailsScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AppointmentDetailsScreen> createState() => _AppointmentDetailsScreenState();
+  State<AppointmentDetailsScreen> createState() =>
+      _AppointmentDetailsScreenState();
 }
 
 class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
@@ -24,11 +27,29 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   String? _errorMessage;
   UserModel? _doctorDetails;
   bool _isLoadingData = true;
+  Timer? _timeCheckTimer;
 
   @override
   void initState() {
     super.initState();
     _loadAdditionalData();
+    _startTimeMonitoring();
+  }
+
+  @override
+  void dispose() {
+    _timeCheckTimer?.cancel(); // Add this line
+    super.dispose();
+  }
+
+  void _startTimeMonitoring() {
+    _timeCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild and re-evaluate _canJoinVirtualAppointment()
+        });
+      }
+    });
   }
 
   Future<void> _loadAdditionalData() async {
@@ -40,7 +61,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       final doctorId = widget.appointmentData['doctorId'] as String?;
 
       if (doctorId != null) {
-        _doctorDetails = await DatabaseService(uid: doctorId).getUserDetails(doctorId);
+        _doctorDetails =
+            await DatabaseService(uid: doctorId).getUserDetails(doctorId);
       }
 
       if (mounted) {
@@ -75,22 +97,22 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       }
 
       final appointmentId = widget.appointmentData['appointmentId'] as String;
-      
+
       await DatabaseService(uid: user.uid).cancelAppointment(appointmentId);
-      
+
       setState(() {
         _isLoading = false;
       });
 
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Appointment cancelled successfully'),
           backgroundColor: Colors.green,
         ),
       );
-      
+
       Navigator.pop(context);
     } catch (e) {
       setState(() {
@@ -107,7 +129,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
   String _getAppointmentTitle() {
     final type = widget.appointmentData['appointmentType'] as String;
-    
+
     if (type == 'vaccination') {
       return 'Vaccination Appointment';
     } else if (type == 'virtual') {
@@ -119,11 +141,11 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
   Widget _buildStatusChip() {
     final status = widget.appointmentData['status'] as String;
-    
+
     late final Color color;
     late final IconData icon;
     late final String displayText;
-    
+
     switch (status) {
       case AppointmentModel.statusPending:
         color = Colors.amber;
@@ -155,7 +177,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         icon = Icons.help_outline;
         displayText = status;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -190,26 +212,28 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
   bool _canCancelAppointment() {
     final status = widget.appointmentData['status'] as String;
-    final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime;
-    
-    return status == AppointmentModel.statusPending && 
-           appointmentDate.difference(DateTime.now()).inHours > 24;
+    final appointmentDate =
+        widget.appointmentData['appointmentDate'] as DateTime;
+
+    return status == AppointmentModel.statusPending &&
+        appointmentDate.difference(DateTime.now()).inHours > 24;
   }
 
   bool _canJoinVirtualAppointment() {
     final status = widget.appointmentData['status'] as String;
     final type = widget.appointmentData['appointmentType'] as String;
-    final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime;
+    final appointmentDate =
+        widget.appointmentData['appointmentDate'] as DateTime;
     final now = DateTime.now();
-    
-    if (status != AppointmentModel.statusApproved || type != AppointmentModel.typeVirtual) {
+
+    if (status != AppointmentModel.statusApproved ||
+        type != AppointmentModel.typeVirtual) {
       return false;
     }
-    
-    // Allow joining 5 minutes before and up to 20 minutes after appointment time
+
     final startWindow = appointmentDate.subtract(const Duration(minutes: 1));
     final endWindow = appointmentDate.add(const Duration(minutes: 20));
-    
+
     return now.isAfter(startWindow) && now.isBefore(endWindow);
   }
 
@@ -251,7 +275,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         title: 'Appointment Details',
         backgroundColor: AppTheme.primaryColor,
       ),
-      body: _isLoadingData 
+      body: _isLoadingData
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
@@ -261,7 +285,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                   // Header Card
                   Card(
                     elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -322,7 +347,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                   // Appointment Info Card
                   Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -330,7 +356,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                         children: [
                           Text(
                             'Appointment Information',
-                            style: AppTheme.subheadingStyle.copyWith(fontSize: 18),
+                            style:
+                                AppTheme.subheadingStyle.copyWith(fontSize: 18),
                           ),
                           const SizedBox(height: 16),
                           _buildInfoRow(
@@ -342,21 +369,26 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                             _buildInfoRow(
                               Icons.local_hospital_outlined,
                               'Department',
-                              widget.appointmentData['department'] as String? ?? 'General',
+                              widget.appointmentData['department'] as String? ??
+                                  'General',
                             ),
                             _buildInfoRow(
                               Icons.person_outline,
                               'Doctor',
-                              _doctorDetails?.name != null 
+                              _doctorDetails?.name != null
                                   ? 'Dr. ${_doctorDetails!.name}'
-                                  : widget.appointmentData['doctorName'] as String? ?? 'Not assigned yet',
+                                  : widget.appointmentData['doctorName']
+                                          as String? ??
+                                      'Not assigned yet',
                             ),
                           ],
                           if (appointmentType == 'vaccination')
                             _buildInfoRow(
                               Icons.vaccines_outlined,
                               'Vaccination Type',
-                              widget.appointmentData['vaccinationType'] as String? ?? 'Standard Vaccination',
+                              widget.appointmentData['vaccinationType']
+                                      as String? ??
+                                  'Standard Vaccination',
                             ),
                         ],
                       ),
@@ -369,7 +401,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                   if (_canJoinVirtualAppointment())
                     Card(
                       elevation: 3,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       child: Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
@@ -385,11 +418,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () {
-                              // Navigate to virtual meeting room
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Joining virtual appointment...'),
-                                  backgroundColor: Colors.green,
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      VirtualAppointmentScreen(
+                                    appointmentData: widget.appointmentData,
+                                  ),
                                 ),
                               );
                             },
@@ -451,7 +486,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),

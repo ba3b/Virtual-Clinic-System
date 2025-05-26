@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../theme/theme.dart';
 import 'diagnosis_writing_page.dart';
 import 'virtual_appointment_screen.dart';
+import 'dart:async';
 
 class DoctorAppointmentDetailsScreen extends StatefulWidget {
   final AppointmentModel appointment;
@@ -20,24 +21,46 @@ class DoctorAppointmentDetailsScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<DoctorAppointmentDetailsScreen> createState() => _DoctorAppointmentDetailsScreenState();
+  State<DoctorAppointmentDetailsScreen> createState() =>
+      _DoctorAppointmentDetailsScreenState();
 }
 
-class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetailsScreen> {
+class _DoctorAppointmentDetailsScreenState
+    extends State<DoctorAppointmentDetailsScreen> {
   bool _isLoadingPatient = true;
   PatientModel? _patientDetail;
+  Timer? _timeCheckTimer;
 
   @override
   void initState() {
     super.initState();
     _loadPatientDetails();
+    _startTimeMonitoring(); // Add this line
+  }
+
+  @override
+  void dispose() {
+    _timeCheckTimer?.cancel(); // Add this line
+    super.dispose();
+  }
+
+  // Add this new method
+  void _startTimeMonitoring() {
+    _timeCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild and re-evaluate _canJoinVirtualMeeting()
+        });
+      }
+    });
   }
 
   Future<void> _loadPatientDetails() async {
     try {
-      final patientData = await DatabaseService(uid: widget.appointment.patientId)
-          .getUserDetails(widget.appointment.patientId);
-      
+      final patientData =
+          await DatabaseService(uid: widget.appointment.patientId)
+              .getUserDetails(widget.appointment.patientId);
+
       if (mounted) {
         setState(() {
           _patientDetail = patientData as PatientModel;
@@ -85,9 +108,10 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
   void _handleViewMedicalHistory() async {
     try {
       // Fetch from database
-      final medicalHistory = await DatabaseService(uid: widget.appointment.patientId)
-          .getPatientMedicalHistory(widget.appointment.patientId);
-      
+      final medicalHistory =
+          await DatabaseService(uid: widget.appointment.patientId)
+              .getPatientMedicalHistory(widget.appointment.patientId);
+
       if (medicalHistory.isEmpty) {
         _showEmptyMedicalHistoryDialog();
         return;
@@ -128,9 +152,10 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
                   itemBuilder: (context, index) {
                     final entry = medicalHistory[index];
                     final timestamp = entry['timestamp'];
-                    final description = entry['description'] as String? ?? 'No description';
+                    final description =
+                        entry['description'] as String? ?? 'No description';
                     final type = entry['type'] as String? ?? 'diagnosis';
-                    
+
                     DateTime? entryDate;
                     if (timestamp is Timestamp) {
                       entryDate = timestamp.toDate();
@@ -143,7 +168,7 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
                         print('Error parsing timestamp: $e');
                       }
                     }
-                    
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 1,
@@ -155,7 +180,9 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
                             Row(
                               children: [
                                 Icon(
-                                  type == 'diagnosis' ? Icons.medical_services : Icons.note_alt,
+                                  type == 'diagnosis'
+                                      ? Icons.medical_services
+                                      : Icons.note_alt,
                                   size: 16,
                                   color: AppTheme.primaryColor,
                                 ),
@@ -228,15 +255,15 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
   }
 
   bool _canWriteDiagnosis() {
-  if (widget.appointment.status.toLowerCase() != 'approved') {
-    return false;
+    if (widget.appointment.status.toLowerCase() != 'approved') {
+      return false;
+    }
+
+    final now = DateTime.now();
+    final appointmentTime = widget.appointment.dateTime;
+
+    return !now.isBefore(appointmentTime);
   }
-  
-  final now = DateTime.now();
-  final appointmentTime = widget.appointment.dateTime;
-  
-  return !now.isBefore(appointmentTime);
-}
 
   @override
   Widget build(BuildContext context) {
@@ -261,16 +288,16 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
                     ),
                     const SizedBox(height: 16),
                   ],
-            
+
                   // Appointment Info Component
                   _AppointmentInfoCard(appointment: widget.appointment),
                   const SizedBox(height: 16),
-                  
+
                   // Patient Details Component
                   if (_patientDetail != null)
                     _PatientDetailsCard(patient: _patientDetail!),
                   const SizedBox(height: 24),
-                  
+
                   // Action Buttons
                   CommonButton(
                     text: 'View Medical History',
@@ -278,7 +305,7 @@ class _DoctorAppointmentDetailsScreenState extends State<DoctorAppointmentDetail
                     backgroundColor: Colors.blue,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Only show Write Diagnosis if appointment is approved
                   if (_canWriteDiagnosis())
                     CommonButton(
@@ -385,13 +412,15 @@ class _AppointmentInfoCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _getStatusColor().withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    appointment.status[0].toUpperCase() + appointment.status.substring(1),
+                    appointment.status[0].toUpperCase() +
+                        appointment.status.substring(1),
                     style: AppTheme.bodySmallStyle.copyWith(
                       color: _getStatusColor(),
                       fontWeight: FontWeight.w600,

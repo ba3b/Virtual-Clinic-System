@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:virtual_clinic_system/constants/departments.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
+import 'package:virtual_clinic_system/models/message_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 
 class DatabaseService {
@@ -20,6 +21,8 @@ class DatabaseService {
       FirebaseFirestore.instance.collection('Prescriptions');
   final CollectionReference vaccinationRecordsCollection =
       FirebaseFirestore.instance.collection('VaccinationRecords');
+  final CollectionReference messagesCollection =
+      FirebaseFirestore.instance.collection('Messages');
 
   Future<void> createUserDocument(
       UserCredential? userCredential,
@@ -185,6 +188,103 @@ class DatabaseService {
       }
     });
   }
+
+  // ============= MESSAGING METHODS =============
+
+  // Send a message
+  Future<String> sendMessage(MessageModel message) async {
+    try {
+      DocumentReference docRef = messagesCollection.doc();
+      
+      // Create message with generated ID
+      final messageWithId = message.copyWith(messageId: docRef.id);
+      
+      await docRef.set(messageWithId.toJson());
+      
+      return docRef.id;
+    } catch (e) {
+      print('Error sending message: $e');
+      throw Exception('Failed to send message: $e');
+    }
+  }
+
+  // Get messages for a specific appointment as a stream
+  Stream<List<MessageModel>> getAppointmentMessages(String appointmentId) {
+    return messagesCollection
+        .where('appointmentId', isEqualTo: appointmentId)
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return MessageModel.fromJson(data);
+      }).toList();
+    });
+  }
+
+  // Mark a message as read
+  Future<void> markMessageAsRead(String messageId) async {
+    try {
+      await messagesCollection.doc(messageId).update({
+        'isRead': true,
+      });
+    } catch (e) {
+      print('Error marking message as read: $e');
+      throw Exception('Failed to mark message as read: $e');
+    }
+  }
+
+  // Mark all messages in an appointment as read for a specific user
+  Future<void> markAppointmentMessagesAsRead(String appointmentId, String currentUserId) async {
+    try {
+      // Get all unread messages in this appointment that are NOT sent by current user
+      QuerySnapshot unreadMessages = await messagesCollection
+          .where('appointmentId', isEqualTo: appointmentId)
+          .where('isRead', isEqualTo: false)
+          .where('senderId', isNotEqualTo: currentUserId)
+          .get();
+
+      // Update all unread messages to read
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+      
+      for (QueryDocumentSnapshot doc in unreadMessages.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      print('Error marking appointment messages as read: $e');
+      throw Exception('Failed to mark appointment messages as read: $e');
+    }
+  }
+
+  // Get unread message count for an appointment
+  Future<int> getUnreadMessageCount(String appointmentId, String currentUserId) async {
+    try {
+      QuerySnapshot unreadMessages = await messagesCollection
+          .where('appointmentId', isEqualTo: appointmentId)
+          .where('isRead', isEqualTo: false)
+          .where('senderId', isNotEqualTo: currentUserId)
+          .get();
+
+      return unreadMessages.docs.length;
+    } catch (e) {
+      print('Error getting unread message count: $e');
+      return 0;
+    }
+  }
+
+  // Delete a message (optional - for message deletion feature)
+  Future<void> deleteMessage(String messageId) async {
+    try {
+      await messagesCollection.doc(messageId).delete();
+    } catch (e) {
+      print('Error deleting message: $e');
+      throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  // ============= END MESSAGING METHODS =============
 
   Future<String> createAppointment({
     required String patientId,
