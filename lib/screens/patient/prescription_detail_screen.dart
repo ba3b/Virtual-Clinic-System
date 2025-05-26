@@ -1,127 +1,270 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
-import '../../models/prescription_model.dart';
 import '../../theme/theme.dart';
 
 class PrescriptionDetailScreen extends StatelessWidget {
-  final PrescriptionModel prescription;
-  final String doctorName;
-  
+  final Map<String, dynamic> prescriptionData;
+
   const PrescriptionDetailScreen({
     Key? key,
-    required this.prescription,
-    required this.doctorName,
+    required this.prescriptionData,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final DateTime createdAt = prescriptionData['createdAt'] as DateTime;
+    final DateTime expiryDate = createdAt.add(const Duration(days: 7));
+    final int daysUntilExpiry = expiryDate.difference(DateTime.now()).inDays;
+    final bool isExpiringSoon = daysUntilExpiry <= 2;
+    final bool isExpired = daysUntilExpiry < 0;
+
     return Scaffold(
       appBar: const CustomAppBar(
         title: 'Prescription Details',
         backgroundColor: AppTheme.primaryColor,
       ),
+      backgroundColor: AppTheme.backgroundColor,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildPrescriptionHeader(),
+            _buildPrescriptionHeader(createdAt, isExpired, isExpiringSoon,
+                daysUntilExpiry, expiryDate),
             const SizedBox(height: 24),
             _buildMedicationDetails(),
             const SizedBox(height: 24),
             _buildDoctorInfo(),
             const SizedBox(height: 24),
-            CommonButton(
-              text: 'Download PDF',
-              onPressed: () {
-                // This would download the prescription as PDF
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Download functionality will be implemented in the next phase'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-            ),
+            _buildValidityInfo(createdAt, expiryDate, isExpired, isExpiringSoon,
+                daysUntilExpiry),
+            const SizedBox(height: 24),
+            _buildImportantNotes(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPrescriptionHeader() {
+  Widget _buildPrescriptionHeader(DateTime createdAt, bool isExpired,
+      bool isExpiringSoon, int daysUntilExpiry, DateTime expiryDate) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: isExpired
+              ? [
+                  AppTheme.errorColor.withOpacity(0.1),
+                  AppTheme.errorColor.withOpacity(0.05)
+                ]
+              : isExpiringSoon
+                  ? [
+                      AppTheme.errorColor.withOpacity(0.1),
+                      AppTheme.errorColor.withOpacity(0.05)
+                    ]
+                  : [
+                      AppTheme.primaryColor.withOpacity(0.1),
+                      AppTheme.primaryColor.withOpacity(0.05)
+                    ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.primaryColor.withOpacity(0.3),
+          color: isExpired
+              ? AppTheme.errorColor.withOpacity(0.3)
+              : isExpiringSoon
+                  ? AppTheme.errorColor.withOpacity(0.3)
+                  : AppTheme.primaryColor.withOpacity(0.3),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: (isExpired
+                    ? AppTheme.errorColor
+                    : isExpiringSoon
+                        ? AppTheme.errorColor
+                        : AppTheme.primaryColor)
+                .withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.2),
+                  gradient: LinearGradient(
+                    colors: isExpired
+                        ? [
+                            AppTheme.errorColor,
+                            AppTheme.errorColor.withOpacity(0.8)
+                          ]
+                        : isExpiringSoon
+                            ? [
+                                AppTheme.errorColor,
+                                AppTheme.errorColor.withOpacity(0.8)
+                              ]
+                            : [
+                                AppTheme.primaryColor,
+                                AppTheme.primaryColor.withOpacity(0.8)
+                              ],
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isExpired
+                              ? AppTheme.errorColor
+                              : isExpiringSoon
+                                  ? AppTheme.errorColor
+                                  : AppTheme.primaryColor)
+                          .withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.medication_outlined,
-                  color: AppTheme.primaryColor,
-                  size: 28,
+                child: Icon(
+                  isExpired ? Icons.warning : Icons.medication_liquid,
+                  color: Colors.white,
+                  size: 32,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      prescription.medicationDetails,
+                      prescriptionData['medicationDetails'] ??
+                          'Unknown Medication',
                       style: AppTheme.headingStyle.copyWith(
-                        fontSize: 18,
-                        color: AppTheme.primaryColor,
+                        fontSize: 20,
+                        color: isExpired
+                            ? AppTheme.errorColor
+                            : isExpiringSoon
+                                ? AppTheme.errorColor
+                                : AppTheme.primaryColor,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Issued on ${DateFormat('MMMM d, yyyy').format(prescription.createdAt)}',
-                      style: AppTheme.bodyStyle.copyWith(
-                        color: AppTheme.textSecondaryColor,
+                    const SizedBox(height: 8),
+                    if (isExpired)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppTheme.errorColor.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 16,
+                              color: AppTheme.errorColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'EXPIRED',
+                              style: AppTheme.bodySmallStyle.copyWith(
+                                color: AppTheme.errorColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (isExpiringSoon)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppTheme.errorColor.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule,
+                              size: 16,
+                              color: AppTheme.errorColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'EXPIRES ${daysUntilExpiry == 0 ? 'TODAY' : 'IN ${daysUntilExpiry}D'}',
+                              style: AppTheme.bodySmallStyle.copyWith(
+                                color: AppTheme.errorColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppTheme.successColor.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 16,
+                              color: AppTheme.successColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'ACTIVE',
+                              style: AppTheme.bodySmallStyle.copyWith(
+                                color: AppTheme.successColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
+          const SizedBox(height: 24),
+          const Divider(height: 1, color: AppTheme.dividerColor),
           const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildInfoItem(
-                Icons.receipt_long_outlined,
-                'Prescription ID',
-                prescription.prescriptionId,
-              ),
-              _buildInfoItem(
                 Icons.calendar_today_outlined,
-                'Date',
-                DateFormat('MMM dd, yyyy').format(prescription.createdAt),
+                'Issued Date',
+                DateFormat('MMM dd, yyyy').format(createdAt),
               ),
               _buildInfoItem(
-                Icons.medical_services_outlined,
-                'Type',
-                'Medication',
+                Icons.access_time_outlined,
+                'Valid Until',
+                DateFormat('MMM dd, yyyy').format(expiryDate),
+                textColor: isExpired
+                    ? AppTheme.errorColor
+                    : isExpiringSoon
+                        ? AppTheme.errorColor
+                        : null,
               ),
             ],
           ),
@@ -130,13 +273,14 @@ class PrescriptionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String title, String value) {
+  Widget _buildInfoItem(IconData icon, String title, String value,
+      {Color? textColor}) {
     return Column(
       children: [
         Icon(
           icon,
           size: 20,
-          color: AppTheme.textSecondaryColor,
+          color: textColor ?? AppTheme.textSecondaryColor,
         ),
         const SizedBox(height: 8),
         Text(
@@ -144,13 +288,16 @@ class PrescriptionDetailScreen extends StatelessWidget {
           style: AppTheme.bodySmallStyle.copyWith(
             color: AppTheme.textSecondaryColor,
           ),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: AppTheme.bodyStyle.copyWith(
             fontWeight: FontWeight.w600,
+            color: textColor ?? AppTheme.textPrimaryColor,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -160,13 +307,13 @@ class PrescriptionDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -174,88 +321,48 @@ class PrescriptionDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Medication Details',
-            style: AppTheme.subheadingStyle,
+          Row(
+            children: [
+              Icon(
+                Icons.medication_outlined,
+                color: AppTheme.primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Medication Details',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          _buildDetailItem('Medication', prescription.medicationDetails),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          _buildDetailItem('Medication',
+              prescriptionData['medicationDetails'] ?? 'Not specified'),
+          const SizedBox(height: 20),
           Text(
             'Dosage Instructions',
             style: AppTheme.bodyStyle.copyWith(
               fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(12),
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppTheme.dividerColor),
             ),
             child: Text(
-              prescription.dosageInstructions,
-              style: AppTheme.bodyStyle,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Notes & Warnings',
-            style: AppTheme.bodyStyle,
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Take medication as prescribed. Do not discontinue without consulting your doctor.',
-                        style: AppTheme.bodyStyle.copyWith(
-                          color: Colors.amber[800],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Keep out of reach of children. Store at room temperature.',
-                        style: AppTheme.bodyStyle.copyWith(
-                          color: Colors.amber[800],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              prescriptionData['dosageInstructions'] ??
+                  'No instructions provided',
+              style: AppTheme.bodyStyle.copyWith(
+                height: 1.5,
+              ),
             ),
           ),
         ],
@@ -273,9 +380,11 @@ class PrescriptionDetailScreen extends StatelessWidget {
             label,
             style: AppTheme.bodyStyle.copyWith(
               fontWeight: FontWeight.bold,
+              color: AppTheme.textSecondaryColor,
             ),
           ),
         ),
+        const SizedBox(width: 16),
         Expanded(
           child: Text(
             value,
@@ -290,13 +399,13 @@ class PrescriptionDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -304,24 +413,48 @@ class PrescriptionDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Prescribed By',
-            style: AppTheme.subheadingStyle,
+          Row(
+            children: [
+              Icon(
+                Icons.local_hospital_outlined,
+                color: AppTheme.primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Prescribed By',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withOpacity(0.8),
+                    ],
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Center(
                   child: Icon(
                     Icons.person,
-                    color: AppTheme.primaryColor,
+                    color: Colors.white,
                     size: 30,
                   ),
                 ),
@@ -332,39 +465,146 @@ class PrescriptionDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      doctorName,
-                      style: AppTheme.bodyStyle.copyWith(
-                        fontWeight: FontWeight.bold,
+                      'Dr. ${prescriptionData['doctorName'] ?? 'Unknown Doctor'}',
+                      style: AppTheme.subheadingStyle.copyWith(
+                        fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'General Medicine',
-                      style: AppTheme.bodySmallStyle,
+                    Text(
+                      prescriptionData['doctorSpecialty'] ?? 'General Medicine',
+                      style: AppTheme.bodyStyle.copyWith(
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.successColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppTheme.successColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified,
+                            color: AppTheme.successColor,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Verified Doctor',
+                            style: AppTheme.bodySmallStyle.copyWith(
+                              color: AppTheme.successColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValidityInfo(DateTime createdAt, DateTime expiryDate,
+      bool isExpired, bool isExpiringSoon, int daysUntilExpiry) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isExpired
+            ? AppTheme.errorColor.withOpacity(0.05)
+            : isExpiringSoon
+                ? AppTheme.errorColor.withOpacity(0.05)
+                : AppTheme.successColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isExpired
+              ? AppTheme.errorColor.withOpacity(0.3)
+              : isExpiringSoon
+                  ? AppTheme.errorColor.withOpacity(0.3)
+                  : AppTheme.successColor.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isExpired ? Icons.error_outline : Icons.schedule_outlined,
+                color: isExpired
+                    ? AppTheme.errorColor
+                    : isExpiringSoon
+                        ? AppTheme.errorColor
+                        : AppTheme.successColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Prescription Validity',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: isExpired
+                      ? AppTheme.errorColor
+                      : isExpiringSoon
+                          ? AppTheme.errorColor
+                          : AppTheme.successColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Issued Date',
+                      style: AppTheme.bodySmallStyle.copyWith(
+                        color: AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '4.8',
-                          style: AppTheme.bodySmallStyle.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(120 reviews)',
-                          style: AppTheme.bodySmallStyle.copyWith(
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      DateFormat('MMMM dd, yyyy').format(createdAt),
+                      style: AppTheme.bodyStyle.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Expiry Date',
+                      style: AppTheme.bodySmallStyle.copyWith(
+                        color: AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('MMMM dd, yyyy').format(expiryDate),
+                      style: AppTheme.bodyStyle.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isExpired ? AppTheme.errorColor : null,
+                      ),
                     ),
                   ],
                 ),
@@ -372,51 +612,134 @@ class PrescriptionDetailScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              // Digital signature indicator
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Digital Signature',
-                    style: AppTheme.bodySmallStyle,
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.successColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppTheme.successColor.withOpacity(0.3),
-                      ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isExpired
+                  ? AppTheme.errorColor.withOpacity(0.1)
+                  : isExpiringSoon
+                      ? AppTheme.errorColor.withOpacity(0.1)
+                      : AppTheme.successColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isExpired
+                      ? Icons.error
+                      : isExpiringSoon
+                          ? Icons.warning
+                          : Icons.check_circle,
+                  color: isExpired
+                      ? AppTheme.errorColor
+                      : isExpiringSoon
+                          ? AppTheme.errorColor
+                          : AppTheme.successColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isExpired
+                        ? 'This prescription has expired and is no longer valid.'
+                        : isExpiringSoon
+                            ? 'This prescription expires ${daysUntilExpiry == 0 ? 'today' : 'in $daysUntilExpiry day${daysUntilExpiry == 1 ? '' : 's'}'}.'
+                            : 'This prescription is valid for ${daysUntilExpiry} more day${daysUntilExpiry == 1 ? '' : 's'}.',
+                    style: AppTheme.bodyStyle.copyWith(
+                      color: isExpired
+                          ? AppTheme.errorColor
+                          : isExpiringSoon
+                              ? AppTheme.errorColor
+                              : AppTheme.successColor,
+                      fontWeight: FontWeight.w500,
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.verified,
-                          color: AppTheme.successColor,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Verified',
-                          style: AppTheme.bodySmallStyle.copyWith(
-                            color: AppTheme.successColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ],
-              ),
-            ],
-          )
+                ),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImportantNotes() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.amber[700],
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Important Notes',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: Colors.amber[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildNoteItem(
+            Icons.warning_amber_rounded,
+            'Take medication exactly as prescribed by your doctor.',
+          ),
+          const SizedBox(height: 12),
+          _buildNoteItem(
+            Icons.access_time,
+            'Complete the full course even if you feel better.',
+          ),
+          const SizedBox(height: 12),
+          _buildNoteItem(
+            Icons.child_care,
+            'Keep out of reach of children.',
+          ),
+          const SizedBox(height: 12),
+          _buildNoteItem(
+            Icons.thermostat,
+            'Store at room temperature unless specified otherwise.',
+          ),
+          const SizedBox(height: 12),
+          _buildNoteItem(
+            Icons.phone,
+            'Contact your doctor if you experience any side effects.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoteItem(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: Colors.amber[700],
+          size: 18,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTheme.bodyStyle.copyWith(
+              color: Colors.amber[800],
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

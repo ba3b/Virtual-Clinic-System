@@ -549,7 +549,7 @@ class DatabaseService {
               DateTime dateB = DateTime.parse(timestampB);
               return dateB.compareTo(dateA);
             } catch (e) {
-              return 0; 
+              return 0;
             }
           });
 
@@ -591,6 +591,116 @@ class DatabaseService {
     } catch (e) {
       print('Error creating prescription: $e');
       throw Exception('Failed to create prescription: $e');
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> getPatientPrescriptions(String patientId) {
+    return prescriptionsCollection
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      List<Map<String, dynamic>> prescriptionsWithDoctors = [];
+
+      final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> prescriptionData =
+            doc.data() as Map<String, dynamic>;
+
+        // Parse createdAt timestamp
+        DateTime createdAt;
+        if (prescriptionData['createdAt'] != null) {
+          if (prescriptionData['createdAt'] is Timestamp) {
+            createdAt = (prescriptionData['createdAt'] as Timestamp).toDate();
+          } else {
+            createdAt =
+                DateTime.parse(prescriptionData['createdAt'].toString());
+          }
+        } else {
+          continue; // Skip if no creation date
+        }
+
+        // Only include prescriptions from the last week
+        if (createdAt.isAfter(oneWeekAgo)) {
+          try {
+            // Get doctor details
+            DocumentSnapshot doctorDoc =
+                await usersCollection.doc(prescriptionData['doctorId']).get();
+            String doctorName = 'Unknown Doctor';
+            String doctorSpecialty = 'General Medicine';
+
+            if (doctorDoc.exists) {
+              Map<String, dynamic> doctorData =
+                  doctorDoc.data() as Map<String, dynamic>;
+              doctorName = doctorData['name'] ?? 'Unknown Doctor';
+              doctorSpecialty = doctorData['specialty'] ?? 'General Medicine';
+            }
+
+            prescriptionData['doctorName'] = doctorName;
+            prescriptionData['doctorSpecialty'] = doctorSpecialty;
+            prescriptionData['createdAt'] = createdAt;
+
+            prescriptionsWithDoctors.add(prescriptionData);
+          } catch (e) {
+            print('Error getting doctor details: $e');
+            // Add prescription without doctor details
+            prescriptionData['doctorName'] = 'Unknown Doctor';
+            prescriptionData['doctorSpecialty'] = 'General Medicine';
+            prescriptionData['createdAt'] = createdAt;
+            prescriptionsWithDoctors.add(prescriptionData);
+          }
+        }
+      }
+
+      return prescriptionsWithDoctors;
+    });
+  }
+
+  Future<Map<String, dynamic>?> getPrescriptionById(
+      String prescriptionId) async {
+    try {
+      DocumentSnapshot doc =
+          await prescriptionsCollection.doc(prescriptionId).get();
+
+      if (doc.exists) {
+        Map<String, dynamic> prescriptionData =
+            doc.data() as Map<String, dynamic>;
+
+        // Get doctor details
+        DocumentSnapshot doctorDoc =
+            await usersCollection.doc(prescriptionData['doctorId']).get();
+        String doctorName = 'Unknown Doctor';
+        String doctorSpecialty = 'General Medicine';
+
+        if (doctorDoc.exists) {
+          Map<String, dynamic> doctorData =
+              doctorDoc.data() as Map<String, dynamic>;
+          doctorName = doctorData['name'] ?? 'Unknown Doctor';
+          doctorSpecialty = doctorData['specialty'] ?? 'General Medicine';
+        }
+
+        prescriptionData['doctorName'] = doctorName;
+        prescriptionData['doctorSpecialty'] = doctorSpecialty;
+
+        // Parse createdAt timestamp
+        if (prescriptionData['createdAt'] != null) {
+          if (prescriptionData['createdAt'] is Timestamp) {
+            prescriptionData['createdAt'] =
+                (prescriptionData['createdAt'] as Timestamp).toDate();
+          } else {
+            prescriptionData['createdAt'] =
+                DateTime.parse(prescriptionData['createdAt'].toString());
+          }
+        }
+
+        return prescriptionData;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error getting prescription by ID: $e');
+      throw Exception('Failed to get prescription: $e');
     }
   }
 }
