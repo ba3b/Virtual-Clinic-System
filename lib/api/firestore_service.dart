@@ -703,4 +703,34 @@ class DatabaseService {
       throw Exception('Failed to get prescription: $e');
     }
   }
+
+  Future<void> updatePatientEligibility({
+    required String patientId,
+    required List<String> eligibility,
+  }) async {
+    try {
+      await usersCollection.doc(patientId).update({
+        'eligibility': eligibility,
+      });
+    } catch (e) {
+      print('Error updating patient eligibility: $e');
+      throw Exception('Failed to update patient eligibility: $e');
+    }
+  }
+
+  Future<List<String>> getPatientEligibility(String patientId) async {
+    try {
+      DocumentSnapshot doc = await usersCollection.doc(patientId).get();
+
+      if (doc.exists) {
+        Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
+        return List<String>.from(userData['eligibility'] ?? [DepartmentConstants.generalMedicine]);
+      }
+
+      return [DepartmentConstants.generalMedicine];
+    } catch (e) {
+      print('Error getting patient eligibility: $e');
+      throw Exception('Failed to get patient eligibility: $e');
+    }
+  }
 }

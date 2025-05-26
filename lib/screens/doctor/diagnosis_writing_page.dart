@@ -5,6 +5,7 @@ import '../../components/custom_text_field.dart';
 import '../../models/appointment_model.dart';
 import '../../theme/theme.dart';
 import 'prescription_page.dart';
+import '../../components/eligibility_management_dialog.dart';
 
 class DiagnosisWritingPage extends StatefulWidget {
   final AppointmentModel appointment;
@@ -25,11 +26,62 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
   final _diagnosisController = TextEditingController();
   
   bool _isSubmitting = false;
+  List<String> _currentEligibility = [];
+  bool _loadingEligibility = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPatientEligibility();
+  }
 
   @override
   void dispose() {
     _diagnosisController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPatientEligibility() async {
+    try {
+      final eligibility = await DatabaseService(uid: widget.appointment.patientId)
+          .getPatientEligibility(widget.appointment.patientId);
+      
+      if (mounted) {
+        setState(() {
+          _currentEligibility = eligibility;
+          _loadingEligibility = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingEligibility = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading eligibility: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openEligibilityDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => EligibilityManagementDialog(
+        patientId: widget.appointment.patientId,
+        patientName: widget.patientName,
+        currentEligibility: _currentEligibility,
+      ),
+    );
+
+    if (result == true) {
+      // Reload eligibility after successful update
+      _loadPatientEligibility();
+    }
   }
 
   Future<void> _saveDiagnosis() async {
@@ -104,6 +156,10 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
             children: [
               // Patient and Appointment Info Header
               _buildPatientInfoHeader(),
+              const SizedBox(height: 24),
+
+              // Patient Eligibility Management Section
+              _buildEligibilitySection(),
               const SizedBox(height: 24),
 
               // Diagnosis Form
@@ -197,7 +253,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Write your diagnosis and observations. This will be saved to the patient\'s medical history.',
+                      'Write your diagnosis and update patient eligibility as needed. This will be saved to the patient\'s medical history.',
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: Colors.blue[800],
                       ),
@@ -206,6 +262,175 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEligibilitySection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.admin_panel_settings,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Patient Eligibility Management',
+                    style: AppTheme.subheadingStyle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            if (_loadingEligibility)
+              const Center(
+                child: CircularProgressIndicator(),
+              )
+            else ...[
+              Text(
+                'Current Department Access (${_currentEligibility.length} departments):',
+                style: AppTheme.bodyStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              if (_currentEligibility.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_outlined,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No department access assigned. Patient cannot book appointments.',
+                          style: AppTheme.bodySmallStyle.copyWith(
+                            color: Colors.orange[800],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _currentEligibility.map((department) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            department,
+                            style: AppTheme.bodySmallStyle.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lightbulb_outline,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tip: Update patient eligibility based on their condition, treatment progress, or referral needs.',
+                        style: AppTheme.bodySmallStyle.copyWith(
+                          color: Colors.green[800],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              // Full-width manage button at the bottom
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _loadingEligibility ? null : _openEligibilityDialog,
+                  icon: Icon(
+                    _loadingEligibility ? Icons.hourglass_empty : Icons.edit,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _loadingEligibility ? 'Loading Eligibility...' : 'Manage Patient Eligibility',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
