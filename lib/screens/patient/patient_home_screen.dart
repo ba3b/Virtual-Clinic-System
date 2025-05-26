@@ -5,6 +5,7 @@ import 'package:virtual_clinic_system/api/firestore_service.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/screens/patient/prescription_screen.dart';
+import 'package:virtual_clinic_system/screens/patient/vaccination_records_screen.dart';
 import '../../components/appointment_card.dart';
 import '../../components/custom_bottom_nav.dart';
 import '../../components/notification_badge.dart';
@@ -40,9 +41,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       case 1:
         return const AppointmentsScreen();
       case 2:
-        return const ProfileScreen();
-      case 3:
         return const PrescriptionsScreen();
+      case 3:
+        return const VaccinationRecordsScreen();
+      case 4:
+        return const ProfileScreen();
       default:
         return _buildHomeScreen();
     }
@@ -320,7 +323,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 iconColor: Colors.orange,
                 onTap: () {
                   setState(() {
-                    _currentIndex = 3; // Switch to prescriptions tab
+                    _currentIndex = 2; // Switch to prescriptions tab
                   });
                 },
               ),
@@ -664,14 +667,19 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             label: 'Appointments',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.list_outlined),
             activeIcon: Icon(Icons.list),
             label: 'Prescriptions',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.vaccines_outlined),
+            activeIcon: Icon(Icons.vaccines_rounded),
+            label: 'Vaccinations',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
           ),
         ],
       ),

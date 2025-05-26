@@ -45,11 +45,11 @@ class CustomBottomNav extends StatelessWidget {
           unselectedItemColor: AppTheme.textSecondaryColor,
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 10,
           ),
           unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w500,
-            fontSize: 12,
+            fontSize: 10,
           ),
           elevation: 0,
           items: items,

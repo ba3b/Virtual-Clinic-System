@@ -580,15 +580,24 @@ class _VaccinationScreenState extends State<VaccinationScreen>
 
   Future<void> _markAsCompleted(AppointmentModel appointment) async {
     try {
+      // Update appointment status to completed
       await _databaseService.updateAppointmentStatus(
         appointment.appointmentId,
         AppointmentModel.statusCompleted,
       );
 
+      // Create vaccination record
+      await _databaseService.createVaccinationRecord(
+        appointmentId: appointment.appointmentId,
+        patientId: appointment.patientId,
+        vaccineType: appointment.vaccinationType ?? 'Unknown',
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Vaccination marked as completed successfully'),
+            content: Text(
+                'Vaccination marked as completed and record created successfully'),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -597,7 +606,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error marking vaccination as completed: $e'),
+            content: Text('Error completing vaccination: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );

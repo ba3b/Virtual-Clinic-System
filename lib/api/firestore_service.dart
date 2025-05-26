@@ -18,6 +18,8 @@ class DatabaseService {
       FirebaseFirestore.instance.collection('Appointments');
   final CollectionReference prescriptionsCollection =
       FirebaseFirestore.instance.collection('Prescriptions');
+  final CollectionReference vaccinationRecordsCollection =
+      FirebaseFirestore.instance.collection('VaccinationRecords');
 
   Future<void> createUserDocument(
       UserCredential? userCredential,
@@ -724,7 +726,8 @@ class DatabaseService {
 
       if (doc.exists) {
         Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
-        return List<String>.from(userData['eligibility'] ?? [DepartmentConstants.generalMedicine]);
+        return List<String>.from(
+            userData['eligibility'] ?? [DepartmentConstants.generalMedicine]);
       }
 
       return [DepartmentConstants.generalMedicine];
@@ -732,5 +735,50 @@ class DatabaseService {
       print('Error getting patient eligibility: $e');
       throw Exception('Failed to get patient eligibility: $e');
     }
+  }
+
+  Future<String> createVaccinationRecord({
+    required String appointmentId,
+    required String patientId,
+    required String vaccineType,
+  }) async {
+    try {
+      DocumentReference docRef = vaccinationRecordsCollection.doc();
+
+      final Map<String, dynamic> vaccinationData = {
+        'vaccinationRecordId': docRef.id,
+        'appointmentId': appointmentId,
+        'patientId': patientId,
+        'vaccineType': vaccineType,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(vaccinationData);
+
+      return docRef.id;
+    } catch (e) {
+      print('Error creating vaccination record: $e');
+      throw Exception('Failed to create vaccination record: $e');
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> getPatientVaccinationRecords(
+      String patientId) {
+    return vaccinationRecordsCollection
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+        // Parse createdAt timestamp
+        if (data['createdAt'] != null && data['createdAt'] is Timestamp) {
+          data['createdAt'] = (data['createdAt'] as Timestamp).toDate();
+        }
+
+        return data;
+      }).toList();
+    });
   }
 }
