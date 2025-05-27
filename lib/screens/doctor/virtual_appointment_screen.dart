@@ -7,7 +7,7 @@ import '../../models/appointment_model.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
-import '../video_call_screen.dart';
+import '../call_screen.dart';
 
 class DoctorVirtualAppointmentScreen extends StatefulWidget {
   final AppointmentModel appointment;
@@ -255,14 +255,17 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
       'appointmentId': widget.appointment.appointmentId,
       'patientName': widget.patientName,
       'doctorName': 'Dr. $_currentUserName',
+      'dateTime': widget.appointment.dateTime,
     };
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoCallScreen(
+        builder: (context) => CallScreen(
           appointmentData: appointmentData,
           isAudioOnly: false,
+          currentUserType: 'doctor',
+          currentUserName: _currentUserName ?? 'Doctor',
         ),
       ),
     );
@@ -283,14 +286,17 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
       'appointmentId': widget.appointment.appointmentId,
       'patientName': widget.patientName,
       'doctorName': 'Dr. $_currentUserName',
+      'dateTime': widget.appointment.dateTime,
     };
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoCallScreen(
+        builder: (context) => CallScreen(
           appointmentData: appointmentData,
           isAudioOnly: true,
+          currentUserType: 'doctor',
+          currentUserName: _currentUserName ?? 'Doctor',
         ),
       ),
     );

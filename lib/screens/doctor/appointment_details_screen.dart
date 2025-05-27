@@ -35,16 +35,15 @@ class _DoctorAppointmentDetailsScreenState
   void initState() {
     super.initState();
     _loadPatientDetails();
-    _startTimeMonitoring(); // Add this line
+    _startTimeMonitoring();
   }
 
   @override
   void dispose() {
-    _timeCheckTimer?.cancel(); // Add this line
+    _timeCheckTimer?.cancel();
     super.dispose();
   }
 
-  // Add this new method
   void _startTimeMonitoring() {
     _timeCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {

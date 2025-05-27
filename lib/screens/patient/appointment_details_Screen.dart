@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:virtual_clinic_system/screens/patient/virtual_appointment_screen.dart';
+import 'virtual_appointment_screen.dart';
 import '../../api/firestore_service.dart';
 import '../../components/custom_app_bar.dart';
 import '../../models/appointment_model.dart';
@@ -38,7 +38,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
   @override
   void dispose() {
-    _timeCheckTimer?.cancel(); // Add this line
+    _timeCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -123,8 +123,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   }
 
   String _formatDateTime() {
-    final date = widget.appointmentData['appointmentDate'] as DateTime;
-    return DateFormat('EEEE, MMMM dd, yyyy \'at\' h:mm a').format(date);
+    final date = widget.appointmentData['appointmentDate'] as DateTime? ??
+        widget.appointmentData['dateTime'] as DateTime?;
+    
+    if (date != null) {
+      return DateFormat('EEEE, MMMM dd, yyyy \'at\' h:mm a').format(date);
+    }
+    return 'Date not available';
   }
 
   String _getAppointmentTitle() {
@@ -163,7 +168,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         displayText = 'Rejected';
         break;
       case AppointmentModel.statusCompleted:
-        color = Colors.green; // Changed from blue to green
+        color = Colors.green;
         icon = Icons.task_alt;
         displayText = 'Completed';
         break;
@@ -181,7 +186,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white, // White background for better contrast
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color, width: 2),
         boxShadow: [
@@ -212,8 +217,10 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
   bool _canCancelAppointment() {
     final status = widget.appointmentData['status'] as String;
-    final appointmentDate =
-        widget.appointmentData['appointmentDate'] as DateTime;
+    final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime? ??
+        widget.appointmentData['dateTime'] as DateTime?;
+
+    if (appointmentDate == null) return false;
 
     return status == AppointmentModel.statusPending &&
         appointmentDate.difference(DateTime.now()).inHours > 24;
@@ -222,8 +229,11 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   bool _canJoinVirtualAppointment() {
     final status = widget.appointmentData['status'] as String;
     final type = widget.appointmentData['appointmentType'] as String;
-    final appointmentDate =
-        widget.appointmentData['appointmentDate'] as DateTime;
+    final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime? ??
+        widget.appointmentData['dateTime'] as DateTime?;
+    
+    if (appointmentDate == null) return false;
+    
     final now = DateTime.now();
 
     if (status != AppointmentModel.statusApproved ||

@@ -6,7 +6,7 @@ import '../../components/custom_app_bar.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
-import '../video_call_screen.dart';
+import '../call_screen.dart';
 
 class VirtualAppointmentScreen extends StatefulWidget {
   final Map<String, dynamic> appointmentData;
@@ -98,12 +98,16 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
   void _startSessionMonitoring() {
     _sessionTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted && !_sessionExpired) {
-        final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime;
-        final now = DateTime.now();
-        final sessionEndTime = appointmentDate.add(const Duration(minutes: 20));
+        final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime? ??
+            widget.appointmentData['dateTime'] as DateTime?;
         
-        if (now.isAfter(sessionEndTime)) {
-          _handleSessionExpired();
+        if (appointmentDate != null) {
+          final now = DateTime.now();
+          final sessionEndTime = appointmentDate.add(const Duration(minutes: 20));
+          
+          if (now.isAfter(sessionEndTime)) {
+            _handleSessionExpired();
+          }
         }
       }
     });
@@ -249,9 +253,11 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoCallScreen(
+        builder: (context) => CallScreen(
           appointmentData: widget.appointmentData,
           isAudioOnly: false,
+          currentUserType: _currentUserType ?? 'patient',
+          currentUserName: _currentUserName ?? 'Patient',
         ),
       ),
     );
@@ -271,9 +277,11 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoCallScreen(
+        builder: (context) => CallScreen(
           appointmentData: widget.appointmentData,
           isAudioOnly: true,
+          currentUserType: _currentUserType ?? 'patient',
+          currentUserName: _currentUserName ?? 'Patient',
         ),
       ),
     );
