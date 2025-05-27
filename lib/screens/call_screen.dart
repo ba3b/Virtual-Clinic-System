@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../constants/agora_config.dart';
 import '../theme/theme.dart';
+import '../api/firestore_service.dart';
 
 enum CallState {
   connecting,
@@ -34,8 +35,7 @@ class CallScreen extends StatefulWidget {
   State<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends State<CallScreen>
-    with TickerProviderStateMixin {
+class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   RtcEngine? _engine;
   bool _isJoined = false;
   bool _isConnecting = true;
@@ -46,17 +46,23 @@ class _CallScreenState extends State<CallScreen>
   bool _isFrontCamera = true;
   bool _isRemoteVideoEnabled = true;
   bool _isRemoteUserJoined = false;
+  // ignore: unused_field
   bool _isWaitingForUser = true;
   bool _isDisposed = false;
   int? _remoteUid;
-  
+
+  // Track remote user states to prevent unnecessary notifications
+  bool? _lastRemoteAudioState;
+  bool? _lastRemoteVideoState;
+  bool _isInitialConnection = true;
+
   Timer? _controlsTimer;
   Timer? _callTimer;
   Timer? _sessionTimer;
   Timer? _autoEndTimer;
   Duration _callDuration = Duration.zero;
   bool _sessionExpired = false;
-  
+
   AnimationController? _pulseController;
   AnimationController? _connectingController;
   Animation<double>? _pulseAnimation;
@@ -67,27 +73,114 @@ class _CallScreenState extends State<CallScreen>
   CallState _callState = CallState.connecting;
   String _statusMessage = 'Connecting...';
 
+  // Database service for call state updates
+  DatabaseService? _databaseService;
+
   @override
   void initState() {
     super.initState();
+    _validateAndInitialize();
+  }
+
+  void _validateAndInitialize() {
+    // Validate required appointment data
+    final appointmentId = _getAppointmentId();
+    if (appointmentId == null || appointmentId.isEmpty) {
+      _showErrorAndExit('Invalid appointment data: Missing appointment ID');
+      return;
+    }
+
+    final currentUserId = _getCurrentUserId();
+    if (currentUserId == null || currentUserId.isEmpty) {
+      _showErrorAndExit('Invalid user data: Missing user ID');
+      return;
+    }
+
     _initializeCall();
     _setupAnimations();
     _initializeAgora();
     _startSessionMonitoring();
+    _initializeDatabase();
+  }
+
+  String? _getAppointmentId() {
+    return widget.appointmentData['appointmentId'] as String? ??
+        widget.appointmentData['id'] as String?;
+  }
+
+  String? _getCurrentUserId() {
+    if (widget.currentUserType == 'patient') {
+      return widget.appointmentData['patientId'] as String?;
+    } else {
+      return widget.appointmentData['doctorId'] as String?;
+    }
+  }
+
+  void _showErrorAndExit(String message) {
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Exit screen
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _initializeDatabase() {
+    final currentUserId = _getCurrentUserId();
+    if (currentUserId != null) {
+      _databaseService = DatabaseService(uid: currentUserId);
+      _updateCallState('calling');
+    }
+  }
+
+  Future<void> _updateCallState(String state) async {
+    if (_databaseService != null && !_isDisposed) {
+      try {
+        final appointmentId = _getAppointmentId();
+        if (appointmentId != null) {
+          await _databaseService!.updateCallState(
+            appointmentId: appointmentId,
+            callState: state,
+            callerType: widget.currentUserType,
+            callerName: widget.currentUserName,
+          );
+        }
+      } catch (e) {
+        print('Error updating call state: $e');
+      }
+    }
   }
 
   void _initializeCall() {
-    // Get participant info from appointment data
+    // Get participant info from appointment data with null safety
     if (widget.currentUserType == 'patient') {
-      _otherParticipantName = widget.appointmentData['doctorName'] as String? ?? 'Doctor';
+      _otherParticipantName =
+          widget.appointmentData['doctorName'] as String? ?? 'Doctor';
     } else {
-      _otherParticipantName = widget.appointmentData['patientName'] as String? ?? 'Patient';
+      _otherParticipantName =
+          widget.appointmentData['patientName'] as String? ?? 'Patient';
     }
-    
-    _channelName = AgoraConfig.generateChannelName(
-      widget.appointmentData['appointmentId'] as String
-    );
-    
+
+    final appointmentId = _getAppointmentId();
+    if (appointmentId != null) {
+      _channelName = AgoraConfig.generateChannelName(appointmentId);
+    } else {
+      _channelName = 'default_channel_${DateTime.now().millisecondsSinceEpoch}';
+    }
+
     if (widget.isAudioOnly) {
       _isVideoEnabled = false;
     }
@@ -114,13 +207,13 @@ class _CallScreenState extends State<CallScreen>
   void _startSessionMonitoring() {
     _sessionTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted && !_sessionExpired && !_isDisposed) {
-        final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime? ??
-            widget.appointmentData['dateTime'] as DateTime?;
-        
+        final appointmentDate = _getAppointmentDateTime();
+
         if (appointmentDate != null) {
           final now = DateTime.now();
-          final sessionEndTime = appointmentDate.add(const Duration(minutes: 20));
-          
+          final sessionEndTime =
+              appointmentDate.add(const Duration(minutes: 20));
+
           if (now.isAfter(sessionEndTime)) {
             _handleSessionExpired();
           }
@@ -129,17 +222,38 @@ class _CallScreenState extends State<CallScreen>
     });
   }
 
+  DateTime? _getAppointmentDateTime() {
+    // Try multiple possible field names for appointment date/time
+    var dateTime = widget.appointmentData['appointmentDate'];
+    if (dateTime == null) {
+      dateTime = widget.appointmentData['dateTime'];
+    }
+
+    if (dateTime is DateTime) {
+      return dateTime;
+    } else if (dateTime is String) {
+      try {
+        return DateTime.parse(dateTime);
+      } catch (e) {
+        print('Error parsing date string: $e');
+      }
+    }
+
+    return null;
+  }
+
   void _handleSessionExpired() {
     if (_sessionExpired || _isDisposed) return;
-    
+
     setState(() {
       _sessionExpired = true;
       _callState = CallState.ended;
       _statusMessage = 'Session expired';
     });
-    
+
     _sessionTimer?.cancel();
-    
+    _updateCallState('ended');
+
     if (mounted) {
       showDialog(
         context: context,
@@ -173,10 +287,15 @@ class _CallScreenState extends State<CallScreen>
     try {
       // Request permissions
       await _requestPermissions();
-      
+
       // Keep screen awake during call
       await WakelockPlus.enable();
-      
+
+      // Validate Agora configuration
+      if (AgoraConfig.appId.isEmpty) {
+        throw Exception('Agora App ID not configured');
+      }
+
       // Initialize Agora engine
       _engine = createAgoraRtcEngine();
       await _engine!.initialize(const RtcEngineContext(
@@ -195,13 +314,12 @@ class _CallScreenState extends State<CallScreen>
                 _isConnecting = false;
                 _callState = CallState.waitingForUser;
                 _statusMessage = 'Waiting for $_otherParticipantName...';
+                _isInitialConnection = true;
               });
               _connectingController?.stop();
               _startCallTimer();
               _startControlsTimer();
-              
-              // Show notification that user joined
-              _showNotification('You joined the call');
+              _updateCallState('joined');
             }
           },
           onUserJoined: (RtcConnection connection, int uid, int elapsed) {
@@ -213,44 +331,53 @@ class _CallScreenState extends State<CallScreen>
                 _isWaitingForUser = false;
                 _callState = CallState.connected;
                 _statusMessage = 'Connected';
+                _isInitialConnection = false;
               });
-              
+
               // Cancel auto-end timer if running
               _autoEndTimer?.cancel();
-              
+
+              // Update call state
+              _updateCallState('connected');
+
               // Show notification that other user joined
               _showNotification('$_otherParticipantName joined the call');
-              
+
               // Start pulse animation for audio indicator
-              if (widget.isAudioOnly && _pulseController != null && !_isDisposed) {
+              if (widget.isAudioOnly &&
+                  _pulseController != null &&
+                  !_isDisposed) {
                 _pulseController!.repeat(reverse: true);
               }
             }
           },
-          onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
+          onUserOffline: (RtcConnection connection, int uid,
+              UserOfflineReasonType reason) {
             print("Remote user $uid left channel, reason: $reason");
             if (mounted && !_isDisposed) {
               setState(() {
                 _remoteUid = null;
                 _isRemoteUserJoined = false;
                 _isWaitingForUser = true;
-                _callState = reason == UserOfflineReasonType.userOfflineDropped 
-                    ? CallState.disconnected 
+                _callState = reason == UserOfflineReasonType.userOfflineDropped
+                    ? CallState.disconnected
                     : CallState.waitingForUser;
-                _statusMessage = reason == UserOfflineReasonType.userOfflineDropped 
-                    ? 'Connection lost' 
-                    : '$_otherParticipantName left the call';
+                _statusMessage =
+                    reason == UserOfflineReasonType.userOfflineDropped
+                        ? 'Connection lost'
+                        : '$_otherParticipantName left the call';
               });
-              
+
               // Show notification that user left
-              String message = reason == UserOfflineReasonType.userOfflineDropped 
-                  ? 'Connection lost with $_otherParticipantName'
-                  : '$_otherParticipantName left the call';
+              String message =
+                  reason == UserOfflineReasonType.userOfflineDropped
+                      ? 'Connection lost with $_otherParticipantName'
+                      : '$_otherParticipantName left the call';
               _showNotification(message);
-              
+
               // Stop pulse animation
               _pulseController?.stop();
-              
+
               // Auto-end call after 30 seconds if user doesn't return
               _autoEndTimer = Timer(const Duration(seconds: 30), () {
                 if (!_isRemoteUserJoined && mounted && !_isDisposed) {
@@ -259,51 +386,80 @@ class _CallScreenState extends State<CallScreen>
               });
             }
           },
-          onRemoteVideoStateChanged: (RtcConnection connection, int uid, 
-              RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
-            if (mounted && !_isDisposed) {
-              setState(() {
-                _isRemoteVideoEnabled = state == RemoteVideoState.remoteVideoStateStarting ||
-                                     state == RemoteVideoState.remoteVideoStateDecoding;
-              });
-              
-              // Notify about video state changes
-              if (uid == _remoteUid) {
-                String message = _isRemoteVideoEnabled 
+          onRemoteVideoStateChanged: (RtcConnection connection,
+              int uid,
+              RemoteVideoState state,
+              RemoteVideoStateReason reason,
+              int elapsed) {
+            if (mounted && !_isDisposed && uid == _remoteUid) {
+              bool isVideoEnabled =
+                  state == RemoteVideoState.remoteVideoStateStarting ||
+                      state == RemoteVideoState.remoteVideoStateDecoding;
+
+              // Only show notification if state actually changed and not initial connection
+              if (_lastRemoteVideoState != null &&
+                  _lastRemoteVideoState != isVideoEnabled &&
+                  !_isInitialConnection) {
+                setState(() {
+                  _isRemoteVideoEnabled = isVideoEnabled;
+                });
+
+                String message = isVideoEnabled
                     ? '$_otherParticipantName turned on camera'
                     : '$_otherParticipantName turned off camera';
                 _showNotification(message);
+              } else {
+                setState(() {
+                  _isRemoteVideoEnabled = isVideoEnabled;
+                });
               }
+
+              _lastRemoteVideoState = isVideoEnabled;
             }
           },
-          onRemoteAudioStateChanged: (RtcConnection connection, int uid,
-              RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
+          onRemoteAudioStateChanged: (RtcConnection connection,
+              int uid,
+              RemoteAudioState state,
+              RemoteAudioStateReason reason,
+              int elapsed) {
             if (uid == _remoteUid && mounted && !_isDisposed) {
-              bool isAudioEnabled = state == RemoteAudioState.remoteAudioStateStarting ||
-                                   state == RemoteAudioState.remoteAudioStateDecoding;
-              
-              String message = isAudioEnabled 
-                  ? '$_otherParticipantName unmuted'
-                  : '$_otherParticipantName muted';
-              _showNotification(message);
+              bool isAudioEnabled =
+                  state == RemoteAudioState.remoteAudioStateStarting ||
+                      state == RemoteAudioState.remoteAudioStateDecoding;
+
+              // Only show notification if state actually changed and not initial connection
+              if (_lastRemoteAudioState != null &&
+                  _lastRemoteAudioState != isAudioEnabled &&
+                  !_isInitialConnection) {
+                String message = isAudioEnabled
+                    ? '$_otherParticipantName unmuted'
+                    : '$_otherParticipantName muted';
+                _showNotification(message);
+              }
+
+              _lastRemoteAudioState = isAudioEnabled;
             }
           },
-          onConnectionStateChanged: (RtcConnection connection, 
+          onConnectionStateChanged: (RtcConnection connection,
               ConnectionStateType state, ConnectionChangedReasonType reason) {
             print("Connection state changed: $state, reason: $reason");
-            
+
             if (mounted && !_isDisposed) {
               CallState newCallState;
               String status = '';
-              
+
               switch (state) {
                 case ConnectionStateType.connectionStateConnecting:
                   newCallState = CallState.connecting;
                   status = 'Connecting...';
                   break;
                 case ConnectionStateType.connectionStateConnected:
-                  newCallState = _isRemoteUserJoined ? CallState.connected : CallState.waitingForUser;
-                  status = _isRemoteUserJoined ? 'Connected' : 'Waiting for $_otherParticipantName...';
+                  newCallState = _isRemoteUserJoined
+                      ? CallState.connected
+                      : CallState.waitingForUser;
+                  status = _isRemoteUserJoined
+                      ? 'Connected'
+                      : 'Waiting for $_otherParticipantName...';
                   break;
                 case ConnectionStateType.connectionStateReconnecting:
                   newCallState = CallState.reconnecting;
@@ -318,7 +474,7 @@ class _CallScreenState extends State<CallScreen>
                   status = 'Connection failed';
                   break;
               }
-              
+
               setState(() {
                 _callState = newCallState;
                 _statusMessage = status;
@@ -341,15 +497,19 @@ class _CallScreenState extends State<CallScreen>
         await _engine!.disableVideo();
       }
 
-      // Join channel
-      await _engine!.joinChannel(
-        token: AgoraConfig.token ?? '',
-        channelId: _channelName,
-        uid: 0,
-        options: const ChannelMediaOptions(),
-      );
+      // Join channel with validation
+      if (_channelName.isNotEmpty) {
+        await _engine!.joinChannel(
+          token: AgoraConfig.token ?? '',
+          channelId: _channelName,
+          uid: 0,
+          options: const ChannelMediaOptions(),
+        );
 
-      _connectingController?.repeat();
+        _connectingController?.repeat();
+      } else {
+        throw Exception('Invalid channel name');
+      }
     } catch (e) {
       print("Error initializing Agora: $e");
       if (mounted && !_isDisposed) {
@@ -373,7 +533,7 @@ class _CallScreenState extends State<CallScreen>
       throw Exception('Microphone permission required');
     }
 
-    if (!widget.isAudioOnly && 
+    if (!widget.isAudioOnly &&
         permissions[Permission.camera] != PermissionStatus.granted) {
       throw Exception('Camera permission required');
     }
@@ -444,7 +604,7 @@ class _CallScreenState extends State<CallScreen>
 
   void _showAutoEndDialog() {
     if (!mounted || _isDisposed) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -504,7 +664,10 @@ class _CallScreenState extends State<CallScreen>
   }
 
   Future<void> _switchCamera() async {
-    if (!widget.isAudioOnly && _isVideoEnabled && _engine != null && !_isDisposed) {
+    if (!widget.isAudioOnly &&
+        _isVideoEnabled &&
+        _engine != null &&
+        !_isDisposed) {
       await _engine!.switchCamera();
       setState(() {
         _isFrontCamera = !_isFrontCamera;
@@ -514,17 +677,20 @@ class _CallScreenState extends State<CallScreen>
 
   Future<void> _endCall() async {
     if (_isDisposed) return;
-    
+
     HapticFeedback.lightImpact();
-    
+
     _isDisposed = true;
-    
+
+    // Update call state
+    await _updateCallState('ended');
+
     // Clean up timers first
     _callTimer?.cancel();
     _controlsTimer?.cancel();
     _sessionTimer?.cancel();
     _autoEndTimer?.cancel();
-    
+
     // Safely stop animation controllers
     try {
       _pulseController?.stop();
@@ -532,7 +698,7 @@ class _CallScreenState extends State<CallScreen>
     } catch (e) {
       print('Error stopping animations: $e');
     }
-    
+
     // Leave channel and dispose engine
     if (_engine != null) {
       try {
@@ -543,14 +709,14 @@ class _CallScreenState extends State<CallScreen>
         print('Error disposing Agora engine: $e');
       }
     }
-    
+
     // Disable wakelock
     try {
       await WakelockPlus.disable();
     } catch (e) {
       print('Error disabling wakelock: $e');
     }
-    
+
     if (mounted) {
       Navigator.pop(context);
     }
@@ -559,22 +725,25 @@ class _CallScreenState extends State<CallScreen>
   @override
   void dispose() {
     _isDisposed = true;
-    
+
     _callTimer?.cancel();
     _controlsTimer?.cancel();
     _sessionTimer?.cancel();
     _autoEndTimer?.cancel();
-    
+
     // Safely dispose animation controllers
     _pulseController?.dispose();
     _connectingController?.dispose();
-    
+
     // Clean up Agora resources
     if (_engine != null) {
       _engine!.leaveChannel();
       _engine!.release();
     }
-    
+
+    // Update call state
+    _updateCallState('ended');
+
     WakelockPlus.disable();
     super.dispose();
   }
@@ -603,10 +772,10 @@ class _CallScreenState extends State<CallScreen>
           children: [
             // Main Video Area
             _buildVideoArea(),
-            
+
             // Connecting Overlay
             if (_isConnecting) _buildConnectingOverlay(),
-            
+
             // Controls Overlay
             if (_isControlsVisible || _isConnecting) _buildControlsOverlay(),
           ],
@@ -627,17 +796,18 @@ class _CallScreenState extends State<CallScreen>
           width: double.infinity,
           height: double.infinity,
           color: Colors.grey[900],
-          child: _isRemoteUserJoined && _isRemoteVideoEnabled && _remoteUid != null
-              ? AgoraVideoView(
-                  controller: VideoViewController.remote(
-                    rtcEngine: _engine!,
-                    canvas: VideoCanvas(uid: _remoteUid),
-                    connection: RtcConnection(channelId: _channelName),
-                  ),
-                )
-              : _buildVideoPlaceholder(isRemote: true),
+          child:
+              _isRemoteUserJoined && _isRemoteVideoEnabled && _remoteUid != null
+                  ? AgoraVideoView(
+                      controller: VideoViewController.remote(
+                        rtcEngine: _engine!,
+                        canvas: VideoCanvas(uid: _remoteUid),
+                        connection: RtcConnection(channelId: _channelName),
+                      ),
+                    )
+                  : _buildVideoPlaceholder(isRemote: true),
         ),
-        
+
         // Local Video (Picture-in-Picture)
         if (_isVideoEnabled)
           Positioned(
@@ -649,7 +819,8 @@ class _CallScreenState extends State<CallScreen>
               decoration: BoxDecoration(
                 color: Colors.grey[800],
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                border:
+                    Border.all(color: Colors.white.withOpacity(0.3), width: 2),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -693,7 +864,8 @@ class _CallScreenState extends State<CallScreen>
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 3),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.3), width: 3),
             ),
             child: const Icon(
               Icons.person,
@@ -701,9 +873,9 @@ class _CallScreenState extends State<CallScreen>
               size: 60,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Participant Name
           Text(
             _otherParticipantName ?? 'Participant',
@@ -713,53 +885,30 @@ class _CallScreenState extends State<CallScreen>
               fontWeight: FontWeight.w600,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Call Status
           Text(
-            _isJoined ? (_isRemoteUserJoined ? _formatCallDuration() : _statusMessage) : 'Connecting...',
+            _isJoined
+                ? (_isRemoteUserJoined ? _formatCallDuration() : _statusMessage)
+                : 'Connecting...',
             style: TextStyle(
               color: Colors.white.withOpacity(0.8),
               fontSize: 16,
             ),
           ),
-          
-          const SizedBox(height: 16),
-          
-          // Connection status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _getStatusColor(),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _statusMessage,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-          
+
           const SizedBox(height: 40),
-          
+
           // Audio Indicator
-          if (_isJoined && !_isMuted && _isRemoteUserJoined && _pulseAnimation != null)
+          if (_isJoined &&
+              !_isMuted &&
+              _isRemoteUserJoined &&
+              _pulseAnimation != null)
             AnimatedBuilder(
               animation: _pulseAnimation!,
               builder: (context, child) {
-                if (_pulseController != null && !_isDisposed) {
-                  _pulseController!.repeat(reverse: true);
-                }
                 return Transform.scale(
                   scale: _pulseAnimation!.value,
                   child: Container(
@@ -783,8 +932,10 @@ class _CallScreenState extends State<CallScreen>
   }
 
   Widget _buildVideoPlaceholder({required bool isRemote}) {
-    String name = isRemote ? (_otherParticipantName ?? 'Participant') : widget.currentUserName;
-    
+    String name = isRemote
+        ? (_otherParticipantName ?? 'Participant')
+        : widget.currentUserName;
+
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -814,7 +965,7 @@ class _CallScreenState extends State<CallScreen>
               fontWeight: FontWeight.w500,
             ),
           ),
-          if (isRemote && !_isRemoteUserJoined) ...[
+          if (isRemote && !_isRemoteUserJoined && _isJoined) ...[
             const SizedBox(height: 8),
             Text(
               _statusMessage,
@@ -854,7 +1005,8 @@ class _CallScreenState extends State<CallScreen>
                   child: CircularProgressIndicator(
                     value: _connectingAnimation!.value,
                     strokeWidth: 3,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 );
               },
@@ -905,9 +1057,9 @@ class _CallScreenState extends State<CallScreen>
           children: [
             // Top Controls
             _buildTopControls(),
-            
+
             const Spacer(),
-            
+
             // Bottom Controls
             _buildBottomControls(),
           ],
@@ -938,13 +1090,14 @@ class _CallScreenState extends State<CallScreen>
                 ),
               ),
             ),
-            
+
             const Spacer(),
-            
+
             // Call Info
             if (_isJoined)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(20),
@@ -962,7 +1115,9 @@ class _CallScreenState extends State<CallScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _isRemoteUserJoined ? _formatCallDuration() : _statusMessage,
+                      _isRemoteUserJoined
+                          ? _formatCallDuration()
+                          : _statusMessage,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -997,29 +1152,30 @@ class _CallScreenState extends State<CallScreen>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _getStatusIcon(),
-                        color: _getStatusColor(),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _statusMessage,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
+                  if (!_isRemoteUserJoined)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _getStatusIcon(),
+                          color: _getStatusColor(),
+                          size: 16,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _statusMessage,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Control Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1030,7 +1186,7 @@ class _CallScreenState extends State<CallScreen>
                   isActive: !_isMuted,
                   onPressed: _toggleMute,
                 ),
-                
+
                 // Video Toggle (if not audio-only)
                 if (!widget.isAudioOnly)
                   _buildControlButton(
@@ -1038,7 +1194,7 @@ class _CallScreenState extends State<CallScreen>
                     isActive: _isVideoEnabled,
                     onPressed: _toggleVideo,
                   ),
-                
+
                 // End Call Button
                 _buildControlButton(
                   icon: Icons.call_end,
@@ -1046,14 +1202,14 @@ class _CallScreenState extends State<CallScreen>
                   isEndCall: true,
                   onPressed: _endCall,
                 ),
-                
+
                 // Speaker Button
                 _buildControlButton(
                   icon: _isSpeakerEnabled ? Icons.volume_up : Icons.volume_down,
                   isActive: _isSpeakerEnabled,
                   onPressed: _toggleSpeaker,
                 ),
-                
+
                 // Camera Switch (if video enabled)
                 if (!widget.isAudioOnly && _isVideoEnabled)
                   _buildControlButton(

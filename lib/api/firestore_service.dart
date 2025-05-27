@@ -195,12 +195,12 @@ class DatabaseService {
   Future<String> sendMessage(MessageModel message) async {
     try {
       DocumentReference docRef = messagesCollection.doc();
-      
+
       // Create message with generated ID
       final messageWithId = message.copyWith(messageId: docRef.id);
-      
+
       await docRef.set(messageWithId.toJson());
-      
+
       return docRef.id;
     } catch (e) {
       print('Error sending message: $e');
@@ -235,7 +235,8 @@ class DatabaseService {
   }
 
   // Mark all messages in an appointment as read for a specific user
-  Future<void> markAppointmentMessagesAsRead(String appointmentId, String currentUserId) async {
+  Future<void> markAppointmentMessagesAsRead(
+      String appointmentId, String currentUserId) async {
     try {
       // Get all unread messages in this appointment that are NOT sent by current user
       QuerySnapshot unreadMessages = await messagesCollection
@@ -246,11 +247,11 @@ class DatabaseService {
 
       // Update all unread messages to read
       WriteBatch batch = FirebaseFirestore.instance.batch();
-      
+
       for (QueryDocumentSnapshot doc in unreadMessages.docs) {
         batch.update(doc.reference, {'isRead': true});
       }
-      
+
       await batch.commit();
     } catch (e) {
       print('Error marking appointment messages as read: $e');
@@ -259,7 +260,8 @@ class DatabaseService {
   }
 
   // Get unread message count for an appointment
-  Future<int> getUnreadMessageCount(String appointmentId, String currentUserId) async {
+  Future<int> getUnreadMessageCount(
+      String appointmentId, String currentUserId) async {
     try {
       QuerySnapshot unreadMessages = await messagesCollection
           .where('appointmentId', isEqualTo: appointmentId)
@@ -880,5 +882,58 @@ class DatabaseService {
         return data;
       }).toList();
     });
+  }
+
+  Future<void> updateCallState({
+    required String appointmentId,
+    required String callState,
+    required String callerType,
+    required String callerName,
+  }) async {
+    try {
+      await appointmentsCollection.doc(appointmentId).update({
+        'callState': callState,
+        'lastCallUpdate': FieldValue.serverTimestamp(),
+        'callerType': callerType,
+        'callerName': callerName,
+      });
+    } catch (e) {
+      print('Error updating call state: $e');
+      throw Exception('Failed to update call state: $e');
+    }
+  }
+
+  // Get call state stream for an appointment
+  Stream<Map<String, dynamic>?> getCallStateStream(String appointmentId) {
+    return appointmentsCollection
+        .doc(appointmentId)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.exists) {
+        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+        return {
+          'callState': data['callState'] ?? 'idle',
+          'callerType': data['callerType'],
+          'callerName': data['callerName'],
+          'lastCallUpdate': data['lastCallUpdate'],
+        };
+      }
+      return null;
+    });
+  }
+
+  // Clear call state (reset to idle)
+  Future<void> clearCallState(String appointmentId) async {
+    try {
+      await appointmentsCollection.doc(appointmentId).update({
+        'callState': 'idle',
+        'lastCallUpdate': FieldValue.serverTimestamp(),
+        'callerType': null,
+        'callerName': null,
+      });
+    } catch (e) {
+      print('Error clearing call state: $e');
+      throw Exception('Failed to clear call state: $e');
+    }
   }
 }

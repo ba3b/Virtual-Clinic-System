@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:virtual_clinic_system/screens/call_screen.dart';
 import '../../api/firestore_service.dart';
 import '../../components/custom_app_bar.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
-import '../call_screen.dart';
+import '../call_state_mixin.dart';
 
 class VirtualAppointmentScreen extends StatefulWidget {
   final Map<String, dynamic> appointmentData;
@@ -20,7 +21,8 @@ class VirtualAppointmentScreen extends StatefulWidget {
   State<VirtualAppointmentScreen> createState() => _VirtualAppointmentScreenState();
 }
 
-class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
+class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> 
+    with CallStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -39,11 +41,39 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
   @override
   void initState() {
     super.initState();
+    _validateAppointmentData();
     _initializeChat();
     _startSessionMonitoring();
   }
 
+  void _validateAppointmentData() {
+    // Validate required appointment data
+    final appointmentId = widget.appointmentData['appointmentId'] as String?;
+    if (appointmentId == null || appointmentId.isEmpty) {
+      setState(() {
+        _error = 'Invalid appointment data: Missing appointment ID';
+      });
+      return;
+    }
+
+    // Ensure required fields exist with defaults
+    if (!widget.appointmentData.containsKey('patientId')) {
+      widget.appointmentData['patientId'] = '';
+    }
+    if (!widget.appointmentData.containsKey('doctorId')) {
+      widget.appointmentData['doctorId'] = '';
+    }
+    if (!widget.appointmentData.containsKey('patientName')) {
+      widget.appointmentData['patientName'] = 'Patient';
+    }
+    if (!widget.appointmentData.containsKey('doctorName')) {
+      widget.appointmentData['doctorName'] = 'Doctor';
+    }
+  }
+
   Future<void> _initializeChat() async {
+    if (_error != null) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -66,18 +96,35 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
       _currentUserType = _currentUser!.userType;
       _currentUserName = _currentUser!.name;
 
+      // Update appointment data with current user info
+      widget.appointmentData['patientId'] = _currentUserId;
+      widget.appointmentData['patientName'] = _currentUserName;
+
       // Get doctor details if available
       final doctorId = widget.appointmentData['doctorId'] as String?;
       if (doctorId != null && doctorId.isNotEmpty) {
         try {
           _doctorUser = await DatabaseService(uid: doctorId).getUserDetails(doctorId);
           _otherParticipantName = 'Dr. ${_doctorUser!.name}';
+          widget.appointmentData['doctorName'] = _otherParticipantName;
         } catch (e) {
           print('Error loading doctor details: $e');
           _otherParticipantName = widget.appointmentData['doctorName'] as String? ?? 'Doctor';
         }
       } else {
         _otherParticipantName = widget.appointmentData['doctorName'] as String? ?? 'Doctor';
+      }
+
+      // Initialize call state listener with validated data
+      final appointmentId = widget.appointmentData['appointmentId'] as String;
+      if (appointmentId.isNotEmpty && _currentUserId!.isNotEmpty) {
+        initializeCallStateListener(
+          appointmentId: appointmentId,
+          currentUserId: _currentUserId!,
+          currentUserType: _currentUserType!,
+          currentUserName: _currentUserName!,
+          appointmentData: widget.appointmentData,
+        );
       }
 
       // Mark messages as read when opening the chat
@@ -98,13 +145,12 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
   void _startSessionMonitoring() {
     _sessionTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted && !_sessionExpired) {
-        final appointmentDate = widget.appointmentData['appointmentDate'] as DateTime? ??
-            widget.appointmentData['dateTime'] as DateTime?;
-        
+        final appointmentDate = _getAppointmentDateTime();
+
         if (appointmentDate != null) {
           final now = DateTime.now();
           final sessionEndTime = appointmentDate.add(const Duration(minutes: 20));
-          
+
           if (now.isAfter(sessionEndTime)) {
             _handleSessionExpired();
           }
@@ -113,48 +159,71 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
     });
   }
 
+  DateTime? _getAppointmentDateTime() {
+    var dateTime = widget.appointmentData['appointmentDate'];
+    if (dateTime == null) {
+      dateTime = widget.appointmentData['dateTime'];
+    }
+    
+    if (dateTime is DateTime) {
+      return dateTime;
+    } else if (dateTime is String) {
+      try {
+        return DateTime.parse(dateTime);
+      } catch (e) {
+        print('Error parsing date string: $e');
+      }
+    }
+    
+    return null;
+  }
+
   void _handleSessionExpired() {
     if (_sessionExpired) return;
-    
+
     setState(() {
       _sessionExpired = true;
     });
-    
+
     _sessionTimer?.cancel();
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.access_time, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Session Expired'),
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.access_time, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Session Expired'),
+            ],
+          ),
+          content: const Text(
+            'Your virtual appointment session has ended. You will be redirected back to the appointment details.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Go back to appointment details
+              },
+              child: const Text('OK'),
+            ),
           ],
         ),
-        content: const Text(
-          'Your virtual appointment session has ended. You will be redirected back to the appointment details.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back to appointment details
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 
   Future<void> _markMessagesAsRead() async {
     if (_currentUserId != null) {
       try {
-        await DatabaseService(uid: _currentUserId!)
-            .markAppointmentMessagesAsRead(
-                widget.appointmentData['appointmentId'], _currentUserId!);
+        final appointmentId = widget.appointmentData['appointmentId'] as String?;
+        if (appointmentId != null) {
+          await DatabaseService(uid: _currentUserId!)
+              .markAppointmentMessagesAsRead(appointmentId, _currentUserId!);
+        }
       } catch (e) {
         print('Error marking messages as read: $e');
       }
@@ -166,6 +235,7 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _sessionTimer?.cancel();
+    disposeCallStateListener(); // Dispose the call state listener
     super.dispose();
   }
 
@@ -179,8 +249,10 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
       );
       return;
     }
-    
-    if (_messageController.text.trim().isEmpty || _isSendingMessage || _currentUser == null) return;
+
+    if (_messageController.text.trim().isEmpty ||
+        _isSendingMessage ||
+        _currentUser == null) return;
 
     final messageContent = _messageController.text.trim();
     _messageController.clear();
@@ -190,9 +262,11 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
     });
 
     try {
+      final appointmentId = widget.appointmentData['appointmentId'] as String;
+      
       final message = MessageModel(
         messageId: '', // Will be generated by Firestore
-        appointmentId: widget.appointmentData['appointmentId'],
+        appointmentId: appointmentId,
         senderId: _currentUserId!,
         senderName: _currentUserName!,
         senderType: _currentUserType!,
@@ -249,12 +323,38 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
       );
       return;
     }
+
+    // Validate appointment data before starting call
+    final appointmentId = widget.appointmentData['appointmentId'] as String?;
+    if (appointmentId == null || appointmentId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to start call: Invalid appointment data'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Ensure all required data is present
+    final enhancedAppointmentData = Map<String, dynamic>.from(widget.appointmentData);
+    enhancedAppointmentData['appointmentId'] = appointmentId;
+    enhancedAppointmentData['patientId'] = _currentUserId ?? '';
+    enhancedAppointmentData['patientName'] = _currentUserName ?? 'Patient';
+    enhancedAppointmentData['doctorName'] = _otherParticipantName ?? 'Doctor';
+    
+    // Ensure appointment date/time is properly set
+    final appointmentDateTime = _getAppointmentDateTime();
+    if (appointmentDateTime != null) {
+      enhancedAppointmentData['appointmentDate'] = appointmentDateTime;
+      enhancedAppointmentData['dateTime'] = appointmentDateTime;
+    }
     
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CallScreen(
-          appointmentData: widget.appointmentData,
+          appointmentData: enhancedAppointmentData,
           isAudioOnly: false,
           currentUserType: _currentUserType ?? 'patient',
           currentUserName: _currentUserName ?? 'Patient',
@@ -273,12 +373,38 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
       );
       return;
     }
+
+    // Validate appointment data before starting call
+    final appointmentId = widget.appointmentData['appointmentId'] as String?;
+    if (appointmentId == null || appointmentId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to start call: Invalid appointment data'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Ensure all required data is present
+    final enhancedAppointmentData = Map<String, dynamic>.from(widget.appointmentData);
+    enhancedAppointmentData['appointmentId'] = appointmentId;
+    enhancedAppointmentData['patientId'] = _currentUserId ?? '';
+    enhancedAppointmentData['patientName'] = _currentUserName ?? 'Patient';
+    enhancedAppointmentData['doctorName'] = _otherParticipantName ?? 'Doctor';
+    
+    // Ensure appointment date/time is properly set
+    final appointmentDateTime = _getAppointmentDateTime();
+    if (appointmentDateTime != null) {
+      enhancedAppointmentData['appointmentDate'] = appointmentDateTime;
+      enhancedAppointmentData['dateTime'] = appointmentDateTime;
+    }
     
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CallScreen(
-          appointmentData: widget.appointmentData,
+          appointmentData: enhancedAppointmentData,
           isAudioOnly: true,
           currentUserType: _currentUserType ?? 'patient',
           currentUserName: _currentUserName ?? 'Patient',
@@ -317,10 +443,13 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                 color: Colors.red,
               ),
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -328,6 +457,7 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                   setState(() {
                     _error = null;
                   });
+                  _validateAppointmentData();
                   _initializeChat();
                 },
                 child: const Text('Retry'),
@@ -348,7 +478,7 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: _sessionExpired 
+              color: _sessionExpired
                   ? Colors.grey.withOpacity(0.2)
                   : Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
@@ -367,7 +497,7 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
           Container(
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: _sessionExpired 
+              color: _sessionExpired
                   ? Colors.grey.withOpacity(0.2)
                   : Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
@@ -388,12 +518,12 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
         children: [
           // Appointment Info Header
           _buildAppointmentHeader(),
-          
+
           // Messages List
           Expanded(
             child: _buildMessagesList(),
           ),
-          
+
           // Message Input
           _buildMessageInput(),
         ],
@@ -424,7 +554,9 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _currentUserType == 'patient' ? Icons.local_hospital : Icons.person,
+              _currentUserType == 'patient'
+                  ? Icons.local_hospital
+                  : Icons.person,
               color: AppTheme.primaryColor,
               size: 24,
             ),
@@ -465,7 +597,7 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _sessionExpired 
+              color: _sessionExpired
                   ? Colors.red.withOpacity(0.1)
                   : AppTheme.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
@@ -484,12 +616,21 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
   }
 
   Widget _buildMessagesList() {
+    final appointmentId = widget.appointmentData['appointmentId'] as String?;
+    
+    if (appointmentId == null || _currentUserId == null) {
+      return const Center(
+        child: Text('Unable to load messages: Invalid appointment data'),
+      );
+    }
+
     return StreamBuilder<List<MessageModel>>(
       stream: DatabaseService(uid: _currentUserId!)
-          .getAppointmentMessages(widget.appointmentData['appointmentId']),
+          .getAppointmentMessages(appointmentId),
       builder: (context, snapshot) {
         // Only show loading indicator on initial load, not on updates
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -535,14 +676,16 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _sessionExpired ? 'Session has ended' : 'Start your consultation',
+                  _sessionExpired
+                      ? 'Session has ended'
+                      : 'Start your consultation',
                   style: AppTheme.subheadingStyle.copyWith(
                     color: Colors.grey[600],
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _sessionExpired 
+                  _sessionExpired
                       ? 'This consultation session has expired'
                       : 'Send a message or start a video call',
                   style: AppTheme.bodyStyle.copyWith(
@@ -570,7 +713,12 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
             final message = messages[index];
             final isCurrentUser = message.senderId == _currentUserId;
             final showTimestamp = index == 0 ||
-                messages[index - 1].timestamp.difference(message.timestamp).inMinutes.abs() > 5;
+                messages[index - 1]
+                        .timestamp
+                        .difference(message.timestamp)
+                        .inMinutes
+                        .abs() >
+                    5;
 
             return Column(
               children: [
@@ -600,7 +748,8 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isCurrentUser) ...[
@@ -612,7 +761,9 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                message.senderType == 'doctor' ? Icons.local_hospital : Icons.person,
+                message.senderType == 'doctor'
+                    ? Icons.local_hospital
+                    : Icons.person,
                 color: AppTheme.primaryColor,
                 size: 16,
               ),
@@ -658,7 +809,9 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                   Text(
                     message.content,
                     style: AppTheme.bodyStyle.copyWith(
-                      color: isCurrentUser ? Colors.white : AppTheme.textPrimaryColor,
+                      color: isCurrentUser
+                          ? Colors.white
+                          : AppTheme.textPrimaryColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -668,7 +821,7 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                       Text(
                         _formatMessageTime(message.timestamp),
                         style: AppTheme.bodySmallStyle.copyWith(
-                          color: isCurrentUser 
+                          color: isCurrentUser
                               ? Colors.white.withOpacity(0.8)
                               : Colors.grey[500],
                           fontSize: 11,
@@ -698,7 +851,9 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                _currentUserType == 'doctor' ? Icons.local_hospital : Icons.person,
+                _currentUserType == 'doctor'
+                    ? Icons.local_hospital
+                    : Icons.person,
                 color: AppTheme.primaryColor,
                 size: 16,
               ),
@@ -735,8 +890,8 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
                   controller: _messageController,
                   enabled: !_sessionExpired,
                   decoration: InputDecoration(
-                    hintText: _sessionExpired 
-                        ? 'Session expired' 
+                    hintText: _sessionExpired
+                        ? 'Session expired'
                         : 'Type your message...',
                     hintStyle: AppTheme.bodyStyle.copyWith(
                       color: Colors.grey[500],
@@ -758,13 +913,14 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
               decoration: BoxDecoration(
                 color: _sessionExpired
                     ? Colors.grey
-                    : (_isSendingMessage 
+                    : (_isSendingMessage
                         ? AppTheme.primaryColor.withOpacity(0.6)
                         : AppTheme.primaryColor),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                onPressed: _sessionExpired || _isSendingMessage ? null : _sendMessage,
+                onPressed:
+                    _sessionExpired || _isSendingMessage ? null : _sendMessage,
                 icon: _isSendingMessage
                     ? const SizedBox(
                         width: 20,
@@ -791,7 +947,8 @@ class _VirtualAppointmentScreenState extends State<VirtualAppointmentScreen> {
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final messageDate =
+        DateTime(timestamp.year, timestamp.month, timestamp.day);
 
     if (messageDate == today) {
       return 'Today';

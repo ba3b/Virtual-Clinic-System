@@ -123,31 +123,33 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
     
     _sessionTimer?.cancel();
     
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.access_time, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Session Expired'),
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.access_time, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Session Expired'),
+            ],
+          ),
+          content: const Text(
+            'The virtual appointment session has ended. You will be redirected back to the appointment details.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Go back to appointment details
+              },
+              child: const Text('OK'),
+            ),
           ],
         ),
-        content: const Text(
-          'The virtual appointment session has ended. You will be redirected back to the appointment details.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back to appointment details
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 
   Future<void> _markMessagesAsRead() async {
@@ -251,12 +253,19 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
       return;
     }
     
-    final appointmentData = {
-      'appointmentId': widget.appointment.appointmentId,
-      'patientName': widget.patientName,
-      'doctorName': 'Dr. $_currentUserName',
-      'dateTime': widget.appointment.dateTime,
-    };
+    // Create properly structured appointment data
+    final appointmentData = _createAppointmentDataForCall();
+    
+    // Validate data before starting call
+    if (!_validateCallData(appointmentData)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to start call: Invalid appointment configuration'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     Navigator.push(
       context,
@@ -282,12 +291,19 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
       return;
     }
     
-    final appointmentData = {
-      'appointmentId': widget.appointment.appointmentId,
-      'patientName': widget.patientName,
-      'doctorName': 'Dr. $_currentUserName',
-      'dateTime': widget.appointment.dateTime,
-    };
+    // Create properly structured appointment data
+    final appointmentData = _createAppointmentDataForCall();
+    
+    // Validate data before starting call
+    if (!_validateCallData(appointmentData)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to start call: Invalid appointment configuration'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     Navigator.push(
       context,
@@ -300,6 +316,45 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
         ),
       ),
     );
+  }
+
+  Map<String, dynamic> _createAppointmentDataForCall() {
+    return {
+      'appointmentId': widget.appointment.appointmentId,
+      'patientId': widget.appointment.patientId,
+      'doctorId': widget.appointment.doctorId ?? _currentUserId ?? '',
+      'patientName': widget.patientName,
+      'doctorName': 'Dr. ${_currentUserName ?? 'Doctor'}',
+      'dateTime': widget.appointment.dateTime,
+      'appointmentDate': widget.appointment.dateTime,
+      'appointmentType': widget.appointment.type,
+      'status': widget.appointment.status,
+      'department': widget.appointment.department,
+    };
+  }
+
+  bool _validateCallData(Map<String, dynamic> data) {
+    // Check required fields
+    final appointmentId = data['appointmentId'] as String?;
+    final patientName = data['patientName'] as String?;
+    final doctorName = data['doctorName'] as String?;
+    
+    if (appointmentId == null || appointmentId.isEmpty) {
+      print('Validation failed: Missing appointment ID');
+      return false;
+    }
+    
+    if (patientName == null || patientName.isEmpty) {
+      print('Validation failed: Missing patient name');
+      return false;
+    }
+    
+    if (doctorName == null || doctorName.isEmpty) {
+      print('Validation failed: Missing doctor name');
+      return false;
+    }
+    
+    return true;
   }
 
   void _showPatientInfo() {
@@ -396,10 +451,13 @@ class _DoctorVirtualAppointmentScreenState extends State<DoctorVirtualAppointmen
                 color: Colors.red,
               ),
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: AppTheme.bodyStyle.copyWith(color: Colors.red),
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
