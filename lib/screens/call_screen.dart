@@ -682,7 +682,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     _isDisposed = true;
 
-    // Update call state
     await _updateCallState('ended');
 
     // Clean up timers first
