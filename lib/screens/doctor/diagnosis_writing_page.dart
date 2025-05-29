@@ -79,7 +79,6 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
     );
 
     if (result == true) {
-      // Reload eligibility after successful update
       _loadPatientEligibility();
     }
   }
@@ -92,7 +91,6 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
     });
 
     try {
-      // Save diagnosis to medical history using the correct format
       await DatabaseService(uid: widget.appointment.patientId)
           .addDiagnosisToMedicalHistory(
         patientId: widget.appointment.patientId,
@@ -112,7 +110,6 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
           ),
         );
 
-        // Navigate to prescription page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -145,7 +142,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
         title: const Text('Write Diagnosis'),
-        automaticallyImplyLeading: false, // Remove back button
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -154,19 +151,15 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Patient and Appointment Info Header
               _buildPatientInfoHeader(),
               const SizedBox(height: 24),
 
-              // Patient Eligibility Management Section
               _buildEligibilitySection(),
               const SizedBox(height: 24),
 
-              // Diagnosis Form
               _buildDiagnosisForm(),
               const SizedBox(height: 32),
 
-              // Action Button
               _buildActionButton(),
             ],
           ),
@@ -403,7 +396,6 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
               ),
               
               const SizedBox(height: 20),
-              // Full-width manage button at the bottom
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -513,7 +505,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
 
   Widget _buildActionButton() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0), // Better alignment
+      padding: const EdgeInsets.symmetric(horizontal: 0),
       child: CommonButton(
         text: 'Continue to Prescription',
         onPressed: _isSubmitting ? null : _saveDiagnosis,

@@ -29,7 +29,10 @@ class DatabaseService {
       String fullName,
       String phoneNumber,
       String address,
-      String userType) async {
+      String userType,
+      String nationalId,
+      String gender,
+      DateTime dateOfBirth) async {
     if (userCredential != null && userCredential.user != null) {
       UserModel user = UserModel(
         userId: uid,
@@ -39,6 +42,9 @@ class DatabaseService {
         address: address,
         userType: userType,
         fcmToken: '',
+        nationalId: nationalId,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
         //TODO: Add fcmToken retrieval logic
       );
 
@@ -90,6 +96,11 @@ class DatabaseService {
             address: userData['address'] ?? '',
             medicalHistory: _parseMedicalHistory(userData['medicalHistory']),
             fcmToken: userData['fcmToken'] ?? '',
+            nationalId: userData['nationalId'] ?? '',
+            gender: userData['gender'] ?? '',
+            dateOfBirth: userData['dateOfBirth'] != null 
+                ? DateTime.parse(userData['dateOfBirth']) 
+                : DateTime.now(),
             eligibility: List<String>.from(userData['eligibility'] ??
                 [DepartmentConstants.generalMedicine]),
           );
@@ -102,6 +113,11 @@ class DatabaseService {
             address: userData['address'] ?? '',
             specialty: userData['specialty'] ?? 'General',
             fcmToken: userData['fcmToken'] ?? '',
+            nationalId: userData['nationalId'] ?? '',
+            gender: userData['gender'] ?? '',
+            dateOfBirth: userData['dateOfBirth'] != null 
+                ? DateTime.parse(userData['dateOfBirth']) 
+                : DateTime.now(),
           );
         case 'staff':
           return StaffModel(
@@ -111,6 +127,11 @@ class DatabaseService {
             phoneNumber: userData['phoneNumber'] ?? '',
             address: userData['address'] ?? '',
             fcmToken: userData['fcmToken'] ?? '',
+            nationalId: userData['nationalId'] ?? '',
+            gender: userData['gender'] ?? '',
+            dateOfBirth: userData['dateOfBirth'] != null 
+                ? DateTime.parse(userData['dateOfBirth']) 
+                : DateTime.now(),
           );
         default:
           return UserModel.fromJson(userData);
@@ -158,6 +179,11 @@ class DatabaseService {
               address: userData['address'] ?? '',
               medicalHistory: userData['medicalHistory'],
               fcmToken: userData['fcmToken'] ?? '',
+              nationalId: userData['nationalId'] ?? '',
+              gender: userData['gender'] ?? '',
+              dateOfBirth: userData['dateOfBirth'] != null 
+                  ? DateTime.parse(userData['dateOfBirth']) 
+                  : DateTime.now(),
               eligibility: List<String>.from(userData['eligibility'] ??
                   [DepartmentConstants.generalMedicine]),
             );
@@ -170,6 +196,11 @@ class DatabaseService {
               address: userData['address'] ?? '',
               specialty: userData['specialty'] ?? 'General',
               fcmToken: userData['fcmToken'] ?? '',
+              nationalId: userData['nationalId'] ?? '',
+              gender: userData['gender'] ?? '',
+              dateOfBirth: userData['dateOfBirth'] != null 
+                  ? DateTime.parse(userData['dateOfBirth']) 
+                  : DateTime.now(),
             );
           case 'staff':
             return StaffModel(
@@ -179,6 +210,11 @@ class DatabaseService {
               phoneNumber: userData['phoneNumber'] ?? '',
               address: userData['address'] ?? '',
               fcmToken: userData['fcmToken'] ?? '',
+              nationalId: userData['nationalId'] ?? '',
+              gender: userData['gender'] ?? '',
+              dateOfBirth: userData['dateOfBirth'] != null 
+                  ? DateTime.parse(userData['dateOfBirth']) 
+                  : DateTime.now(),
             );
           default:
             return UserModel.fromJson(userData);
@@ -551,6 +587,11 @@ class DatabaseService {
           address: data['address'] ?? '',
           specialty: data['specialty'] ?? '',
           fcmToken: data['fcmToken'] ?? '',
+          nationalId: data['nationalId'] ?? '',
+          gender: data['gender'] ?? '',
+          dateOfBirth: data['dateOfBirth'] != null 
+              ? DateTime.parse(data['dateOfBirth']) 
+              : DateTime.now(),
         );
       }).toList();
     } catch (e) {
@@ -575,6 +616,11 @@ class DatabaseService {
           address: data['address'] ?? '',
           specialty: data['specialty'] ?? '',
           fcmToken: data['fcmToken'] ?? '',
+          nationalId: data['nationalId'] ?? '',
+          gender: data['gender'] ?? '',
+          dateOfBirth: data['dateOfBirth'] != null 
+              ? DateTime.parse(data['dateOfBirth']) 
+              : DateTime.now(),
         );
       }).toList();
     } catch (e) {
@@ -922,7 +968,6 @@ class DatabaseService {
     });
   }
 
-  // Clear call state (reset to idle)
   Future<void> clearCallState(String appointmentId) async {
     try {
       await appointmentsCollection.doc(appointmentId).update({

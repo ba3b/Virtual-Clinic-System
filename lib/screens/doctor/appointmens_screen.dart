@@ -33,11 +33,9 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
     super.dispose();
   }
 
-  // Only fetch names for appointments we haven't processed yet
   void _checkForNewAppointments(List<AppointmentModel> appointments) {
     if (_isLoading) return;
     
-    // Create a list of appointment IDs we haven't processed yet
     final List<AppointmentModel> newAppointments = appointments.where((appointment) {
       return !_processedAppointmentIds.contains(appointment.appointmentId) && 
              !_patientNames.containsKey(appointment.patientId);
@@ -63,7 +61,6 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
     List<String> processedIds = List.from(_processedAppointmentIds);
     
     for (var appointment in appointments) {
-      // Mark this appointment as processed regardless of success or failure
       processedIds.add(appointment.appointmentId);
       
       if (!updatedNames.containsKey(appointment.patientId)) {
@@ -160,10 +157,8 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
 
                 final List<AppointmentModel> allAppointments = snapshot.data ?? [];
                 
-                // Check for new appointments that need patient names fetched
                 _checkForNewAppointments(allAppointments);
                 
-                // Filter appointments
                 final List<AppointmentModel> upcomingAppointments = [];
                 final List<AppointmentModel> completedAppointments = [];
                 
@@ -178,7 +173,6 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
                   }
                 }
                 
-                // Sort appointments by date and time (most recent first for completed, earliest first for upcoming)
                 upcomingAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
                 completedAppointments.sort((a, b) => b.dateTime.compareTo(a.dateTime));
                 

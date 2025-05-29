@@ -291,7 +291,6 @@ class DoctorProfileScreen extends StatelessWidget {
           Icons.edit_outlined,
           Colors.blue,
           () {
-            // Navigate to edit profile screen
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Edit Profile feature will be implemented next')),
             );
@@ -303,7 +302,6 @@ class DoctorProfileScreen extends StatelessWidget {
           Icons.lock_outline,
           Colors.orange,
           () {
-            // Navigate to change password screen
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Change Password feature will be implemented next')),
             );
@@ -315,7 +313,6 @@ class DoctorProfileScreen extends StatelessWidget {
           Icons.notifications_outlined,
           Colors.purple,
           () {
-            // Navigate to notifications settings screen
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Notifications Settings feature will be implemented next')),
             );
@@ -327,7 +324,6 @@ class DoctorProfileScreen extends StatelessWidget {
           Icons.help_outline,
           Colors.green,
           () {
-            // Navigate to help & support screen
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Help & Support feature will be implemented next')),
             );

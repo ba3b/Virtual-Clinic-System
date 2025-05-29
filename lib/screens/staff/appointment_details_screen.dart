@@ -65,8 +65,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
   Widget _buildAppointmentStatusCard() {
     IconData appointmentIcon;
     Color statusColor;
-    
-    // Set icon based on appointment type
+
     switch (_appointment.type.toLowerCase()) {
       case 'virtual':
         appointmentIcon = Icons.videocam_rounded;
@@ -80,8 +79,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
       default:
         appointmentIcon = Icons.calendar_today_rounded;
     }
-    
-    // Set color based on appointment status
+
     switch (_appointment.status.toLowerCase()) {
       case 'pending':
         statusColor = Colors.orange;
@@ -246,8 +244,8 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
           _buildInfoRow('Name', widget.patientName),
           _buildInfoRow('Patient ID', _appointment.patientId),
           _buildInfoRow('Appointment Type', _appointment.type),
-          _buildInfoRow('Contact', '+966 50 123 4567'), // Sample data
-          _buildInfoRow('Email', 'patient@example.com'), // Sample data
+          _buildInfoRow('Contact', '+966 50 123 4567'),
+          _buildInfoRow('Email', 'patient@example.com'),
         ],
       ),
     );
@@ -332,7 +330,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                         ),
                       ),
                       Text(
-                        'General Medicine', // Sample data
+                        'General Medicine',
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -352,7 +350,6 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
             ),
           ] else ...[
             if (_appointment.type.toLowerCase() != 'vaccination') ...[
-              // For non-vaccination appointments, show assign doctor button
               Row(
                 children: [
                   const Icon(
@@ -377,7 +374,6 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                 ],
               ),
             ] else ...[
-              // For vaccination appointments, no doctor assignment needed
               Row(
                 children: [
                   const Icon(
@@ -404,10 +400,9 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
 
   Widget _buildActionButtons() {
     if (_appointment.status.toLowerCase() != 'pending') {
-      // No actions for non-pending appointments
       return Container();
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,7 +420,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                 backgroundColor: AppTheme.successColor,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(height: 16),
             Expanded(
               child: CommonButton(
                 text: 'Edit Details',
@@ -451,12 +446,11 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
       builder: (context) => DoctorSelectorDialog(
         doctors: widget.availableDoctors,
         onDoctorSelected: (doctor) {
-          // Update the appointment with the selected doctor
           setState(() {
             _appointment = _appointment.copyWith(doctorId: doctor.userId);
             _doctorName = doctor.name;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Doctor "${doctor.name}" assigned successfully'),
@@ -470,7 +464,6 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
 
   void _verifyAppointment() {
     if (_appointment.type.toLowerCase() != 'vaccination' && _appointment.doctorId == null) {
-      // For non-vaccination appointments, a doctor must be assigned
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please assign a doctor before verifying the appointment'),
@@ -479,8 +472,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
       );
       return;
     }
-    
-    // Show confirmation dialog
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -498,20 +490,18 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              
-              // Update the appointment status
+
               setState(() {
                 _appointment = _appointment.copyWith(status: 'upcoming');
               });
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Appointment verified successfully'),
                   backgroundColor: AppTheme.successColor,
                 ),
               );
-              
-              // Go back to previous screen
+
               Navigator.pop(context, _appointment);
             },
             style: TextButton.styleFrom(
@@ -530,11 +520,10 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
       builder: (context) => AppointmentEditDialog(
         appointment: _appointment,
         onAppointmentUpdated: (newDateTime) {
-          // Update the appointment with the new date and time
           setState(() {
             _appointment = _appointment.copyWith(dateTime: newDateTime);
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Appointment updated successfully'),
@@ -564,10 +553,9 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              
-              // Return to previous screen with delete flag
+
               Navigator.pop(context, 'delete');
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Appointment deleted successfully'),

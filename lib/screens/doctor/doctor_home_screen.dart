@@ -39,11 +39,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     });
   }
 
-  // Only fetch names for appointments we haven't processed yet
   void _checkForNewAppointments(List<AppointmentModel> appointments) {
     if (_isLoading) return;
 
-    // Create a list of appointment IDs we haven't processed yet
     final List<AppointmentModel> newAppointments =
         appointments.where((appointment) {
       return !_processedAppointmentIds.contains(appointment.appointmentId) &&
@@ -70,7 +68,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     List<String> processedIds = List.from(_processedAppointmentIds);
 
     for (var appointment in appointments) {
-      // Mark this appointment as processed regardless of success or failure
       processedIds.add(appointment.appointmentId);
 
       if (!updatedNames.containsKey(appointment.patientId)) {
@@ -250,7 +247,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               }
             }
 
-            // Sort appointments by date and time
             todayAppointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
             upcomingAppointments
                 .sort((a, b) => a.dateTime.compareTo(b.dateTime));

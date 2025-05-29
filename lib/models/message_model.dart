@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MessageModel {
   final String messageId;
-  final String appointmentId; // Foreign key to appointment
+  final String appointmentId;
   final String senderId;
   final String senderName;
-  final String senderType; // 'patient' or 'doctor'
+  final String senderType; 
   final String content;
   final DateTime timestamp;
   final bool isRead;

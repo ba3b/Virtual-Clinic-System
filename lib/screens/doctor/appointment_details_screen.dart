@@ -48,7 +48,6 @@ class _DoctorAppointmentDetailsScreenState
     _timeCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
         setState(() {
-          // This will trigger a rebuild and re-evaluate _canJoinVirtualMeeting()
         });
       }
     });
@@ -88,7 +87,6 @@ class _DoctorAppointmentDetailsScreenState
     final appointmentTime = widget.appointment.dateTime;
     final windowEnd = appointmentTime.add(const Duration(minutes: 20));
     
-    // Allow joining from appointment time to 20 minutes after
     return !now.isBefore(appointmentTime) && now.isBefore(windowEnd);
   }
 
@@ -106,7 +104,6 @@ class _DoctorAppointmentDetailsScreenState
 
   void _handleViewMedicalHistory() async {
     try {
-      // Fetch from database
       final medicalHistory =
           await DatabaseService(uid: widget.appointment.patientId)
               .getPatientMedicalHistory(widget.appointment.patientId);
@@ -278,7 +275,6 @@ class _DoctorAppointmentDetailsScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Join Virtual Meeting Button (if applicable)
                   if (_canJoinVirtualMeeting()) ...[
                     CommonButton(
                       text: 'Join Virtual Meeting',
@@ -288,16 +284,13 @@ class _DoctorAppointmentDetailsScreenState
                     const SizedBox(height: 16),
                   ],
 
-                  // Appointment Info Component
                   _AppointmentInfoCard(appointment: widget.appointment),
                   const SizedBox(height: 16),
 
-                  // Patient Details Component
                   if (_patientDetail != null)
                     _PatientDetailsCard(patient: _patientDetail!),
                   const SizedBox(height: 24),
 
-                  // Action Buttons
                   CommonButton(
                     text: 'View Medical History',
                     onPressed: _handleViewMedicalHistory,
@@ -305,7 +298,6 @@ class _DoctorAppointmentDetailsScreenState
                   ),
                   const SizedBox(height: 12),
 
-                  // Only show Write Diagnosis if appointment is approved
                   if (_canWriteDiagnosis())
                     CommonButton(
                       text: 'Write Diagnosis',
@@ -543,10 +535,10 @@ class _PatientDetailsCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildDetailItem('Age', '25 years'), // Placeholder
+                  child: _buildDetailItem('Age', '25 years'), 
                 ),
                 Expanded(
-                  child: _buildDetailItem('Gender', 'Male'), // Placeholder
+                  child: _buildDetailItem('Gender', 'Male'),
                 ),
               ],
             ),

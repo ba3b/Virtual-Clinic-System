@@ -38,7 +38,6 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
     super.initState();
     _selectedDate = widget.initialDate;
 
-    // Calculate the difference in months between firstDate and initialDate
     _currentMonthPage = (widget.initialDate.year - widget.firstDate.year) * 12 +
         widget.initialDate.month -
         widget.firstDate.month;
@@ -66,12 +65,10 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
   }
 
   bool _isInRange(DateTime date) {
-    // Check if date is within the allowed date range
     if (date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate)) {
       return false;
     }
 
-    // Check if date is not a weekend (Friday=5, Saturday=6)
     if (date.weekday == 5 || date.weekday == 6) {
       return false;
     }
@@ -105,7 +102,6 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
               });
             },
             itemBuilder: (context, index) {
-              // Calculate the month and year for this page
               final DateTime firstDateOfMonth = DateTime(
                 widget.firstDate.year +
                     (widget.firstDate.month + index - 1) ~/ 12,
@@ -164,7 +160,6 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // Sunday
         SizedBox(
           width: 40,
           child: Text(
@@ -176,10 +171,9 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
             textAlign: TextAlign.center,
           ),
         ),
-        // Monday to Thursday
         ...List.generate(4, (index) {
           final int weekday =
-              index + 1; // Monday=1, Tuesday=2, Wednesday=3, Thursday=4
+              index + 1; 
           return SizedBox(
             width: 40,
             child: Text(
@@ -192,7 +186,6 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
             ),
           );
         }),
-        // Empty spaces for Friday and Saturday (to maintain grid alignment)
         const SizedBox(width: 40),
         const SizedBox(width: 40),
       ],
@@ -200,22 +193,19 @@ class _DatePickerComponentState extends State<DatePickerComponent> {
   }
 
   Widget _buildMonthCalendar(DateTime firstDayOfMonth) {
-    // Determine the first date to display (start from Sunday of the week)
     final int firstWeekday = firstDayOfMonth.weekday;
     final int daysToSubtract = firstWeekday == 7
         ? 0
-        : firstWeekday; // If Sunday, no subtraction needed
+        : firstWeekday; 
     final DateTime firstDisplayedDate =
         firstDayOfMonth.subtract(Duration(days: daysToSubtract));
 
-    // Determine the last date of the month
     final DateTime lastDayOfMonth = DateTime(
       firstDayOfMonth.year,
       firstDayOfMonth.month + 1,
       0,
     );
 
-    // Determine how many weeks to display
     final int daysToShow =
         (lastDayOfMonth.difference(firstDisplayedDate).inDays + 1);
     final int weeksToShow = (daysToShow / 7).ceil();

@@ -46,7 +46,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     _timeCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
         setState(() {
-          // This will trigger a rebuild and re-evaluate _canJoinVirtualAppointment()
         });
       }
     });
@@ -292,7 +291,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Card
                   Card(
                     elevation: 4,
                     shape: RoundedRectangleBorder(
@@ -354,7 +352,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Appointment Info Card
                   Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
@@ -407,7 +404,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Virtual Join Button (if applicable)
                   if (_canJoinVirtualAppointment())
                     Card(
                       elevation: 3,
@@ -467,7 +463,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
                   if (_canJoinVirtualAppointment()) const SizedBox(height: 20),
 
-                  // Error Message
                   if (_errorMessage != null)
                     Container(
                       width: double.infinity,
@@ -485,7 +480,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                       ),
                     ),
 
-                  // Action Buttons
                   if (_canCancelAppointment())
                     SizedBox(
                       width: double.infinity,

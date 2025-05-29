@@ -57,7 +57,6 @@ class AppointmentModel {
     );
   }
   
-  // Copy with method for easy updating
   AppointmentModel copyWith({
     String? appointmentId,
     String? patientId,

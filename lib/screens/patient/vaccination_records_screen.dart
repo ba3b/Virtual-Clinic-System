@@ -43,7 +43,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Background decorative elements
                     Positioned(
                       right: -50,
                       top: -50,
@@ -80,7 +79,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Floating virus particles
                     Positioned(
                       left: 60,
                       top: 80,
@@ -117,7 +115,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Main content - positioned to avoid conflicts
                     Positioned(
                       left: 24,
                       right: 24,
@@ -207,7 +204,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Large decorative icon
                           Container(
                             width: 80,
                             height: 80,
@@ -244,11 +240,9 @@ class VaccinationRecordsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              // Remove the conflicting title and use a cleaner approach
               title: null,
               titlePadding: EdgeInsets.zero,
             ),
-            // Add a simple title for the collapsed state
             title: Text(
               'Vaccinations',
               style: TextStyle(
@@ -366,7 +360,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
     final String vaccineType = vaccination['vaccineType'] ?? 'Unknown Vaccine';
     final DateTime? createdAt = vaccination['createdAt'];
 
-    // Color palette for different vaccines
     final List<LinearGradient> gradients = [
       LinearGradient(
         colors: [Colors.blue.shade400, Colors.blue.shade600],
@@ -397,7 +390,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
 
     final gradient = gradients[index % gradients.length];
 
-    // Vaccine emoji mapping
     final Map<String, String> vaccineEmojis = {
       'COVID-19': '🦠',
       'Influenza': '❄️',
@@ -441,7 +433,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Background pattern
           Positioned(
             right: -20,
             top: -20,
@@ -470,7 +461,6 @@ class VaccinationRecordsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                // Vaccine emoji in a circle
                 Container(
                   width: 60,
                   height: 60,

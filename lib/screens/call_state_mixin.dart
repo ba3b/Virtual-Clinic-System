@@ -9,7 +9,7 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
   String? _lastCallState;
   DatabaseService? _databaseService;
   String? _currentCallId;
-  bool _isCurrentUserCalling = false; // Track if current user is the one calling
+  bool _isCurrentUserCalling = false; 
 
   void initializeCallStateListener({
     required String appointmentId,
@@ -18,7 +18,6 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
     required String currentUserName,
     required Map<String, dynamic> appointmentData,
   }) {
-    // Validate required parameters
     if (appointmentId.isEmpty ||
         currentUserId.isEmpty ||
         currentUserType.isEmpty ||
@@ -29,7 +28,6 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
 
     _databaseService = DatabaseService(uid: currentUserId);
 
-    // Listen to call state changes
     _callStateSubscription = _databaseService!
         .getCallStateStream(appointmentId)
         .listen((callStateData) {
@@ -38,19 +36,16 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
         final callerType = callStateData['callerType'] as String?;
         final callerName = callStateData['callerName'] as String?;
 
-        // Generate a unique call ID based on caller info and timestamp
         final currentCallId =
             '${callerType}_${callerName}_${callStateData['lastCallUpdate']?.toString() ?? ''}';
 
-        // Check if the current user is the one who initiated the call
         final isCurrentUserTheCaller = callerType == currentUserType && 
                                       callerName == currentUserName;
 
-        // Check if this is a new incoming call
         if (callState == 'calling' &&
             callerType != null &&
             callerName != null &&
-            !isCurrentUserTheCaller && // Don't show dialog to the caller
+            !isCurrentUserTheCaller && 
             !_isCallDialogShowing &&
             (_lastCallState != 'calling' || _currentCallId != currentCallId)) {
 
@@ -69,7 +64,6 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
           _currentCallId = null;
           _isCurrentUserCalling = false;
           
-          // Reset state when call ends
           if (_isCallDialogShowing) {
             Navigator.of(context).pop();
             _isCallDialogShowing = false;
@@ -81,12 +75,10 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
     });
   }
 
-  // Method to mark that current user is starting a call
   void markCurrentUserAsCaller() {
     _isCurrentUserCalling = true;
   }
 
-  // Method to reset the calling state
   void resetCallingState() {
     _isCurrentUserCalling = false;
   }
@@ -109,7 +101,7 @@ mixin CallStateMixin<T extends StatefulWidget> on State<T> {
         appointmentData: appointmentData,
         callerName: callerName,
         callerType: callerType,
-        isVideoCall: true, // You can determine this from appointmentData
+        isVideoCall: true, 
         currentUserType: currentUserType,
         currentUserName: currentUserName,
       ),

@@ -15,6 +15,9 @@ class UserModel {
   final String address;
   final String userType;
   final String fcmToken;
+  final String nationalId;
+  final String gender;
+  final DateTime dateOfBirth;
 
   UserModel({
     required this.userId,
@@ -24,6 +27,9 @@ class UserModel {
     required this.address,
     required this.userType,
     required this.fcmToken,
+    required this.nationalId,
+    required this.gender,
+    required this.dateOfBirth,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +41,11 @@ class UserModel {
       address: json['address'] ?? '',
       userType: json['userType'] ?? 'patient',
       fcmToken: json['fcmToken'] ?? '',
+      nationalId: json['nationalId'] ?? '',
+      gender: json['gender'] ?? '',
+      dateOfBirth: json['dateOfBirth'] != null 
+          ? DateTime.parse(json['dateOfBirth']) 
+          : DateTime.now(),
     );
   }
 
@@ -47,12 +58,25 @@ class UserModel {
       'address': address,
       'userType': userType,
       'fcmToken': fcmToken,
+      'nationalId': nationalId,
+      'gender': gender,
+      'dateOfBirth': dateOfBirth.toIso8601String(),
     };
   }
 
   bool get isPatient => userType == 'patient';
   bool get isDoctor => userType == 'doctor';
   bool get isStaff => userType == 'staff';
+
+  int get age {
+    final now = DateTime.now();
+    int age = now.year - dateOfBirth.year;
+    if (now.month < dateOfBirth.month || 
+        (now.month == dateOfBirth.month && now.day < dateOfBirth.day)) {
+      age--;
+    }
+    return age;
+  }
 
   UserModel copyWith({
     String? userId,
@@ -62,6 +86,9 @@ class UserModel {
     String? address,
     String? userType,
     String? fcmToken,
+    String? nationalId,
+    String? gender,
+    DateTime? dateOfBirth,
     Map<String, dynamic>? additionalData,
   }) {
     return UserModel(
@@ -72,6 +99,9 @@ class UserModel {
       address: address ?? this.address,
       userType: userType ?? this.userType,
       fcmToken: fcmToken ?? this.fcmToken,
+      nationalId: nationalId ?? this.nationalId,
+      gender: gender ?? this.gender,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
 }
@@ -87,6 +117,9 @@ class PatientModel extends UserModel {
     required super.phoneNumber,
     required super.address,
     required super.fcmToken,
+    required super.nationalId,
+    required super.gender,
+    required super.dateOfBirth,
     this.medicalHistory,
     this.eligibility = const [DepartmentConstants.generalMedicine],
   }) : super(
@@ -106,6 +139,9 @@ class PatientModel extends UserModel {
       address: user.address,
       medicalHistory: medicalHistory,
       fcmToken: user.fcmToken,
+      nationalId: user.nationalId,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
       eligibility: eligibility ?? [DepartmentConstants.generalMedicine],
     );
   }
@@ -129,6 +165,9 @@ class DoctorModel extends UserModel {
     required super.phoneNumber,
     required super.address,
     required super.fcmToken,
+    required super.nationalId,
+    required super.gender,
+    required super.dateOfBirth,
     required this.specialty,
   }) : super(
           userType: 'doctor',
@@ -144,6 +183,9 @@ class DoctorModel extends UserModel {
       address: user.address,
       specialty: specialty,
       fcmToken: user.fcmToken,
+      nationalId: user.nationalId,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
     );
   }
 
@@ -163,6 +205,9 @@ class StaffModel extends UserModel {
     required super.phoneNumber,
     required super.address,
     required super.fcmToken,
+    required super.nationalId,
+    required super.gender,
+    required super.dateOfBirth,
   }) : super(
           userType: 'staff',
         );
@@ -175,6 +220,9 @@ class StaffModel extends UserModel {
       phoneNumber: user.phoneNumber,
       address: user.address,
       fcmToken: user.fcmToken,
+      nationalId: user.nationalId,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
     );
   }
 }

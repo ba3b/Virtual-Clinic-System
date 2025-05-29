@@ -22,7 +22,6 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   void initState() {
     super.initState();
     
-    // If an initial type is provided, navigate directly to appropriate screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialType != null) {
         if (widget.initialType == 'vaccination') {
@@ -33,7 +32,6 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
             ),
           );
         } else {
-          // For virtual and physical appointments
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -44,7 +42,6 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
           );
         }
       } else {
-        // Otherwise, navigate to type selection
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

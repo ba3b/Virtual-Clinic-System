@@ -1,5 +1,4 @@
 class Validators {
-  // Email validation
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return 'Email is required';
@@ -13,7 +12,6 @@ class Validators {
     return null;
   }
 
-  // Password validation
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password is required';
@@ -26,7 +24,6 @@ class Validators {
     return null;
   }
 
-  // Name validation
   static String? validateName(String? value) {
     if (value == null || value.isEmpty) {
       return 'Name is required';
@@ -39,7 +36,6 @@ class Validators {
     return null;
   }
 
-  // Phone number validation
   static String? validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Phone number is required';
@@ -53,7 +49,6 @@ class Validators {
     return null;
   }
 
-  // Address validation
   static String? validateAddress(String? value) {
     if (value == null || value.isEmpty) {
       return 'Address is required';
@@ -66,7 +61,6 @@ class Validators {
     return null;
   }
 
-  // Confirmation code validation
   static String? validateConfirmationCode(String? value) {
     if (value == null || value.isEmpty) {
       return 'Confirmation code is required';
@@ -83,7 +77,6 @@ class Validators {
     return null;
   }
 
-  // Confirm password validation
   static String? validateConfirmPassword(String? value, String password) {
     if (value == null || value.isEmpty) {
       return 'Please confirm your password';
@@ -96,7 +89,6 @@ class Validators {
     return null;
   }
 
-  // Non-empty field validation
   static String? validateNonEmpty(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return '$fieldName is required';

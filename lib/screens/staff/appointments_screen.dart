@@ -64,11 +64,11 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
               unselectedLabelColor: Colors.white.withOpacity(0.7),
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 12, // Smaller font
+                fontSize: 12,
               ),
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.normal,
-                fontSize: 12, // Smaller font
+                fontSize: 12,
               ),
               isScrollable: false,
               tabs: const [
@@ -76,10 +76,10 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.videocam_rounded, size: 24), // Smaller icon
-                      SizedBox(height: 2), // Reduced spacing
+                      Icon(Icons.videocam_rounded, size: 24),
+                      SizedBox(height: 2),
                       Text('Virtual',
-                          style: TextStyle(fontSize: 14)), // Smaller text
+                          style: TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -87,10 +87,10 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.person_rounded, size: 24), // Smaller icon
-                      SizedBox(height: 2), // Reduced spacing
+                      Icon(Icons.person_rounded, size: 24),
+                      SizedBox(height: 2),
                       Text('Physical',
-                          style: TextStyle(fontSize: 14)), // Smaller text
+                          style: TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -98,11 +98,11 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.healing_rounded, size: 24), // Smaller icon
-                      SizedBox(height: 2), // Reduced spacing
+                      Icon(Icons.healing_rounded, size: 24),
+                      SizedBox(height: 2),
                       Text('Vaccination',
                           style: TextStyle(
-                              fontSize: 14)), // Even smaller for longer text
+                              fontSize: 14)),
                     ],
                   ),
                 ),
@@ -243,9 +243,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                     appointment: appointment,
                     patientName: patientName,
                     doctorName: doctorName,
-                    onTap: () {
-                      // You can implement navigation to appointment details if needed
-                    },
+                    onTap: () {},
                     onAssignDoctor:
                         appointment.type != AppointmentModel.typeVaccination
                             ? () => _showDoctorAssignmentDialog(appointment)
@@ -301,7 +299,6 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
         return;
       }
 
-      // Get the ScaffoldMessenger reference before showing the dialog
       final scaffoldMessenger = ScaffoldMessenger.of(context);
 
       showDialog(
@@ -310,14 +307,12 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
           doctors: filteredDoctors,
           requiredSpecialty: appointment.department,
           onDoctorSelected: (doctor) async {
-            // Close the dialog first
             Navigator.pop(context);
             
             try {
               await _databaseService.assignDoctorToAppointment(
                   appointment.appointmentId, doctor.userId);
 
-              // Use the stored ScaffoldMessenger reference
               scaffoldMessenger.showSnackBar(
                 SnackBar(
                   content:
@@ -326,7 +321,6 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                 ),
               );
             } catch (e) {
-              // Use the stored ScaffoldMessenger reference
               scaffoldMessenger.showSnackBar(
                 SnackBar(
                   content: Text('Error assigning doctor: $e'),
@@ -375,18 +369,15 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
 
   Future<List<DoctorModel>> _getFilteredDoctors(
       AppointmentModel appointment) async {
-    // For vaccination appointments, return all doctors
     if (appointment.type.toLowerCase() == 'vaccination') {
       return await _databaseService.getAllDoctors();
     }
 
-    // For other appointments, filter by specialty matching department
     if (appointment.department != null) {
       return await _databaseService
           .getDoctorsBySpecialty(appointment.department!);
     }
 
-    // Fallback to all doctors if no department specified
     return await _databaseService.getAllDoctors();
   }
 

@@ -3,10 +3,10 @@ import 'package:intl/intl.dart';
 import '../theme/theme.dart';
 
 class AppointmentCard extends StatelessWidget {
-  final String doctorName; // For vaccination, this will be the vaccine type
+  final String doctorName; 
   final DateTime appointmentDate;
-  final String appointmentType; // "virtual", "physical", or "vaccination"
-  final String status; // "pending", "approved", "completed", "rejected", "cancelled"
+  final String appointmentType; 
+  final String status; 
   final VoidCallback? onTap;
 
   const AppointmentCard({
@@ -75,9 +75,9 @@ class AppointmentCard extends StatelessWidget {
 
   String _getSubtitle() {
     if (appointmentType.toLowerCase() == 'vaccination') {
-      return doctorName; // For vaccination, doctorName actually contains vaccine type
+      return doctorName; 
     } else {
-      return doctorName; // For regular appointments, this is the actual doctor name
+      return doctorName; 
     }
   }
 

@@ -112,7 +112,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
           Expanded(
             child: StreamBuilder<List<AppointmentModel>>(
               stream: _databaseService
-                  .getVaccinationAppointments(), // You'll need to add this method
+                  .getVaccinationAppointments(), 
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -580,13 +580,11 @@ class _VaccinationScreenState extends State<VaccinationScreen>
 
   Future<void> _markAsCompleted(AppointmentModel appointment) async {
     try {
-      // Update appointment status to completed
       await _databaseService.updateAppointmentStatus(
         appointment.appointmentId,
         AppointmentModel.statusCompleted,
       );
 
-      // Create vaccination record
       await _databaseService.createVaccinationRecord(
         appointmentId: appointment.appointmentId,
         patientId: appointment.patientId,

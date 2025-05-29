@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:virtual_clinic_system/api/auth_service.dart';
 import 'package:virtual_clinic_system/screens/wrapper.dart';
 import '../../components/custom_app_bar.dart';
@@ -19,7 +20,6 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _auth = AuthService();
 
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -27,8 +27,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _nationalIdController = TextEditingController();
   
   String _selectedUserType = 'patient';
+  String _selectedGender = 'male';
+  DateTime? _selectedDateOfBirth;
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -39,6 +42,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     {'value': 'staff', 'label': 'Staff'},
   ];
 
+  final List<Map<String, dynamic>> _genderOptions = [
+    {'value': 'male', 'label': 'Male'},
+    {'value': 'female', 'label': 'Female'},
+  ];
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -47,6 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _addressController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _nationalIdController.dispose();
     super.dispose();
   }
 
@@ -62,14 +71,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
+  Future<void> _selectDateOfBirth() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // Default to 18 years ago
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.textPrimaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null && picked != _selectedDateOfBirth) {
+      setState(() {
+        _selectedDateOfBirth = picked;
+      });
+    }
+  }
+
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedDateOfBirth == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your date of birth'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
       
-      User? result = await _auth.register(_nameController.text.trim(), _emailController.text.trim().toLowerCase(), _passwordController.text, 
-        _phoneController.text, _addressController.text, _selectedUserType);
+      User? result = await _auth.register(
+        _nameController.text.trim(), 
+        _emailController.text.trim().toLowerCase(), 
+        _passwordController.text, 
+        _phoneController.text, 
+        _addressController.text, 
+        _selectedUserType,
+        _nationalIdController.text.trim(),
+        _selectedGender,
+        _selectedDateOfBirth!,
+      );
       
       setState(() {
         _isLoading = false;
@@ -86,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('You have logged in successfully!'),
+              content: Text('Account created successfully!'),
               backgroundColor: AppTheme.successColor,
             ),
           );
@@ -185,6 +240,116 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
+
+                // National ID Field
+                CustomTextField(
+                  label: 'National ID',
+                  hint: 'Enter your national ID number',
+                  controller: _nationalIdController,
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'National ID is required';
+                    }
+                    if (value.length < 10) {
+                      return 'Please enter a valid national ID';
+                    }
+                    return null;
+                  },
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+
+                // Gender Selection
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Gender',
+                      style: AppTheme.bodyStyle.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.dividerColor),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedGender,
+                          isExpanded: true,
+                          elevation: 2,
+                          style: AppTheme.bodyStyle,
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedGender = newValue;
+                              });
+                            }
+                          },
+                          items: _genderOptions.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+                            return DropdownMenuItem<String>(
+                              value: item['value'],
+                              child: Text(item['label']),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Date of Birth Field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Date of Birth',
+                      style: AppTheme.bodyStyle.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _selectDateOfBirth,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.dividerColor),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              color: AppTheme.textSecondaryColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _selectedDateOfBirth != null
+                                  ? DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!)
+                                  : 'Select your date of birth',
+                              style: AppTheme.bodyStyle.copyWith(
+                                color: _selectedDateOfBirth != null 
+                                    ? AppTheme.textPrimaryColor 
+                                    : AppTheme.textSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 
                 // Email Field
                 CustomTextField(
@@ -257,6 +422,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _passwordController.text,
                   ),
                   textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _register(),
                 ),
                 const SizedBox(height: 32),
                 

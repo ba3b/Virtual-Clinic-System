@@ -27,18 +27,14 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize with tomorrow as default
     _selectedDate = DateTime.now().add(const Duration(days: 1));
 
-    // Ensure the selected date is not on a weekend (Friday=5, Saturday=6)
     if (_selectedDate.weekday == 5) {
-      // Friday
       _selectedDate =
-          _selectedDate.add(const Duration(days: 2)); // Move to Sunday
+          _selectedDate.add(const Duration(days: 2)); 
     } else if (_selectedDate.weekday == 6) {
-      // Saturday
       _selectedDate =
-          _selectedDate.add(const Duration(days: 1)); // Move to Sunday
+          _selectedDate.add(const Duration(days: 1)); 
     }
   }
 

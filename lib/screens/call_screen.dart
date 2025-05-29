@@ -20,7 +20,7 @@ enum CallState {
 class CallScreen extends StatefulWidget {
   final Map<String, dynamic> appointmentData;
   final bool isAudioOnly;
-  final String currentUserType; // 'patient' or 'doctor'
+  final String currentUserType;
   final String currentUserName;
 
   const CallScreen({
@@ -46,12 +46,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _isFrontCamera = true;
   bool _isRemoteVideoEnabled = true;
   bool _isRemoteUserJoined = false;
-  // ignore: unused_field
-  bool _isWaitingForUser = true;
   bool _isDisposed = false;
   int? _remoteUid;
 
-  // Track remote user states to prevent unnecessary notifications
   bool? _lastRemoteAudioState;
   bool? _lastRemoteVideoState;
   bool _isInitialConnection = true;
@@ -73,7 +70,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   CallState _callState = CallState.connecting;
   String _statusMessage = 'Connecting...';
 
-  // Database service for call state updates
   DatabaseService? _databaseService;
 
   @override
@@ -83,7 +79,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   void _validateAndInitialize() {
-    // Validate required appointment data
     final appointmentId = _getAppointmentId();
     if (appointmentId == null || appointmentId.isEmpty) {
       _showErrorAndExit('Invalid appointment data: Missing appointment ID');
@@ -127,8 +122,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Exit screen
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
               child: const Text('OK'),
             ),
@@ -165,7 +160,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   void _initializeCall() {
-    // Get participant info from appointment data with null safety
     if (widget.currentUserType == 'patient') {
       _otherParticipantName =
           widget.appointmentData['doctorName'] as String? ?? 'Doctor';
@@ -223,7 +217,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   DateTime? _getAppointmentDateTime() {
-    // Try multiple possible field names for appointment date/time
     var dateTime = widget.appointmentData['appointmentDate'];
     if (dateTime == null) {
       dateTime = widget.appointmentData['dateTime'];
@@ -272,8 +265,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                _endCall(); // End the call
+                Navigator.of(context).pop();
+                _endCall();
               },
               child: const Text('OK'),
             ),
@@ -285,25 +278,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   Future<void> _initializeAgora() async {
     try {
-      // Request permissions
       await _requestPermissions();
 
-      // Keep screen awake during call
       await WakelockPlus.enable();
 
-      // Validate Agora configuration
       if (AgoraConfig.appId.isEmpty) {
         throw Exception('Agora App ID not configured');
       }
 
-      // Initialize Agora engine
       _engine = createAgoraRtcEngine();
       await _engine!.initialize(const RtcEngineContext(
         appId: AgoraConfig.appId,
         channelProfile: ChannelProfileType.channelProfileCommunication,
       ));
 
-      // Set up event handlers
       _engine!.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
@@ -328,22 +316,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               setState(() {
                 _remoteUid = uid;
                 _isRemoteUserJoined = true;
-                _isWaitingForUser = false;
                 _callState = CallState.connected;
                 _statusMessage = 'Connected';
                 _isInitialConnection = false;
               });
 
-              // Cancel auto-end timer if running
               _autoEndTimer?.cancel();
 
-              // Update call state
               _updateCallState('connected');
 
-              // Show notification that other user joined
               _showNotification('$_otherParticipantName joined the call');
 
-              // Start pulse animation for audio indicator
               if (widget.isAudioOnly &&
                   _pulseController != null &&
                   !_isDisposed) {
@@ -358,7 +341,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               setState(() {
                 _remoteUid = null;
                 _isRemoteUserJoined = false;
-                _isWaitingForUser = true;
                 _callState = reason == UserOfflineReasonType.userOfflineDropped
                     ? CallState.disconnected
                     : CallState.waitingForUser;
@@ -368,17 +350,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         : '$_otherParticipantName left the call';
               });
 
-              // Show notification that user left
               String message =
                   reason == UserOfflineReasonType.userOfflineDropped
                       ? 'Connection lost with $_otherParticipantName'
                       : '$_otherParticipantName left the call';
               _showNotification(message);
 
-              // Stop pulse animation
               _pulseController?.stop();
 
-              // Auto-end call after 30 seconds if user doesn't return
               _autoEndTimer = Timer(const Duration(seconds: 30), () {
                 if (!_isRemoteUserJoined && mounted && !_isDisposed) {
                   _showAutoEndDialog();
@@ -396,7 +375,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   state == RemoteVideoState.remoteVideoStateStarting ||
                       state == RemoteVideoState.remoteVideoStateDecoding;
 
-              // Only show notification if state actually changed and not initial connection
               if (_lastRemoteVideoState != null &&
                   _lastRemoteVideoState != isVideoEnabled &&
                   !_isInitialConnection) {
@@ -427,7 +405,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   state == RemoteAudioState.remoteAudioStateStarting ||
                       state == RemoteAudioState.remoteAudioStateDecoding;
 
-              // Only show notification if state actually changed and not initial connection
               if (_lastRemoteAudioState != null &&
                   _lastRemoteAudioState != isAudioEnabled &&
                   !_isInitialConnection) {
@@ -490,14 +467,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         ),
       );
 
-      // Enable video if not audio-only
       if (!widget.isAudioOnly) {
         await _engine!.enableVideo();
       } else {
         await _engine!.disableVideo();
       }
 
-      // Join channel with validation
       if (_channelName.isNotEmpty) {
         await _engine!.joinChannel(
           token: AgoraConfig.token ?? '',
@@ -622,8 +597,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              _endCall(); // End the call
+              Navigator.of(context).pop();
+              _endCall();
             },
             child: const Text('OK'),
           ),
@@ -684,13 +659,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     await _updateCallState('ended');
 
-    // Clean up timers first
     _callTimer?.cancel();
     _controlsTimer?.cancel();
     _sessionTimer?.cancel();
     _autoEndTimer?.cancel();
 
-    // Safely stop animation controllers
     try {
       _pulseController?.stop();
       _connectingController?.stop();
@@ -698,7 +671,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       print('Error stopping animations: $e');
     }
 
-    // Leave channel and dispose engine
     if (_engine != null) {
       try {
         await _engine!.leaveChannel();
@@ -709,7 +681,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       }
     }
 
-    // Disable wakelock
     try {
       await WakelockPlus.disable();
     } catch (e) {
@@ -730,17 +701,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _sessionTimer?.cancel();
     _autoEndTimer?.cancel();
 
-    // Safely dispose animation controllers
     _pulseController?.dispose();
     _connectingController?.dispose();
 
-    // Clean up Agora resources
     if (_engine != null) {
       _engine!.leaveChannel();
       _engine!.release();
     }
 
-    // Update call state
     _updateCallState('ended');
 
     WakelockPlus.disable();
@@ -769,13 +737,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         onTap: _showControls,
         child: Stack(
           children: [
-            // Main Video Area
             _buildVideoArea(),
 
-            // Connecting Overlay
             if (_isConnecting) _buildConnectingOverlay(),
 
-            // Controls Overlay
             if (_isControlsVisible || _isConnecting) _buildControlsOverlay(),
           ],
         ),
@@ -790,7 +755,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     return Stack(
       children: [
-        // Remote Video (Full Screen)
         Container(
           width: double.infinity,
           height: double.infinity,
@@ -807,7 +771,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   : _buildVideoPlaceholder(isRemote: true),
         ),
 
-        // Local Video (Picture-in-Picture)
         if (_isVideoEnabled)
           Positioned(
             top: 60,
@@ -856,7 +819,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Participant Avatar
           Container(
             width: 120,
             height: 120,
@@ -875,7 +837,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
           const SizedBox(height: 24),
 
-          // Participant Name
           Text(
             _otherParticipantName ?? 'Participant',
             style: const TextStyle(
@@ -887,7 +848,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
           const SizedBox(height: 8),
 
-          // Call Status
           Text(
             _isJoined
                 ? (_isRemoteUserJoined ? _formatCallDuration() : _statusMessage)
@@ -900,7 +860,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
           const SizedBox(height: 40),
 
-          // Audio Indicator
           if (_isJoined &&
               !_isMuted &&
               _isRemoteUserJoined &&
@@ -1054,12 +1013,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         ),
         child: Column(
           children: [
-            // Top Controls
             _buildTopControls(),
 
             const Spacer(),
 
-            // Bottom Controls
             _buildBottomControls(),
           ],
         ),
@@ -1073,7 +1030,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            // Back Button
             GestureDetector(
               onTap: _endCall,
               child: Container(
@@ -1092,7 +1048,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
             const Spacer(),
 
-            // Call Info
             if (_isJoined)
               Container(
                 padding:
@@ -1138,7 +1093,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Participant Name and Status
             if (_isJoined)
               Column(
                 children: [
@@ -1175,18 +1129,15 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
             const SizedBox(height: 24),
 
-            // Control Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Mute Button
                 _buildControlButton(
                   icon: _isMuted ? Icons.mic_off : Icons.mic,
                   isActive: !_isMuted,
                   onPressed: _toggleMute,
                 ),
 
-                // Video Toggle (if not audio-only)
                 if (!widget.isAudioOnly)
                   _buildControlButton(
                     icon: _isVideoEnabled ? Icons.videocam : Icons.videocam_off,
@@ -1194,7 +1145,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     onPressed: _toggleVideo,
                   ),
 
-                // End Call Button
                 _buildControlButton(
                   icon: Icons.call_end,
                   isActive: false,
@@ -1202,14 +1152,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   onPressed: _endCall,
                 ),
 
-                // Speaker Button
                 _buildControlButton(
                   icon: _isSpeakerEnabled ? Icons.volume_up : Icons.volume_down,
                   isActive: _isSpeakerEnabled,
                   onPressed: _toggleSpeaker,
                 ),
 
-                // Camera Switch (if video enabled)
                 if (!widget.isAudioOnly && _isVideoEnabled)
                   _buildControlButton(
                     icon: Icons.cameraswitch,

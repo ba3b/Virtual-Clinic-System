@@ -176,12 +176,11 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    // Navigate back to home and clear the stack
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
                   child: const Text('Back to Home'),
                 ),
-                const SizedBox(height: 8),  // Added bottom padding
+                const SizedBox(height: 8),
               ],
             ),
           ),

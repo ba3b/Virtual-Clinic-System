@@ -390,7 +390,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   void _navigateToAppointmentDetails(AppointmentModel appointment) {
-    // Implementation for navigation
   }
 
   Future<void> _showDoctorAssignmentDialog(AppointmentModel appointment) async {
@@ -416,7 +415,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       return;
     }
 
-    // Get the ScaffoldMessenger reference before showing the dialog
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     showDialog(
@@ -425,7 +423,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         doctors: filteredDoctors,
         requiredSpecialty: appointment.department,
         onDoctorSelected: (doctor) async {
-          // Close the dialog first
           Navigator.pop(context);
           
           try {
@@ -434,7 +431,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               doctor.userId
             );
 
-            // Use the stored ScaffoldMessenger reference
             scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text('Doctor "${doctor.name}" assigned successfully'),
@@ -442,7 +438,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               ),
             );
           } catch (e) {
-            // Use the stored ScaffoldMessenger reference
             scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text('Error assigning doctor: $e'),
@@ -491,17 +486,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Future<List<DoctorModel>> _getFilteredDoctors(AppointmentModel appointment) async {
-    // For vaccination appointments, return all doctors
     if (appointment.type.toLowerCase() == 'vaccination') {
       return await _databaseService.getAllDoctors();
     }
 
-    // For other appointments, filter by specialty matching department
     if (appointment.department != null) {
       return await _databaseService.getDoctorsBySpecialty(appointment.department!);
     }
 
-    // Fallback to all doctors if no department specified
     return await _databaseService.getAllDoctors();
   }
 

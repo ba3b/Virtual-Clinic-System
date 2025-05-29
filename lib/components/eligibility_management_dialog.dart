@@ -51,7 +51,7 @@ class _EligibilityManagementDialogState extends State<EligibilityManagementDialo
       );
 
       if (mounted) {
-        Navigator.of(context).pop(true); // Return true to indicate success
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Patient eligibility updated successfully'),
@@ -159,7 +159,6 @@ class _EligibilityManagementDialogState extends State<EligibilityManagementDialo
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -244,7 +243,6 @@ class _EligibilityManagementDialogState extends State<EligibilityManagementDialo
               ),
             ),
 
-            // Changes Summary (if any)
             if (addedCount > 0 || removedCount > 0)
               Container(
                 margin: const EdgeInsets.all(16),
@@ -275,7 +273,6 @@ class _EligibilityManagementDialogState extends State<EligibilityManagementDialo
                 ),
               ),
 
-            // Departments List
             Flexible(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -306,7 +303,6 @@ class _EligibilityManagementDialogState extends State<EligibilityManagementDialo
               ),
             ),
 
-            // Action Buttons
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(

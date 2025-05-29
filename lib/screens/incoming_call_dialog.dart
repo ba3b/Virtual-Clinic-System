@@ -45,8 +45,6 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
       curve: Curves.easeInOut,
     ));
     _animationController.repeat(reverse: true);
-    
-    // Play ringtone
     HapticFeedback.vibrate();
   }
 
@@ -57,23 +55,17 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
   }
 
   void _acceptCall() {
-    // Validate appointment data first
     final appointmentId = _getAppointmentId();
     if (appointmentId == null || appointmentId.isEmpty) {
       _showError('Invalid appointment data: Missing appointment ID');
       return;
     }
-
-    // Create a properly structured appointment data map
     final enhancedAppointmentData = _createEnhancedAppointmentData();
-
-    // Validate enhanced data
     if (!_validateAppointmentData(enhancedAppointmentData)) {
       _showError('Unable to start call: Invalid appointment configuration');
       return;
     }
-
-    Navigator.of(context).pop(); // Close dialog
+    Navigator.of(context).pop();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -89,56 +81,41 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
 
   String? _getAppointmentId() {
     return widget.appointmentData['appointmentId'] as String? ??
-           widget.appointmentData['id'] as String?;
+        widget.appointmentData['id'] as String?;
   }
 
   Map<String, dynamic> _createEnhancedAppointmentData() {
     final enhancedData = Map<String, dynamic>.from(widget.appointmentData);
-    
-    // Ensure appointment ID is set
     final appointmentId = _getAppointmentId();
     if (appointmentId != null) {
       enhancedData['appointmentId'] = appointmentId;
     }
-
-    // Set participant names based on current user type
     if (widget.currentUserType == 'patient') {
       enhancedData['patientName'] = widget.currentUserName;
       enhancedData['doctorName'] = widget.callerName;
-      
-      // Ensure IDs are present (use existing or empty string as fallback)
       enhancedData['patientId'] ??= '';
       enhancedData['doctorId'] ??= '';
     } else {
       enhancedData['doctorName'] = widget.currentUserName;
       enhancedData['patientName'] = widget.callerName;
-      
-      // Ensure IDs are present (use existing or empty string as fallback)
       enhancedData['doctorId'] ??= '';
       enhancedData['patientId'] ??= '';
     }
-
-    // Ensure we have both dateTime formats for compatibility
     final appointmentDate = _getAppointmentDateTime();
     if (appointmentDate != null) {
       enhancedData['appointmentDate'] = appointmentDate;
       enhancedData['dateTime'] = appointmentDate;
     } else {
-      // Use current time as fallback
       final now = DateTime.now();
       enhancedData['appointmentDate'] = now;
       enhancedData['dateTime'] = now;
     }
-
-    // Ensure other required fields exist
     enhancedData['appointmentType'] ??= 'virtual';
     enhancedData['status'] ??= 'approved';
-
     return enhancedData;
   }
 
   DateTime? _getAppointmentDateTime() {
-    // Try multiple possible field names for appointment date/time
     var dateTime = widget.appointmentData['appointmentDate'];
     if (dateTime == null) {
       dateTime = widget.appointmentData['dateTime'];
@@ -146,7 +123,6 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
     if (dateTime == null) {
       dateTime = widget.appointmentData['date'];
     }
-    
     if (dateTime is DateTime) {
       return dateTime;
     } else if (dateTime is String) {
@@ -156,14 +132,11 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
         print('Error parsing date string: $e');
       }
     }
-    
     return null;
   }
 
   bool _validateAppointmentData(Map<String, dynamic> data) {
-    // Check required fields
     final requiredFields = ['appointmentId'];
-    
     for (String field in requiredFields) {
       final value = data[field];
       if (value == null || (value is String && value.isEmpty)) {
@@ -171,37 +144,27 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
         return false;
       }
     }
-
-    // Validate participant names
     final patientName = data['patientName'] as String?;
     final doctorName = data['doctorName'] as String?;
-    
-    if (patientName == null || patientName.isEmpty ||
-        doctorName == null || doctorName.isEmpty) {
+    if (patientName == null || patientName.isEmpty || doctorName == null || doctorName.isEmpty) {
       print('Validation failed: Missing participant names');
       return false;
     }
-
-    // Validate appointment date/time
     final appointmentDate = data['appointmentDate'];
     final dateTime = data['dateTime'];
-    
     if (appointmentDate == null && dateTime == null) {
       print('Validation failed: Missing appointment date/time');
       return false;
     }
-
     return true;
   }
 
   void _declineCall() {
-    // Update call state to declined
     Navigator.of(context).pop();
   }
 
   void _showError(String message) {
     print('IncomingCallDialog Error: $message');
-    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -211,7 +174,6 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
         ),
       );
     }
-    
     Navigator.of(context).pop();
   }
 
@@ -237,7 +199,6 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Caller Avatar
             AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) {
@@ -265,10 +226,7 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
                 );
               },
             ),
-            
             const SizedBox(height: 20),
-            
-            // Incoming Call Text
             Text(
               'Incoming ${widget.isVideoCall ? 'Video' : 'Audio'} Call',
               style: AppTheme.subheadingStyle.copyWith(
@@ -276,10 +234,7 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
             const SizedBox(height: 8),
-            
-            // Caller Name
             Text(
               widget.callerName,
               style: AppTheme.headingStyle.copyWith(
@@ -287,32 +242,23 @@ class _IncomingCallDialogState extends State<IncomingCallDialog>
                 color: AppTheme.primaryColor,
               ),
             ),
-            
             const SizedBox(height: 4),
-            
-            // Call Type
             Text(
               widget.callerType == 'doctor' ? 'Doctor' : 'Patient',
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
             ),
-            
             const SizedBox(height: 32),
-            
-            // Action Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Decline Button
                 _buildActionButton(
                   onTap: _declineCall,
                   color: Colors.red,
                   icon: Icons.call_end,
                   label: 'Decline',
                 ),
-                
-                // Accept Button
                 _buildActionButton(
                   onTap: _acceptCall,
                   color: Colors.green,

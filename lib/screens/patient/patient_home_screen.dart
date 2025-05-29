@@ -45,7 +45,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       case 3:
         return const VaccinationRecordsScreen();
       case 4:
-        return const ProfileScreen();
+        return const PatientProfileScreen();
       default:
         return _buildHomeScreen();
     }
@@ -66,8 +66,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           _buildUpcomingAppointments(),
           const SizedBox(height: 24),
           _buildHealthTips(),
-          const SizedBox(
-              height: 60), // Extra space at bottom for navigation bar
+          const SizedBox(height: 60),
         ],
       ),
     );
@@ -323,21 +322,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 iconColor: Colors.orange,
                 onTap: () {
                   setState(() {
-                    _currentIndex = 2; // Switch to prescriptions tab
+                    _currentIndex = 2;
                   });
                 },
               ),
               const SizedBox(width: 16),
-              QuickActionButton(
-                icon: Icons.history_rounded,
-                label: 'Medical History',
-                backgroundColor: Colors.purple.withOpacity(0.1),
-                iconColor: Colors.purple,
-                onTap: () {
-                  // Navigate to medical history screen
-                },
-              ),
-              const SizedBox(width: 8),
             ],
           ),
         ),
@@ -363,7 +352,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             actionText: 'See All',
             onActionTap: () {
               setState(() {
-                _currentIndex = 1; // Switch to appointments tab
+                _currentIndex = 1;
               });
             },
           ),
@@ -385,7 +374,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
             final appointments = snapshot.data ?? [];
 
-            // Filter for upcoming appointments
             final upcomingAppointments = appointments
                 .where((appointment) =>
                     appointment.status != AppointmentModel.statusCancelled &&
@@ -394,11 +382,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         DateTime.now().subtract(const Duration(minutes: 20))))
                 .toList();
 
-            // Sort by date
             upcomingAppointments
                 .sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-            // Take only the next 3 appointments
             final displayAppointments = upcomingAppointments.take(3).toList();
 
             if (displayAppointments.isEmpty) {
@@ -610,9 +596,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {
-                // Navigate to full health tip details
-              },
+              onPressed: () {},
               style: TextButton.styleFrom(
                 foregroundColor: color,
                 padding: EdgeInsets.zero,

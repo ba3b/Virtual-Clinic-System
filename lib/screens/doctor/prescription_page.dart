@@ -46,7 +46,6 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
       final user = Provider.of<UserId?>(context, listen: false);
       if (user == null) throw Exception('User not found');
 
-      // Create prescription
       await DatabaseService(uid: user.uid).createPrescription(
         appointmentId: widget.appointment.appointmentId,
         patientId: widget.appointment.patientId,
@@ -55,12 +54,10 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
         dosageInstructions: _dosageController.text.trim(),
       );
 
-      // Mark appointment as completed
       await DatabaseService(uid: user.uid)
           .updateAppointmentStatus(widget.appointment.appointmentId, 'completed');
 
       if (mounted) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Prescription submitted successfully! Appointment completed.'),
@@ -68,7 +65,6 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
           ),
         );
 
-        // Navigate back to main menu (home screen)
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
@@ -88,7 +84,6 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
   }
 
   Future<void> _skipPrescription() async {
-    // Show confirmation dialog
     final shouldSkip = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -122,7 +117,6 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
       final user = Provider.of<UserId?>(context, listen: false);
       if (user == null) throw Exception('User not found');
 
-      // Mark appointment as completed without prescription
       await DatabaseService(uid: user.uid)
           .updateAppointmentStatus(widget.appointment.appointmentId, 'completed');
 
@@ -134,7 +128,6 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
           ),
         );
 
-        // Navigate back to main menu
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
@@ -159,7 +152,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
         title: const Text('Write Prescription'),
-        automaticallyImplyLeading: false, // Remove back button
+        automaticallyImplyLeading: false, 
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -168,15 +161,12 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Patient and Appointment Info Header
               _buildPatientInfoHeader(),
               const SizedBox(height: 24),
 
-              // Prescription Form
               _buildPrescriptionForm(),
               const SizedBox(height: 32),
 
-              // Action Buttons
               _buildActionButtons(),
             ],
           ),
@@ -337,7 +327,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
 
   Widget _buildActionButtons() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0), // Better alignment
+      padding: const EdgeInsets.symmetric(horizontal: 0), 
       child: Column(
         children: [
           CommonButton(

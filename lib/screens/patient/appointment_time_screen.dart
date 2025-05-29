@@ -97,7 +97,6 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
 
       final dbService = DatabaseService(uid: user.uid);
       
-      // Create the appointment in Firestore
       final appointmentId = await dbService.createAppointment(
         patientId: user.uid,
         appointmentDate: widget.appointmentDate,
@@ -113,7 +112,6 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
 
       if (!mounted) return;
 
-      // Construct the appointment data
       final appointmentData = {
         'appointmentId': appointmentId,
         'appointmentType': widget.appointmentType,
@@ -123,7 +121,6 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
         if (widget.vaccinationType != null) 'vaccinationType': widget.vaccinationType,
       };
 
-      // Navigate to confirmation screen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

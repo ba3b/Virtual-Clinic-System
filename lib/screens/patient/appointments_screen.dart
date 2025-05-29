@@ -109,7 +109,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    // Upcoming Appointments Tab
                     _buildAppointmentsListView(appointments
                         .where((app) =>
                             (app.status == AppointmentModel.statusPending ||
@@ -119,7 +118,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                 .subtract(const Duration(minutes: 20))))
                         .toList()),
 
-                    // Completed Appointments Tab
                     _buildAppointmentsListView(appointments
                         .where((app) =>
                             app.status == AppointmentModel.statusCompleted ||
@@ -127,7 +125,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                 app.dateTime.isBefore(DateTime.now())))
                         .toList()),
 
-                    // Rejected Appointments Tab
                     _buildAppointmentsListView(appointments
                         .where((app) =>
                             app.status == AppointmentModel.statusRejected)
@@ -166,7 +163,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       );
     }
 
-    // Sort appointments by date (most recent first)
     appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
     return ListView.builder(
@@ -175,7 +171,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       itemBuilder: (context, index) {
         final appointment = appointments[index];
 
-        // Handle vaccination appointments differently
         if (appointment.type == AppointmentModel.typeVaccination) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
@@ -190,7 +185,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           );
         }
 
-        // Handle regular appointments with doctor assignment
         return FutureBuilder<UserModel?>(
           future: appointment.doctorId != null
               ? DatabaseService(uid: appointment.doctorId!)
