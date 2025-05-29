@@ -45,7 +45,6 @@ class DatabaseService {
         nationalId: nationalId,
         gender: gender,
         dateOfBirth: dateOfBirth,
-        //TODO: Add fcmToken retrieval logic
       );
 
       Map<String, dynamic> userData;
@@ -160,7 +159,6 @@ class DatabaseService {
     return usersCollection.snapshots();
   }
 
-  // Get user as stream
   Stream<UserModel> getUserStream(String userId) {
     return usersCollection.doc(userId).snapshots().map((snapshot) {
       if (snapshot.exists) {
@@ -225,14 +223,10 @@ class DatabaseService {
     });
   }
 
-  // ============= MESSAGING METHODS =============
-
-  // Send a message
   Future<String> sendMessage(MessageModel message) async {
     try {
       DocumentReference docRef = messagesCollection.doc();
 
-      // Create message with generated ID
       final messageWithId = message.copyWith(messageId: docRef.id);
 
       await docRef.set(messageWithId.toJson());
@@ -244,7 +238,6 @@ class DatabaseService {
     }
   }
 
-  // Get messages for a specific appointment as a stream
   Stream<List<MessageModel>> getAppointmentMessages(String appointmentId) {
     return messagesCollection
         .where('appointmentId', isEqualTo: appointmentId)
@@ -258,7 +251,6 @@ class DatabaseService {
     });
   }
 
-  // Mark a message as read
   Future<void> markMessageAsRead(String messageId) async {
     try {
       await messagesCollection.doc(messageId).update({
@@ -270,18 +262,15 @@ class DatabaseService {
     }
   }
 
-  // Mark all messages in an appointment as read for a specific user
   Future<void> markAppointmentMessagesAsRead(
       String appointmentId, String currentUserId) async {
     try {
-      // Get all unread messages in this appointment that are NOT sent by current user
       QuerySnapshot unreadMessages = await messagesCollection
           .where('appointmentId', isEqualTo: appointmentId)
           .where('isRead', isEqualTo: false)
           .where('senderId', isNotEqualTo: currentUserId)
           .get();
 
-      // Update all unread messages to read
       WriteBatch batch = FirebaseFirestore.instance.batch();
 
       for (QueryDocumentSnapshot doc in unreadMessages.docs) {
@@ -295,7 +284,6 @@ class DatabaseService {
     }
   }
 
-  // Get unread message count for an appointment
   Future<int> getUnreadMessageCount(
       String appointmentId, String currentUserId) async {
     try {
@@ -312,7 +300,6 @@ class DatabaseService {
     }
   }
 
-  // Delete a message (optional - for message deletion feature)
   Future<void> deleteMessage(String messageId) async {
     try {
       await messagesCollection.doc(messageId).delete();
@@ -321,8 +308,6 @@ class DatabaseService {
       throw Exception('Failed to delete message: $e');
     }
   }
-
-  // ============= END MESSAGING METHODS =============
 
   Future<String> createAppointment({
     required String patientId,
@@ -346,11 +331,10 @@ class DatabaseService {
 
       DocumentReference docRef = appointmentsCollection.doc();
 
-      // Create appointment model
       AppointmentModel appointment = AppointmentModel(
         appointmentId: docRef.id,
         patientId: patientId,
-        doctorId: null, // Will be assigned by staff
+        doctorId: null,
         status: AppointmentModel.statusPending,
         dateTime: appointmentDateTime,
         type: appointmentType,
@@ -362,7 +346,6 @@ class DatabaseService {
             : null,
       );
 
-      // Save to Firestore
       await docRef.set(appointment.toJson());
 
       return docRef.id;
@@ -372,7 +355,6 @@ class DatabaseService {
     }
   }
 
-  // Get appointments for a specific patient
   Stream<List<AppointmentModel>> getPatientAppointments(String patientId) {
     return appointmentsCollection
         .where('patientId', isEqualTo: patientId)
@@ -386,7 +368,6 @@ class DatabaseService {
     });
   }
 
-  // Get appointments for a specific doctor
   Stream<List<AppointmentModel>> getDoctorAppointments(String doctorId) {
     return appointmentsCollection
         .where('doctorId', isEqualTo: doctorId)
@@ -400,7 +381,6 @@ class DatabaseService {
     });
   }
 
-  // Get all pending appointments (for staff)
   Stream<List<AppointmentModel>> getPendingAppointments() {
     return appointmentsCollection
         .where('status', isEqualTo: AppointmentModel.statusPending)
@@ -414,7 +394,6 @@ class DatabaseService {
     });
   }
 
-  // Update appointment status
   Future<void> updateAppointmentStatus(
       String appointmentId, String status) async {
     try {
@@ -427,7 +406,6 @@ class DatabaseService {
     }
   }
 
-  // Assign doctor to appointment
   Future<void> assignDoctorToAppointment(
       String appointmentId, String doctorId) async {
     try {
@@ -441,7 +419,6 @@ class DatabaseService {
     }
   }
 
-  // Check if slot is available
   Future<bool> isTimeSlotAvailable(
     DateTime appointmentDate,
     String appointmentTime,
@@ -449,11 +426,9 @@ class DatabaseService {
     String? department,
   ) async {
     try {
-      // Parse the appointmentTime string to DateTime
       final DateFormat timeFormat = DateFormat('h:mm a');
       final DateTime parsedTime = timeFormat.parse(appointmentTime);
 
-      // Combine date and time
       final DateTime appointmentDateTime = DateTime(
         appointmentDate.year,
         appointmentDate.month,
@@ -462,7 +437,6 @@ class DatabaseService {
         parsedTime.minute,
       );
 
-      // Calculate the start and end of the 30-minute window
       final DateTime slotStart =
           appointmentDateTime.subtract(const Duration(minutes: 10));
       final DateTime slotEnd =
@@ -506,13 +480,11 @@ class DatabaseService {
     }
   }
 
-  // Generate time slots for a specific date
   Future<List<String>> getAvailableTimeSlots(
     DateTime date,
     String appointmentType,
     String? department,
   ) async {
-    // Define all possible time slots (9 AM to 4 PM, every 30 minutes)
     final List<String> allTimeSlots = [
       '9:00 AM',
       '9:30 AM',
@@ -531,7 +503,6 @@ class DatabaseService {
 
     List<String> availableSlots = [];
 
-    // Check availability for each slot
     for (String timeSlot in allTimeSlots) {
       bool isAvailable = await isTimeSlotAvailable(
         date,
@@ -548,7 +519,6 @@ class DatabaseService {
     return availableSlots;
   }
 
-  // Cancel an appointment
   Future<void> cancelAppointment(String appointmentId) async {
     try {
       await appointmentsCollection.doc(appointmentId).update({
@@ -560,7 +530,6 @@ class DatabaseService {
     }
   }
 
-  // Delete an appointment (for staff only)
   Future<void> deleteAppointment(String appointmentId) async {
     try {
       await appointmentsCollection.doc(appointmentId).delete();
@@ -600,7 +569,6 @@ class DatabaseService {
     }
   }
 
-// Get all doctors
   Future<List<DoctorModel>> getAllDoctors() async {
     try {
       QuerySnapshot snapshot =
@@ -653,7 +621,7 @@ class DatabaseService {
   }) async {
     try {
       final Map<String, dynamic> medicalHistoryEntry = {
-        'timestamp': DateTime.now().toIso8601String(), // Use ISO string format
+        'timestamp': DateTime.now().toIso8601String(),
         'description': diagnosis,
         'appointmentId': appointmentId,
         'type': 'diagnosis',
@@ -668,7 +636,6 @@ class DatabaseService {
     }
   }
 
-// Method to get patient's medical history
   Future<List<Map<String, dynamic>>> getPatientMedicalHistory(
       String patientId) async {
     try {
@@ -689,7 +656,6 @@ class DatabaseService {
             }
           }
 
-          // Sort by timestamp (most recent first)
           medicalHistory.sort((a, b) {
             String timestampA = a['timestamp'] as String? ?? '';
             String timestampB = b['timestamp'] as String? ?? '';
@@ -714,7 +680,6 @@ class DatabaseService {
     }
   }
 
-// Method to create prescription
   Future<String> createPrescription({
     required String appointmentId,
     required String patientId,
@@ -758,7 +723,6 @@ class DatabaseService {
         Map<String, dynamic> prescriptionData =
             doc.data() as Map<String, dynamic>;
 
-        // Parse createdAt timestamp
         DateTime createdAt;
         if (prescriptionData['createdAt'] != null) {
           if (prescriptionData['createdAt'] is Timestamp) {
@@ -768,13 +732,11 @@ class DatabaseService {
                 DateTime.parse(prescriptionData['createdAt'].toString());
           }
         } else {
-          continue; // Skip if no creation date
+          continue;
         }
 
-        // Only include prescriptions from the last week
         if (createdAt.isAfter(oneWeekAgo)) {
           try {
-            // Get doctor details
             DocumentSnapshot doctorDoc =
                 await usersCollection.doc(prescriptionData['doctorId']).get();
             String doctorName = 'Unknown Doctor';
@@ -794,7 +756,6 @@ class DatabaseService {
             prescriptionsWithDoctors.add(prescriptionData);
           } catch (e) {
             print('Error getting doctor details: $e');
-            // Add prescription without doctor details
             prescriptionData['doctorName'] = 'Unknown Doctor';
             prescriptionData['doctorSpecialty'] = 'General Medicine';
             prescriptionData['createdAt'] = createdAt;
@@ -817,7 +778,6 @@ class DatabaseService {
         Map<String, dynamic> prescriptionData =
             doc.data() as Map<String, dynamic>;
 
-        // Get doctor details
         DocumentSnapshot doctorDoc =
             await usersCollection.doc(prescriptionData['doctorId']).get();
         String doctorName = 'Unknown Doctor';
@@ -833,7 +793,6 @@ class DatabaseService {
         prescriptionData['doctorName'] = doctorName;
         prescriptionData['doctorSpecialty'] = doctorSpecialty;
 
-        // Parse createdAt timestamp
         if (prescriptionData['createdAt'] != null) {
           if (prescriptionData['createdAt'] is Timestamp) {
             prescriptionData['createdAt'] =
@@ -920,7 +879,6 @@ class DatabaseService {
       return snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        // Parse createdAt timestamp
         if (data['createdAt'] != null && data['createdAt'] is Timestamp) {
           data['createdAt'] = (data['createdAt'] as Timestamp).toDate();
         }
@@ -949,7 +907,6 @@ class DatabaseService {
     }
   }
 
-  // Get call state stream for an appointment
   Stream<Map<String, dynamic>?> getCallStateStream(String appointmentId) {
     return appointmentsCollection
         .doc(appointmentId)
