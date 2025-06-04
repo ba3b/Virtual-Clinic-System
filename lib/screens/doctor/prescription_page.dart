@@ -209,13 +209,6 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
                         'Prescription for ${widget.patientName}',
                         style: AppTheme.subheadingStyle,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Appointment: ${widget.appointment.appointmentId}',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
                     ],
                   ),
                 ),

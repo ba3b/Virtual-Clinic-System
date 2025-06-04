@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
@@ -114,19 +113,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         builder: (context) => const NotificationsScreen()),
                   );
                 },
-              ),
-              InkWell(
-                onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                },
-                child: const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.transparent,
-                  child: Icon(
-                    Icons.logout_rounded,
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                ),
               ),
             ],
           ),

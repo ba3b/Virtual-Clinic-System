@@ -99,14 +99,14 @@ class AppointmentConfirmationScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
-            Row(
+            const Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.info_outline,
                   color: AppTheme.primaryColor,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Your appointment is pending confirmation. You will receive a notification once confirmed.',
@@ -115,28 +115,6 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                 ),
               ],
             ),
-            if (appointmentData['appointmentId'] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.confirmation_number_outlined,
-                      color: AppTheme.textSecondaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Appointment ID: ${appointmentData['appointmentId']}',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
       ),
@@ -158,7 +136,7 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                   size: 64,
                 ),
                 const SizedBox(height: 24),
-                Text(
+                const Text(
                   'Appointment Successfully Booked!',
                   style: AppTheme.headingStyle,
                   textAlign: TextAlign.center,

@@ -392,13 +392,6 @@ class _AppointmentInfoCard extends StatelessWidget {
                         '${appointment.type[0].toUpperCase()}${appointment.type.substring(1)} Appointment',
                         style: AppTheme.subheadingStyle.copyWith(fontSize: 16),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'ID: ${appointment.appointmentId}',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -503,7 +496,7 @@ class _PatientDetailsCard extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.person,
+                    Icons.person_outline_rounded,
                     color: AppTheme.primaryColor,
                     size: 28,
                   ),
@@ -519,7 +512,7 @@ class _PatientDetailsCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Patient ID: ${patient.userId}',
+                        'National ID: ${patient.nationalId}',
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -535,15 +528,17 @@ class _PatientDetailsCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildDetailItem('Age', '25 years'), 
+                  child: _buildDetailItem('Age', '${patient.age} years'),
                 ),
                 Expanded(
-                  child: _buildDetailItem('Gender', 'Male'),
+                  child: _buildDetailItem('Gender', patient.gender[0].toUpperCase() + patient.gender.substring(1)),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             _buildDetailItem('Phone', patient.phoneNumber),
+            const SizedBox(height: 12),
+            _buildDetailItem('Address', patient.address),
           ],
         ),
       ),

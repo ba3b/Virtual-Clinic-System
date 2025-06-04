@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/auth_service.dart';
-import 'package:virtual_clinic_system/api/firestore_service.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
-import '../auth/login_screen.dart';
 
 class PatientProfileScreen extends StatefulWidget {
   const PatientProfileScreen({Key? key}) : super(key: key);
@@ -15,7 +12,7 @@ class PatientProfileScreen extends StatefulWidget {
   State<PatientProfileScreen> createState() => _PatientProfileScreenState();
 }
 
-class _PatientProfileScreenState extends State<PatientProfileScreen>
+class _PatientProfileScreenState extends State<PatientProfileScreen> 
     with SingleTickerProviderStateMixin {
   final AuthService _auth = AuthService();
   late AnimationController _animationController;
@@ -29,12 +26,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
+    
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeIn,
     );
-
+    
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
@@ -42,7 +39,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       parent: _animationController,
       curve: Curves.easeOutQuart,
     ));
-
+    
     _animationController.forward();
   }
 
@@ -53,16 +50,33 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
   }
 
   void _showLogoutDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+          ),
         ),
-        title: Row(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 60,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.red.withOpacity(0.1),
                 shape: BoxShape.circle,
@@ -70,61 +84,82 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               child: const Icon(
                 Icons.logout_rounded,
                 color: Colors.red,
-                size: 24,
+                size: 40,
               ),
             ),
-            const SizedBox(width: 12),
-            const Text('Logout'),
+            const SizedBox(height: 24),
+            Text(
+              'Logout',
+              style: AppTheme.headingStyle.copyWith(fontSize: 24),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Are you sure you want to logout?',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.textSecondaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      side: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await _auth.signOut();
+                      if (mounted) {
+                        Navigator.pop(
+                          context,
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Logout',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-        content:
-            const Text('Are you sure you want to logout from your account?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _auth.signOut();
-              if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Logout'),
-          ),
-        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserId?>(context);
-
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('User not logged in')),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: FutureBuilder<UserModel>(
-        future: DatabaseService(uid: user.uid).getUserDetails(user.uid),
+      body: StreamBuilder<UserModel?>(
+        stream: _auth.getCurrentUserModelStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -156,8 +191,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
                           const SizedBox(height: 16),
                           _buildMedicalInfoCard(user),
                           const SizedBox(height: 16),
-                          _buildQuickActions(),
-                          const SizedBox(height: 24),
                           _buildLogoutButton(),
                           const SizedBox(height: 16),
                         ],
@@ -176,7 +209,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
   Widget _buildAnimatedAppBar(PatientModel user) {
     return SliverAppBar(
       expandedHeight: 200,
-      collapsedHeight: 80, 
       floating: false,
       pinned: true,
       backgroundColor: AppTheme.primaryColor,
@@ -419,15 +451,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           _buildInfoRow(Icons.phone_outlined, 'Phone', user.phoneNumber),
           _buildInfoRow(Icons.location_on_outlined, 'Address', user.address),
           _buildInfoRow(
-            Icons.calendar_month_outlined,
-            'Date of Birth',
+            Icons.calendar_month_outlined, 
+            'Date of Birth', 
             DateFormat('dd MMMM yyyy').format(user.dateOfBirth),
           ),
           _buildInfoRow(
-            Icons.wc_outlined,
-            'Gender',
-            user.gender.substring(0, 1).toUpperCase() +
-                user.gender.substring(1),
+            Icons.wc_outlined, 
+            'Gender', 
+            user.gender.substring(0, 1).toUpperCase() + user.gender.substring(1),
           ),
         ],
       ),
@@ -475,16 +506,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildMedicalInfoRow(
-              'Eligible Departments', user.eligibility.join(', ')),
-          _buildMedicalInfoRow(
-              'Medical History',
-              user.medicalHistory != null && user.medicalHistory!.isNotEmpty
-                  ? '${user.medicalHistory!.length} records'
-                  : 'No records'),
-          _buildMedicalInfoRow('Allergies',
-              'None reported'),
-          _buildMedicalInfoRow('Emergency Contact', user.phoneNumber),
+          _buildMedicalInfoRow('Eligible Departments', user.eligibility.join(', ')),
         ],
       ),
     );
@@ -530,6 +552,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start, // Align items to the start vertically
         children: [
           Text(
             label,
@@ -537,10 +560,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               color: AppTheme.textSecondaryColor,
             ),
           ),
-          Text(
-            value,
-            style: AppTheme.bodyStyle.copyWith(
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 8), // Add some space between label and value
+          Expanded(
+            child: Text(
+              value,
+              style: AppTheme.bodyStyle.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.end, // Align text to the end
+              softWrap: true, // Allow text to wrap
             ),
           ),
         ],
@@ -548,87 +576,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
     );
   }
 
-  Widget _buildQuickActions() {
-    return Container(
-      transform: Matrix4.translationValues(0, -20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Actions',
-            style: AppTheme.subheadingStyle.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.edit_document,
-                  label: 'Update Info',
-                  color: Colors.blue,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Update info feature coming soon!')),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.lock_outline,
-                  label: 'Change Password',
-                  color: Colors.orange,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Change password feature coming soon!')),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.notifications_outlined,
-                  label: 'Notifications',
-                  color: Colors.purple,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Notifications settings coming soon!')),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.help_outline,
-                  label: 'Help & Support',
-                  color: Colors.green,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Help & Support coming soon!')),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildActionButton({
     required IconData icon,

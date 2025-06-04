@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
@@ -95,47 +94,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        title: const Text('Doctor Dashboard'),
-        actions: [
-          NotificationBadge(
-            child: IconButton(
-              icon:
-                  const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const DoctorNotificationsScreen()),
-                );
-              },
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const DoctorNotificationsScreen()),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-            },
-            child: const CircleAvatar(
-              radius: 20,
-              backgroundColor: AppTheme.dividerColor,
-              child: Icon(
-                Icons.logout_rounded,
-                color: AppTheme.textSecondaryColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: _getSelectedScreen(),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
@@ -251,40 +209,67 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             upcomingAppointments
                 .sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDoctorInfoWidget(doctor, todayAppointments.length,
-                      upcomingAppointments.length),
-                  const SizedBox(height: 24),
-                  SectionHeader(
-                    title: 'Today\'s Appointments',
-                    subtitle: 'Your schedule for today',
-                    actionText: todayAppointments.isEmpty ? null : 'See All',
-                    onActionTap: () {
-                      setState(() {
-                        _selectedIndex = 1;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildAppointmentsList(todayAppointments),
-                  const SizedBox(height: 24),
-                  SectionHeader(
-                    title: 'Upcoming Appointments',
-                    subtitle: 'Your future schedule',
-                    actionText: upcomingAppointments.isEmpty ? null : 'See All',
-                    onActionTap: () {
-                      setState(() {
-                        _selectedIndex = 1;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildAppointmentsList(upcomingAppointments),
-                ],
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: NotificationBadge(
+                          child: IconButton(
+                            icon: const Icon(Icons.notifications_outlined, color: AppTheme.primaryColor),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const DoctorNotificationsScreen()),
+                              );
+                            },
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const DoctorNotificationsScreen()),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    _buildDoctorInfoWidget(doctor, todayAppointments.length,
+                        upcomingAppointments.length),
+                    const SizedBox(height: 24),
+                    SectionHeader(
+                      title: 'Today\'s Appointments',
+                      subtitle: 'Your schedule for today',
+                      actionText: todayAppointments.isEmpty ? null : 'See All',
+                      onActionTap: () {
+                        setState(() {
+                          _selectedIndex = 1;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildAppointmentsList(todayAppointments),
+                    const SizedBox(height: 24),
+                    SectionHeader(
+                      title: 'Upcoming Appointments',
+                      subtitle: 'Your future schedule',
+                      actionText: upcomingAppointments.isEmpty ? null : 'See All',
+                      onActionTap: () {
+                        setState(() {
+                          _selectedIndex = 1;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildAppointmentsList(upcomingAppointments),
+                  ],
+                ),
               ),
             );
           },

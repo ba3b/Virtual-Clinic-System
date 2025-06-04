@@ -202,13 +202,6 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                         'Diagnosis for ${widget.patientName}',
                         style: AppTheme.subheadingStyle,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Appointment: ${widget.appointment.appointmentId}',
-                        style: AppTheme.bodySmallStyle.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
                     ],
                   ),
                 ),

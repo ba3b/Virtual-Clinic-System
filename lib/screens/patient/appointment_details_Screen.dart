@@ -367,11 +367,6 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                                 AppTheme.subheadingStyle.copyWith(fontSize: 18),
                           ),
                           const SizedBox(height: 16),
-                          _buildInfoRow(
-                            Icons.confirmation_number_outlined,
-                            'Appointment ID',
-                            widget.appointmentData['appointmentId'] as String,
-                          ),
                           if (appointmentType != 'vaccination') ...[
                             _buildInfoRow(
                               Icons.local_hospital_outlined,

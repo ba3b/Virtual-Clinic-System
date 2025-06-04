@@ -1,8 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
-import 'package:virtual_clinic_system/components/custom_app_bar.dart';
 import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
 import 'package:virtual_clinic_system/components/doctor_selector_dialog.dart';
 import 'package:virtual_clinic_system/components/notification_badge.dart';
@@ -44,46 +42,6 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Staff Dashboard',
-        backgroundColor: AppTheme.primaryColor,
-        showBackButton: false,
-        actions: [
-          NotificationBadge(
-            child: IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const StaffNotificationsScreen()),
-                );
-              },
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const StaffNotificationsScreen()),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-            },
-            child: const CircleAvatar(
-              radius: 20,
-              backgroundColor: AppTheme.dividerColor,
-              child: Icon(
-                Icons.logout_rounded,
-                color: AppTheme.textSecondaryColor,
-              ),
-            ),
-          ),
-        ],
-      ),
       body: _getSelectedScreen(),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
@@ -130,48 +88,75 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildDashboardScreen() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStaffInfo(),
-          const SizedBox(height: 32),
-          StreamBuilder<List<AppointmentModel>>(
-            stream: _databaseService.getPendingAppointments(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('Error: ${snapshot.error}'),
-                );
-              }
-
-              final pendingAppointments = snapshot.data ?? [];
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeader(
-                    title: 'Pending Appointments',
-                    subtitle: 'Appointments that need verification and doctor assignment',
-                    actionText: pendingAppointments.isEmpty ? null : 'See All',
-                    onActionTap: () {
-                      setState(() {
-                        _selectedIndex = 1;
-                      });
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: NotificationBadge(
+                  child: IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: AppTheme.primaryColor, size: 28),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const StaffNotificationsScreen()),
+                      );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  _buildAppointmentsList(pendingAppointments),
-                ],
-              );
-            },
-          ),
-        ],
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const StaffNotificationsScreen()),
+                    );
+                  },
+                ),
+              ),
+            ),
+            _buildStaffInfo(),
+            const SizedBox(height: 32),
+            StreamBuilder<List<AppointmentModel>>(
+              stream: _databaseService.getPendingAppointments(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+      
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                }
+      
+                final pendingAppointments = snapshot.data ?? [];
+      
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SectionHeader(
+                      title: 'Pending Appointments',
+                      subtitle: 'Appointments that need verification and doctor assignment',
+                      actionText: pendingAppointments.isEmpty ? null : 'See All',
+                      onActionTap: () {
+                        setState(() {
+                          _selectedIndex = 1;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildAppointmentsList(pendingAppointments),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
