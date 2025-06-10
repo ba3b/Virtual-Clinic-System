@@ -166,7 +166,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           }
 
           if (!snapshot.hasData) {
-            return const Center(child: Text('Error loading profile'));
+            return Center(child: Text('Error loading profile: ${snapshot.error}'));
           }
 
           final user = snapshot.data as PatientModel;

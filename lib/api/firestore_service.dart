@@ -201,7 +201,8 @@ class DatabaseService {
               email: userData['email'] ?? '',
               phoneNumber: userData['phoneNumber'] ?? '',
               address: userData['address'] ?? '',
-              medicalHistory: userData['medicalHistory'],
+              medicalHistory: _parseMedicalHistory(
+                  userData['medicalHistory']), // Use the parsing method
               fcmToken: userData['fcmToken'] ?? '',
               nationalId: userData['nationalId'] ?? '',
               gender: userData['gender'] ?? '',
