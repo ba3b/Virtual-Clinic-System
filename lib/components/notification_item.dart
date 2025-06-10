@@ -25,34 +25,37 @@ class NotificationItem extends StatelessWidget {
         color: AppTheme.errorColor,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        child: const Icon(
-          Icons.delete_outline,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) {
-        if (onDelete != null) {
-          onDelete!();
-        }
-      },
+      onDismissed: (_) => onDelete?.call(),
       child: InkWell(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: notification.isRead ? Colors.white : AppTheme.primaryColor.withOpacity(0.05),
-            border: Border(
-              bottom: BorderSide(
-                color: AppTheme.dividerColor,
-                width: 1,
-              ),
+            color: notification.isRead 
+                ? Colors.white 
+                : AppTheme.primaryColor.withOpacity(0.05),
+            border: const Border(
+              bottom: BorderSide(color: AppTheme.dividerColor, width: 1),
             ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildNotificationIcon(),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.notifications,
+                  color: AppTheme.primaryColor,
+                  size: 24,
+                ),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -61,7 +64,9 @@ class NotificationItem extends StatelessWidget {
                     Text(
                       notification.message,
                       style: AppTheme.bodyStyle.copyWith(
-                        fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                        fontWeight: notification.isRead 
+                            ? FontWeight.normal 
+                            : FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -94,42 +99,6 @@ class NotificationItem extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildNotificationIcon() {
-    IconData iconData;
-    Color iconColor;
-
-    switch (notification.type) {
-      case 'appointment':
-        iconData = Icons.calendar_today_rounded;
-        iconColor = AppTheme.primaryColor;
-        break;
-      case 'reminder':
-        iconData = Icons.alarm;
-        iconColor = Colors.orange;
-        break;
-      case 'system':
-        iconData = Icons.notifications;
-        iconColor = Colors.blue;
-        break;
-      default:
-        iconData = Icons.notifications;
-        iconColor = AppTheme.primaryColor;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.1),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        iconData,
-        color: iconColor,
-        size: 24,
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
@@ -8,13 +9,12 @@ import 'package:virtual_clinic_system/screens/patient/vaccination_records_screen
 import '../../components/appointment_card.dart';
 import '../../components/custom_bottom_nav.dart';
 import '../../components/notification_badge.dart';
-import '../../components/quick_action_button.dart';
 import '../../components/section_header.dart';
 import '../../theme/theme.dart';
 import 'appointment_booking_screen.dart';
 import 'appointment_details_screen.dart';
 import 'appointments_screen.dart';
-import '../notifications_screen.dart';
+import 'patient_notifications_screen.dart';
 import 'profile_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -102,7 +102,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const NotificationsScreen()),
+                          builder: (context) =>
+                              const PatientNotificationsScreen()),
                     );
                   },
                 ),
@@ -110,7 +111,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const NotificationsScreen()),
+                        builder: (context) =>
+                            const PatientNotificationsScreen()),
                   );
                 },
               ),
@@ -233,6 +235,74 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildQuickActions() {
+    final actions = [
+      {
+        'icon': Icons.videocam_rounded,
+        'label': 'Virtual\nAppointment',
+        'color': AppTheme.primaryColor,
+        'gradientColors': [
+          const Color(0xFF667eea),
+          const Color(0xFF764ba2),
+        ],
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AppointmentBookingScreen(initialType: 'virtual'),
+            ),
+          );
+        },
+      },
+      {
+        'icon': Icons.person_rounded,
+        'label': 'Physical\nAppointment',
+        'color': AppTheme.secondaryColor,
+        'gradientColors': [
+          const Color(0xFFf093fb),
+          const Color(0xFFf5576c),
+        ],
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AppointmentBookingScreen(initialType: 'physical'),
+            ),
+          );
+        },
+      },
+      {
+        'icon': Icons.healing_rounded,
+        'label': 'Vaccination',
+        'color': AppTheme.accentColor,
+        'gradientColors': [
+          const Color(0xFF4facfe),
+          const Color(0xFF00f2fe),
+        ],
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AppointmentBookingScreen(initialType: 'vaccination'),
+            ),
+          );
+        },
+      },
+      {
+        'icon': Icons.description_outlined,
+        'label': 'Prescriptions',
+        'color': Colors.orange,
+        'gradientColors': [
+          const Color(0xFFfa709a),
+          const Color(0xFFfee140),
+        ],
+        'onTap': () {
+          setState(() {
+            _currentIndex = 2;
+          });
+        },
+      },
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,80 +313,217 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             subtitle: 'Access common features quickly',
           ),
         ),
-        const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              const SizedBox(width: 8),
-              QuickActionButton(
-                icon: Icons.videocam_rounded,
-                label: 'Virtual \nAppointment',
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                iconColor: AppTheme.primaryColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AppointmentBookingScreen(
-                        initialType: 'virtual',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 16),
-              QuickActionButton(
-                icon: Icons.person_rounded,
-                label: 'Physical \nAppointment',
-                backgroundColor: AppTheme.secondaryColor.withOpacity(0.1),
-                iconColor: AppTheme.secondaryColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AppointmentBookingScreen(
-                        initialType: 'physical',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 16),
-              QuickActionButton(
-                icon: Icons.healing_rounded,
-                label: 'Vaccination',
-                backgroundColor: AppTheme.accentColor.withOpacity(0.1),
-                iconColor: AppTheme.accentColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AppointmentBookingScreen(
-                        initialType: 'vaccination',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 16),
-              QuickActionButton(
-                icon: Icons.description_outlined,
-                label: 'Prescriptions',
-                backgroundColor: Colors.orange.withOpacity(0.1),
-                iconColor: Colors.orange,
-                onTap: () {
-                  setState(() {
-                    _currentIndex = 2;
-                  });
-                },
-              ),
-              const SizedBox(width: 16),
-            ],
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 240, // Increased to accommodate shadows
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 30), // Added bottom padding for shadows
+            itemCount: actions.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 20),
+            itemBuilder: (context, i) {
+              final a = actions[i];
+              return _buildStunningQuickActionCard(
+                icon: a['icon'] as IconData,
+                label: a['label'] as String,
+                color: a['color'] as Color,
+                gradientColors: a['gradientColors'] as List<Color>,
+                onTap: a['onTap'] as VoidCallback,
+                index: i,
+              );
+            },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStunningQuickActionCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required List<Color> gradientColors,
+    required VoidCallback onTap,
+    required int index,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: TweenAnimationBuilder<double>(
+        duration: Duration(milliseconds: 400 + (index * 100)),
+        tween: Tween(begin: 0.0, end: 1.0),
+        curve: Curves.elasticOut,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: value,
+            child: Container(
+              width: 160,
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: gradientColors,
+                  stops: const [0.0, 1.0],
+                ),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  // Colored glow shadow
+                  BoxShadow(
+                    color: gradientColors[0].withOpacity(0.4),
+                    blurRadius: 25,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 15),
+                  ),
+                  // Deep shadow for depth
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 30,
+                    spreadRadius: -10,
+                    offset: const Offset(0, 20),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Animated gradient overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.2),
+                          Colors.white.withOpacity(0.05),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                      ),
+                    ),
+                  ),
+                  
+                  // Floating elements for visual interest
+                  Positioned(
+                    top: 20,
+                    right: 20,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                  ),
+                  
+                  Positioned(
+                    bottom: 30,
+                    left: 15,
+                    child: Container(
+                      width: 25,
+                      height: 25,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.08),
+                      ),
+                    ),
+                  ),
+                  
+                  // Main content
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Icon with modern design
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            icon,
+                            color: Colors.white,
+                            size: 40,
+                            shadows: const [
+                              Shadow(
+                                color: Colors.black26,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 28),
+                        
+                        // Text with better styling
+                        Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            height: 1.2,
+                            letterSpacing: 0.5,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Top highlight border
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withOpacity(0.3),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -439,33 +646,34 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       }
 
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: AppointmentCard(
-                          doctorName: doctorName,
-                          appointmentDate: appointment.dateTime,
-                          appointmentType: appointment.type,
-                          status: appointment.status,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AppointmentDetailsScreen(
-                                  appointmentData: {
-                                    'appointmentId': appointment.appointmentId,
-                                    'doctorName': doctorName,
-                                    'appointmentDate': appointment.dateTime,
-                                    'appointmentType': appointment.type,
-                                    'status': appointment.status,
-                                    'department': appointment.department,
-                                    'vaccinationType':
-                                        appointment.vaccinationType,
-                                  },
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: AppointmentCard(
+                            doctorName: doctorName,
+                            appointmentDate: appointment.dateTime,
+                            appointmentType: appointment.type,
+                            status: appointment.status,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AppointmentDetailsScreen(
+                                    appointmentData: {
+                                      'appointmentId':
+                                          appointment.appointmentId,
+                                      'doctorName': doctorName,
+                                      'appointmentDate': appointment.dateTime,
+                                      'appointmentType': appointment.type,
+                                      'status': appointment.status,
+                                      'department': appointment.department,
+                                      'vaccinationType':
+                                          appointment.vaccinationType,
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
+                              );
+                            },
+                          ));
                     });
               },
             );

@@ -5,6 +5,7 @@ import 'package:virtual_clinic_system/constants/departments.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/message_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
+import 'package:virtual_clinic_system/models/notification_model.dart';
 
 class DatabaseService {
   final String uid;
@@ -23,6 +24,31 @@ class DatabaseService {
       FirebaseFirestore.instance.collection('VaccinationRecords');
   final CollectionReference messagesCollection =
       FirebaseFirestore.instance.collection('Messages');
+  final CollectionReference notificationsCollection =
+      FirebaseFirestore.instance.collection('Notifications');
+
+  Future<String> createNotification({
+    required String userId,
+    required String message,
+  }) async {
+    try {
+      DocumentReference docRef = notificationsCollection.doc();
+
+      final notification = NotificationModel(
+        notificationId: docRef.id,
+        userId: userId,
+        message: message,
+        dateTime: DateTime.now(),
+        isRead: false,
+      );
+
+      await docRef.set(notification.toJson());
+      return docRef.id;
+    } catch (e) {
+      print('Error creating notification: $e');
+      throw Exception('Failed to create notification: $e');
+    }
+  }
 
   Future<void> createUserDocument(
       UserCredential? userCredential,
@@ -97,8 +123,8 @@ class DatabaseService {
             fcmToken: userData['fcmToken'] ?? '',
             nationalId: userData['nationalId'] ?? '',
             gender: userData['gender'] ?? '',
-            dateOfBirth: userData['dateOfBirth'] != null 
-                ? DateTime.parse(userData['dateOfBirth']) 
+            dateOfBirth: userData['dateOfBirth'] != null
+                ? DateTime.parse(userData['dateOfBirth'])
                 : DateTime.now(),
             eligibility: List<String>.from(userData['eligibility'] ??
                 [DepartmentConstants.generalMedicine]),
@@ -114,8 +140,8 @@ class DatabaseService {
             fcmToken: userData['fcmToken'] ?? '',
             nationalId: userData['nationalId'] ?? '',
             gender: userData['gender'] ?? '',
-            dateOfBirth: userData['dateOfBirth'] != null 
-                ? DateTime.parse(userData['dateOfBirth']) 
+            dateOfBirth: userData['dateOfBirth'] != null
+                ? DateTime.parse(userData['dateOfBirth'])
                 : DateTime.now(),
           );
         case 'staff':
@@ -128,8 +154,8 @@ class DatabaseService {
             fcmToken: userData['fcmToken'] ?? '',
             nationalId: userData['nationalId'] ?? '',
             gender: userData['gender'] ?? '',
-            dateOfBirth: userData['dateOfBirth'] != null 
-                ? DateTime.parse(userData['dateOfBirth']) 
+            dateOfBirth: userData['dateOfBirth'] != null
+                ? DateTime.parse(userData['dateOfBirth'])
                 : DateTime.now(),
           );
         default:
@@ -179,8 +205,8 @@ class DatabaseService {
               fcmToken: userData['fcmToken'] ?? '',
               nationalId: userData['nationalId'] ?? '',
               gender: userData['gender'] ?? '',
-              dateOfBirth: userData['dateOfBirth'] != null 
-                  ? DateTime.parse(userData['dateOfBirth']) 
+              dateOfBirth: userData['dateOfBirth'] != null
+                  ? DateTime.parse(userData['dateOfBirth'])
                   : DateTime.now(),
               eligibility: List<String>.from(userData['eligibility'] ??
                   [DepartmentConstants.generalMedicine]),
@@ -196,8 +222,8 @@ class DatabaseService {
               fcmToken: userData['fcmToken'] ?? '',
               nationalId: userData['nationalId'] ?? '',
               gender: userData['gender'] ?? '',
-              dateOfBirth: userData['dateOfBirth'] != null 
-                  ? DateTime.parse(userData['dateOfBirth']) 
+              dateOfBirth: userData['dateOfBirth'] != null
+                  ? DateTime.parse(userData['dateOfBirth'])
                   : DateTime.now(),
             );
           case 'staff':
@@ -210,8 +236,8 @@ class DatabaseService {
               fcmToken: userData['fcmToken'] ?? '',
               nationalId: userData['nationalId'] ?? '',
               gender: userData['gender'] ?? '',
-              dateOfBirth: userData['dateOfBirth'] != null 
-                  ? DateTime.parse(userData['dateOfBirth']) 
+              dateOfBirth: userData['dateOfBirth'] != null
+                  ? DateTime.parse(userData['dateOfBirth'])
                   : DateTime.now(),
             );
           default:
@@ -558,8 +584,8 @@ class DatabaseService {
           fcmToken: data['fcmToken'] ?? '',
           nationalId: data['nationalId'] ?? '',
           gender: data['gender'] ?? '',
-          dateOfBirth: data['dateOfBirth'] != null 
-              ? DateTime.parse(data['dateOfBirth']) 
+          dateOfBirth: data['dateOfBirth'] != null
+              ? DateTime.parse(data['dateOfBirth'])
               : DateTime.now(),
         );
       }).toList();
@@ -586,8 +612,8 @@ class DatabaseService {
           fcmToken: data['fcmToken'] ?? '',
           nationalId: data['nationalId'] ?? '',
           gender: data['gender'] ?? '',
-          dateOfBirth: data['dateOfBirth'] != null 
-              ? DateTime.parse(data['dateOfBirth']) 
+          dateOfBirth: data['dateOfBirth'] != null
+              ? DateTime.parse(data['dateOfBirth'])
               : DateTime.now(),
         );
       }).toList();

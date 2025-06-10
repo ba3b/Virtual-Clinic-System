@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:virtual_clinic_system/api/notification_service.dart';
-import 'package:virtual_clinic_system/components/custom_app_bar.dart';
-import 'package:virtual_clinic_system/components/notification_item.dart';
-import 'package:virtual_clinic_system/models/notification_model.dart';
-import 'package:virtual_clinic_system/models/user_model.dart';
-import 'package:virtual_clinic_system/theme/theme.dart';
+import '../../api/notification_service.dart';
+import '../../components/custom_app_bar.dart';
+import '../../components/notification_item.dart';
+import '../../models/notification_model.dart';
+import '../../models/user_model.dart';
+import '../../theme/theme.dart';
 
-class DoctorNotificationsScreen extends StatelessWidget {
-  const DoctorNotificationsScreen({Key? key}) : super(key: key);
+class PatientNotificationsScreen extends StatelessWidget {
+  const PatientNotificationsScreen({Key? key}) : super(key: key);
 
   void _markAsRead(String notificationId) {
     NotificationService().markAsRead(notificationId);
@@ -32,10 +32,10 @@ class DoctorNotificationsScreen extends StatelessWidget {
     final user = Provider.of<UserId?>(context);
 
     if (user == null) {
-      return Scaffold(
-        appBar: const CustomAppBar(
+      return const Scaffold(
+        appBar: CustomAppBar(
             title: 'Notifications', backgroundColor: AppTheme.primaryColor),
-        body: const Center(child: Text('Please log in to view notifications')),
+        body: Center(child: Text('Please log in to view notifications')),
       );
     }
 

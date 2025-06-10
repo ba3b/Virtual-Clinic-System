@@ -1,51 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../api/notification_service.dart';
+import '../models/user_model.dart';
 import '../theme/theme.dart';
 
-class NotificationBadge extends StatefulWidget {
+class NotificationBadge extends StatelessWidget {
   final Widget child;
-  final bool showZero;
   final VoidCallback? onTap;
 
   const NotificationBadge({
     super.key,
     required this.child,
-    this.showZero = false,
     this.onTap,
   });
 
   @override
-  State<NotificationBadge> createState() => _NotificationBadgeState();
-}
-
-class _NotificationBadgeState extends State<NotificationBadge> {
-  final NotificationService _notificationService = NotificationService();
-  
-  @override
-  void initState() {
-    super.initState();
-    // Initialize the notification service
-    _notificationService.init();
-  }
-  
-  @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: _notificationService.unreadCountNotifier,
-      builder: (context, count, _) {
-        if (count == 0 && !widget.showZero) {
-          return GestureDetector(
-            onTap: widget.onTap,
-            child: widget.child,
-          );
+    final user = Provider.of<UserId?>(context);
+    
+    if (user == null) {
+      return GestureDetector(onTap: onTap, child: child);
+    }
+
+    return StreamBuilder<int>(
+      stream: NotificationService().getUnreadCountStream(user.uid),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        
+        if (count == 0) {
+          return GestureDetector(onTap: onTap, child: child);
         }
 
         return GestureDetector(
-          onTap: widget.onTap,
+          onTap: onTap,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              widget.child,
+              child,
               Positioned(
                 top: -5,
                 right: -5,

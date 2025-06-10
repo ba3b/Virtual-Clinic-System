@@ -1,20 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class NotificationModel {
   final String notificationId;
   final String userId;
   final String message;
-  final String type; // 'appointment', 'reminder', 'system', etc.
   final DateTime dateTime;
   final bool isRead;
-  final Map<String, dynamic>? additionalData;
 
   NotificationModel({
     required this.notificationId,
     required this.userId,
     required this.message,
-    required this.type,
     required this.dateTime,
     this.isRead = false,
-    this.additionalData,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -22,14 +20,14 @@ class NotificationModel {
       notificationId: json['notificationId'] ?? '',
       userId: json['userId'] ?? '',
       message: json['message'] ?? '',
-      type: json['type'] ?? 'system',
       dateTime: json['dateTime'] != null
-          ? (json['dateTime'] is DateTime
-              ? json['dateTime']
-              : DateTime.parse(json['dateTime']))
+          ? (json['dateTime'] is Timestamp
+              ? (json['dateTime'] as Timestamp).toDate()
+              : json['dateTime'] is DateTime
+                  ? json['dateTime']
+                  : DateTime.parse(json['dateTime']))
           : DateTime.now(),
       isRead: json['isRead'] ?? false,
-      additionalData: json['additionalData'],
     );
   }
 
@@ -38,10 +36,8 @@ class NotificationModel {
       'notificationId': notificationId,
       'userId': userId,
       'message': message,
-      'type': type,
       'dateTime': dateTime.toIso8601String(),
       'isRead': isRead,
-      if (additionalData != null) 'additionalData': additionalData,
     };
   }
 
@@ -49,19 +45,40 @@ class NotificationModel {
     String? notificationId,
     String? userId,
     String? message,
-    String? type,
     DateTime? dateTime,
     bool? isRead,
-    Map<String, dynamic>? additionalData,
   }) {
     return NotificationModel(
       notificationId: notificationId ?? this.notificationId,
       userId: userId ?? this.userId,
       message: message ?? this.message,
-      type: type ?? this.type,
       dateTime: dateTime ?? this.dateTime,
       isRead: isRead ?? this.isRead,
-      additionalData: additionalData ?? this.additionalData,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is NotificationModel &&
+        other.notificationId == notificationId &&
+        other.userId == userId &&
+        other.message == message &&
+        other.dateTime == dateTime &&
+        other.isRead == isRead;
+  }
+
+  @override
+  int get hashCode {
+    return notificationId.hashCode ^
+        userId.hashCode ^
+        message.hashCode ^
+        dateTime.hashCode ^
+        isRead.hashCode;
+  }
+
+  @override
+  String toString() {
+    return 'NotificationModel(notificationId: $notificationId, userId: $userId, message: $message, dateTime: $dateTime, isRead: $isRead)';
   }
 }
