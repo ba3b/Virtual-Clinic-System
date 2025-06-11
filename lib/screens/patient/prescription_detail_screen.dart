@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../components/custom_app_bar.dart';
 import '../../theme/theme.dart';
+import '../../api/firestore_service.dart';
+import '../../models/user_model.dart';
 
-class PrescriptionDetailScreen extends StatelessWidget {
+class PrescriptionDetailScreen extends StatefulWidget {
   final Map<String, dynamic> prescriptionData;
 
   const PrescriptionDetailScreen({
@@ -12,12 +15,46 @@ class PrescriptionDetailScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<PrescriptionDetailScreen> createState() => _PrescriptionDetailScreenState();
+}
+
+class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _pharmacyRegIdController = TextEditingController();
+  final _medicationDetailsController = TextEditingController();
+  final _priceController = TextEditingController();
+  
+  bool _isLoading = false;
+  bool _isPharmacyFormVisible = false;
+
+  String get prescriptionStatus => widget.prescriptionData['status'] ?? 'active';
+  bool get hasPharmacyDetails => widget.prescriptionData['pharmacyRegistrationId'] != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (hasPharmacyDetails) {
+      _pharmacyRegIdController.text = widget.prescriptionData['pharmacyRegistrationId'] ?? '';
+      _medicationDetailsController.text = widget.prescriptionData['pharmacyMedicationDetails'] ?? '';
+      _priceController.text = widget.prescriptionData['priceInSAR']?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _pharmacyRegIdController.dispose();
+    _medicationDetailsController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final DateTime createdAt = prescriptionData['createdAt'] as DateTime;
+    final DateTime createdAt = widget.prescriptionData['createdAt'] as DateTime;
     final DateTime expiryDate = createdAt.add(const Duration(days: 7));
     final int daysUntilExpiry = expiryDate.difference(DateTime.now()).inDays;
     final bool isExpiringSoon = daysUntilExpiry <= 2;
-    final bool isExpired = daysUntilExpiry < 0;
+    final bool isExpired = daysUntilExpiry < 0 || prescriptionStatus == 'expired';
 
     return Scaffold(
       appBar: const CustomAppBar(
@@ -37,14 +74,258 @@ class PrescriptionDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildDoctorInfo(),
             const SizedBox(height: 24),
-            _buildValidityInfo(createdAt, expiryDate, isExpired, isExpiringSoon,
-                daysUntilExpiry),
+            if (hasPharmacyDetails || _isPharmacyFormVisible) ...[
+              _buildPharmacySection(),
+              const SizedBox(height: 24),
+            ],
+            if (!hasPharmacyDetails && prescriptionStatus == 'active') ...[
+              _buildPharmacyButton(),
+              const SizedBox(height: 24),
+            ],
+            _buildValidityInfo(createdAt, expiryDate, isExpired, isExpiringSoon, daysUntilExpiry),
             const SizedBox(height: 24),
             _buildImportantNotes(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildPharmacyButton() {
+    return Center(
+      child: ElevatedButton.icon(
+        onPressed: () {
+          setState(() {
+            _isPharmacyFormVisible = true;
+          });
+        },
+        icon: const Icon(Icons.local_pharmacy),
+        label: const Text('Fill Pharmacy Details'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPharmacySection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.local_pharmacy,
+                color: AppTheme.primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Pharmacy Information',
+                style: AppTheme.subheadingStyle.copyWith(
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (hasPharmacyDetails) ...[
+            _buildPharmacyDisplayInfo(),
+          ] else ...[
+            _buildPharmacyForm(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPharmacyDisplayInfo() {
+    return Column(
+      children: [
+        _buildDetailItem('Pharmacy Registration ID', widget.prescriptionData['pharmacyRegistrationId'] ?? ''),
+        const SizedBox(height: 16),
+        _buildDetailItem('Medication Details', widget.prescriptionData['pharmacyMedicationDetails'] ?? ''),
+        const SizedBox(height: 16),
+        _buildDetailItem('Price', '${widget.prescriptionData['priceInSAR']?.toStringAsFixed(2) ?? '0.00'} SAR'),
+      ],
+    );
+  }
+
+  Widget _buildPharmacyForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _pharmacyRegIdController,
+            decoration: InputDecoration(
+              labelText: 'Pharmacy Registration ID *',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: const Icon(Icons.badge),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Pharmacy Registration ID is required';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _medicationDetailsController,
+            decoration: InputDecoration(
+              labelText: 'Medication Details *',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: const Icon(Icons.medication),
+            ),
+            maxLines: 3,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Medication details are required';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _priceController,
+            decoration: InputDecoration(
+              labelText: 'Price (SAR) *',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: const Icon(Icons.attach_money),
+              suffixText: 'SAR',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Price is required';
+              }
+              final price = double.tryParse(value.trim());
+              if (price == null || price <= 0) {
+                return 'Please enter a valid price';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : () {
+                    setState(() {
+                      _isPharmacyFormVisible = false;
+                    });
+                  },
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submitPharmacyDetails,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Received'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitPharmacyDetails() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = Provider.of<UserId?>(context, listen: false);
+      if (user == null) throw Exception('User not logged in');
+
+      final price = double.parse(_priceController.text.trim());
+
+      await DatabaseService(uid: user.uid).updatePrescriptionPharmacyDetails(
+        prescriptionId: widget.prescriptionData['prescriptionId'],
+        pharmacyRegistrationId: _pharmacyRegIdController.text.trim(),
+        pharmacyMedicationDetails: _medicationDetailsController.text.trim(),
+        priceInSAR: price,
+      );
+
+      // Update local data
+      widget.prescriptionData['pharmacyRegistrationId'] = _pharmacyRegIdController.text.trim();
+      widget.prescriptionData['pharmacyMedicationDetails'] = _medicationDetailsController.text.trim();
+      widget.prescriptionData['priceInSAR'] = price;
+      widget.prescriptionData['status'] = 'expired';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pharmacy details updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        setState(() {
+          _isPharmacyFormVisible = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildPrescriptionHeader(DateTime createdAt, bool isExpired,
@@ -141,7 +422,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      prescriptionData['medicationDetails'] ??
+                      widget.prescriptionData['medicationDetails'] ??
                           'Unknown Medication',
                       style: AppTheme.headingStyle.copyWith(
                         fontSize: 20,
@@ -173,7 +454,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'EXPIRED',
+                              prescriptionStatus == 'expired' ? 'RECEIVED' : 'EXPIRED',
                               style: AppTheme.bodySmallStyle.copyWith(
                                 color: AppTheme.errorColor,
                                 fontWeight: FontWeight.bold,
@@ -339,7 +620,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildDetailItem('Medication',
-              prescriptionData['medicationDetails'] ?? 'Not specified'),
+              widget.prescriptionData['medicationDetails'] ?? 'Not specified'),
           const SizedBox(height: 20),
           Text(
             'Dosage Instructions',
@@ -358,7 +639,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
               border: Border.all(color: AppTheme.dividerColor),
             ),
             child: Text(
-              prescriptionData['dosageInstructions'] ??
+              widget.prescriptionData['dosageInstructions'] ??
                   'No instructions provided',
               style: AppTheme.bodyStyle.copyWith(
                 height: 1.5,
@@ -465,14 +746,14 @@ class PrescriptionDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Dr. ${prescriptionData['doctorName'] ?? 'Unknown Doctor'}',
+                      'Dr. ${widget.prescriptionData['doctorName'] ?? 'Unknown Doctor'}',
                       style: AppTheme.subheadingStyle.copyWith(
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      prescriptionData['doctorSpecialty'] ?? 'General Medicine',
+                      widget.prescriptionData['doctorSpecialty'] ?? 'General Medicine',
                       style: AppTheme.bodyStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                       ),
@@ -641,7 +922,9 @@ class PrescriptionDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     isExpired
-                        ? 'This prescription has expired and is no longer valid.'
+                        ? prescriptionStatus == 'expired'
+                            ? 'This prescription has been received from the pharmacy.'
+                            : 'This prescription has expired and is no longer valid.'
                         : isExpiringSoon
                             ? 'This prescription expires ${daysUntilExpiry == 0 ? 'today' : 'in $daysUntilExpiry day${daysUntilExpiry == 1 ? '' : 's'}'}.'
                             : 'This prescription is valid for ${daysUntilExpiry} more day${daysUntilExpiry == 1 ? '' : 's'}.',

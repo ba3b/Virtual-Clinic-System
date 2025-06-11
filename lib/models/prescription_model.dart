@@ -6,6 +6,10 @@ class PrescriptionModel {
   final String medicationDetails;
   final String dosageInstructions;
   final DateTime createdAt;
+  final String status;
+  final String? pharmacyRegistrationId;
+  final String? pharmacyMedicationDetails;
+  final double? priceInSAR;
   
   PrescriptionModel({
     required this.prescriptionId,
@@ -15,6 +19,10 @@ class PrescriptionModel {
     required this.medicationDetails,
     required this.dosageInstructions,
     required this.createdAt,
+    this.status = 'active',
+    this.pharmacyRegistrationId,
+    this.pharmacyMedicationDetails,
+    this.priceInSAR,
   });
 
   factory PrescriptionModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +38,10 @@ class PrescriptionModel {
               ? json['createdAt']
               : DateTime.parse(json['createdAt']))
           : DateTime.now(),
+      status: json['status'] ?? 'active',
+      pharmacyRegistrationId: json['pharmacyRegistrationId'],
+      pharmacyMedicationDetails: json['pharmacyMedicationDetails'],
+      priceInSAR: json['priceInSAR']?.toDouble(),
     );
   }
 
@@ -42,6 +54,10 @@ class PrescriptionModel {
       'medicationDetails': medicationDetails,
       'dosageInstructions': dosageInstructions,
       'createdAt': createdAt.toIso8601String(),
+      'status': status,
+      'pharmacyRegistrationId': pharmacyRegistrationId,
+      'pharmacyMedicationDetails': pharmacyMedicationDetails,
+      'priceInSAR': priceInSAR,
     };
   }
 }

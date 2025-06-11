@@ -44,6 +44,7 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
           }
 
           if (snapshot.hasError) {
+            print('Error fetching prescriptions: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -725,6 +725,10 @@ class DatabaseService {
         'medicationDetails': medicationDetails,
         'dosageInstructions': dosageInstructions,
         'createdAt': FieldValue.serverTimestamp(),
+        'status': 'active',
+        'pharmacyRegistrationId': null,
+        'pharmacyMedicationDetails': null,
+        'priceInSAR': null,
       };
 
       await docRef.set(prescriptionData);
@@ -736,9 +740,29 @@ class DatabaseService {
     }
   }
 
+  Future<void> updatePrescriptionPharmacyDetails({
+    required String prescriptionId,
+    required String pharmacyRegistrationId,
+    required String pharmacyMedicationDetails,
+    required double priceInSAR,
+  }) async {
+    try {
+      await prescriptionsCollection.doc(prescriptionId).update({
+        'pharmacyRegistrationId': pharmacyRegistrationId,
+        'pharmacyMedicationDetails': pharmacyMedicationDetails,
+        'priceInSAR': priceInSAR,
+        'status': 'expired',
+      });
+    } catch (e) {
+      print('Error updating prescription pharmacy details: $e');
+      throw Exception('Failed to update prescription pharmacy details: $e');
+    }
+  }
+
   Stream<List<Map<String, dynamic>>> getPatientPrescriptions(String patientId) {
     return prescriptionsCollection
         .where('patientId', isEqualTo: patientId)
+        .where('status', isEqualTo: 'active')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
