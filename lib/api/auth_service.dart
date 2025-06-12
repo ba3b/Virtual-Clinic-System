@@ -66,12 +66,55 @@ class AuthService {
     }
   }
 
-  Future<void> resetPassword(String email) async {
+  Future<String?> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+      return null; // Success
     } on FirebaseAuthException catch (e) {
-      print("Failed to send password reset email: ${e.message}");
-      rethrow;
+      return _getErrorMessage(e.code);
+    } catch (e) {
+      return 'An unexpected error occurred. Please try again.';
+    }
+  }
+
+  Future<String?> verifyPasswordResetCode(String code) async {
+    try {
+      await _auth.verifyPasswordResetCode(code);
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      return _getErrorMessage(e.code);
+    } catch (e) {
+      return 'Invalid or expired code. Please try again.';
+    }
+  }
+
+  Future<String?> confirmPasswordReset(String code, String newPassword) async {
+    try {
+      await _auth.confirmPasswordReset(code: code, newPassword: newPassword);
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      return _getErrorMessage(e.code);
+    } catch (e) {
+      return 'Failed to reset password. Please try again.';
+    }
+  }
+
+  String _getErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'No account found with this email address.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'too-many-requests':
+        return 'Too many requests. Please try again later.';
+      case 'expired-action-code':
+        return 'The verification code has expired. Please request a new one.';
+      case 'invalid-action-code':
+        return 'The verification code is invalid. Please check and try again.';
+      case 'weak-password':
+        return 'Password is too weak. Please choose a stronger password.';
+      default:
+        return 'An error occurred. Please try again.';
     }
   }
 

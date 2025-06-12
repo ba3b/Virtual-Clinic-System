@@ -4,7 +4,7 @@ import '../../components/custom_text_field.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
 import '../../utils/validators.dart';
-import 'confirmation_code_screen.dart';
+import '../../api/auth_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -16,7 +16,9 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _authService = AuthService();
   bool _isLoading = false;
+  bool _emailSent = false;
 
   @override
   void dispose() {
@@ -30,32 +32,177 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _isLoading = true;
       });
       
-      // This is a placeholder for actual password reset logic
-      // In a real app, you would use AuthService to send a reset email
-      await Future.delayed(const Duration(seconds: 2));
-      
-      setState(() {
-        _isLoading = false;
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Reset code sent to your email'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
+      try {
+        String? error = await _authService.sendPasswordResetEmail(_emailController.text.trim());
         
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ConfirmationCodeScreen(
-              email: _emailController.text,
+        setState(() {
+          _isLoading = false;
+        });
+        
+        if (mounted) {
+          if (error == null) {
+            setState(() {
+              _emailSent = true;
+            });
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error),
+                backgroundColor: AppTheme.errorColor,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('An unexpected error occurred. Please try again.'),
+              backgroundColor: AppTheme.errorColor,
             ),
-          ),
-        );
+          );
+        }
       }
     }
+  }
+
+  Widget _buildEmailForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Reset Password',
+          style: AppTheme.headingStyle,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Enter your email address and we\'ll send you a link to reset your password.',
+          style: AppTheme.bodyStyle.copyWith(
+            color: AppTheme.textSecondaryColor,
+          ),
+        ),
+        const SizedBox(height: 32),
+        
+        CustomTextField(
+          label: 'Email',
+          hint: 'Enter your email',
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          prefixIcon: const Icon(Icons.email_outlined),
+          validator: Validators.validateEmail,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _sendResetEmail(),
+          enabled: !_isLoading,
+        ),
+        const SizedBox(height: 32),
+        
+        CommonButton(
+          text: 'Send Reset Link',
+          isLoading: _isLoading,
+          onPressed: _isLoading ? null : _sendResetEmail,
+        ),
+        
+        const SizedBox(height: 16),
+        
+        Center(
+          child: TextButton(
+            onPressed: _isLoading ? null : () => Navigator.pop(context),
+            child: Text(
+              'Back to Login',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccessMessage() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.mark_email_read_outlined,
+          size: 64,
+          color: AppTheme.successColor,
+        ),
+        const SizedBox(height: 24),
+        
+        const Text(
+          'Check Your Email',
+          style: AppTheme.headingStyle,
+        ),
+        const SizedBox(height: 8),
+        
+        Text(
+          'We\'ve sent a password reset link to ${_emailController.text.trim()}',
+          style: AppTheme.bodyStyle.copyWith(
+            color: AppTheme.textSecondaryColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppTheme.dividerColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Next Steps:',
+                style: AppTheme.bodyStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '1. Check your email inbox (and spam folder)\n2. Click the reset link in the email\n3. Follow the instructions to set a new password\n4. Return to the app and login',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        
+        CommonButton(
+          text: 'Back to Login',
+          onPressed: () => Navigator.pop(context),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        Center(
+          child: TextButton(
+            onPressed: () {
+              setState(() {
+                _emailSent = false;
+              });
+            },
+            child: Text(
+              'Send to Different Email',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -71,43 +218,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Reset Password',
-                  style: AppTheme.headingStyle,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter your email address. We\'ll send you a code to reset your password.',
-                  style: AppTheme.bodyStyle.copyWith(
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                // Email Field
-                CustomTextField(
-                  label: 'Email',
-                  hint: 'Enter your email',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  validator: Validators.validateEmail,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _sendResetEmail(),
-                ),
-                const SizedBox(height: 32),
-                
-                // Send Reset Email Button
-                CommonButton(
-                  text: 'Send Reset Code',
-                  isLoading: _isLoading,
-                  onPressed: _sendResetEmail,
-                ),
-              ],
-            ),
+            child: _emailSent ? _buildSuccessMessage() : _buildEmailForm(),
           ),
         ),
       ),
