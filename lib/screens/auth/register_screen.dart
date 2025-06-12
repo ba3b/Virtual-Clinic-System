@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:virtual_clinic_system/api/auth_service.dart';
 import 'package:virtual_clinic_system/screens/wrapper.dart';
@@ -29,23 +30,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _nationalIdController = TextEditingController();
   
-  String _selectedUserType = 'patient';
+  final _selectedUserType = 'patient';
   String _selectedGender = 'male';
   DateTime? _selectedDateOfBirth;
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
-  final List<Map<String, dynamic>> _userTypes = [
-    {'value': 'patient', 'label': 'Patient'},
-    {'value': 'doctor', 'label': 'Doctor'},
-    {'value': 'staff', 'label': 'Staff'},
-  ];
+  
+  // Password strength tracking
+  double _passwordStrength = 0.0;
+  String _passwordStrengthText = '';
+  Color _passwordStrengthColor = Colors.red;
 
   final List<Map<String, dynamic>> _genderOptions = [
     {'value': 'male', 'label': 'Male'},
     {'value': 'female', 'label': 'Female'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(() {
+      _updatePasswordStrength();
+    });
+  }
 
   @override
   void dispose() {
@@ -57,6 +65,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     _nationalIdController.dispose();
     super.dispose();
+  }
+
+  void _updatePasswordStrength() {
+    final password = _passwordController.text;
+    final strength = _calculatePasswordStrength(password);
+    
+    setState(() {
+      _passwordStrength = strength;
+      if (password.isEmpty) {
+        _passwordStrengthText = '';
+        _passwordStrengthColor = Colors.grey;
+      } else if (strength < 0.3) {
+        _passwordStrengthText = 'Weak';
+        _passwordStrengthColor = Colors.red;
+      } else if (strength < 0.7) {
+        _passwordStrengthText = 'Medium';
+        _passwordStrengthColor = Colors.orange;
+      } else {
+        _passwordStrengthText = 'Strong';
+        _passwordStrengthColor = Colors.green;
+      }
+    });
+  }
+
+  double _calculatePasswordStrength(String password) {
+    if (password.isEmpty) return 0.0;
+    
+    double strength = 0.0;
+    
+    // Length check
+    if (password.length >= 8) strength += 0.25;
+    if (password.length >= 12) strength += 0.15;
+    
+    // Character variety checks
+    if (password.contains(RegExp(r'[a-z]'))) strength += 0.15;
+    if (password.contains(RegExp(r'[A-Z]'))) strength += 0.15;
+    if (password.contains(RegExp(r'[0-9]'))) strength += 0.15;
+    if (password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) strength += 0.15;
+    
+    return strength.clamp(0.0, 1.0);
+  }
+
+  bool _isPasswordStrong() {
+    return _passwordStrength >= 0.7;
   }
 
   void _togglePasswordVisibility() {
@@ -74,7 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _selectDateOfBirth() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // Default to 18 years ago
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -98,12 +150,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  String? _validateNationalId(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'National ID is required';
+    }
+    if (value.length != 10) {
+      return 'National ID must be exactly 10 digits';
+    }
+    if (!RegExp(r'^[12]\d{9}$').hasMatch(value)) {
+      return 'National ID must start with 1 or 2 and contain only numbers';
+    }
+    return null;
+  }
+
+  String? _validatePhoneNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Phone number is required';
+    }
+    if (value.length != 10) {
+      return 'Phone number must be exactly 10 digits';
+    }
+    if (!RegExp(r'^05\d{8}$').hasMatch(value)) {
+      return 'Phone number must start with 05 and contain only numbers';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (!_isPasswordStrong()) {
+      return 'Password is not strong enough';
+    }
+    return null;
+  }
+
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDateOfBirth == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please select your date of birth'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        return;
+      }
+
+      if (!_isPasswordStrong()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please use a stronger password'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -154,6 +252,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Widget _buildPasswordStrengthIndicator() {
+    if (_passwordController.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  color: Colors.grey.shade300,
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: _passwordStrength,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: _passwordStrengthColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: _passwordStrengthColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _passwordStrengthColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                _passwordStrengthText,
+                style: TextStyle(
+                  color: _passwordStrengthColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Password must contain: uppercase, lowercase, number, and special character (min 8 chars)',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,50 +348,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 
-                // User Type Selection
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'I am a:',
-                      style: AppTheme.bodyStyle.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.dividerColor),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedUserType,
-                          isExpanded: true,
-                          elevation: 2,
-                          style: AppTheme.bodyStyle,
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                _selectedUserType = newValue;
-                              });
-                            }
-                          },
-                          items: _userTypes.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
-                            return DropdownMenuItem<String>(
-                              value: item['value'],
-                              child: Text(item['label']),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
                 // Name Field
                 CustomTextField(
                   label: 'Full Name',
@@ -241,22 +359,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // National ID Field
+                // National ID Field with improved validation
                 CustomTextField(
                   label: 'National ID',
-                  hint: 'Enter your national ID number',
+                  hint: 'Enter your 10-digit national ID',
                   controller: _nationalIdController,
                   prefixIcon: const Icon(Icons.badge_outlined),
                   keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'National ID is required';
-                    }
-                    if (value.length < 10) {
-                      return 'Please enter a valid national ID';
-                    }
-                    return null;
-                  },
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  validator: _validateNationalId,
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
@@ -327,7 +441,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.calendar_today_outlined,
                               color: AppTheme.textSecondaryColor,
                               size: 20,
@@ -363,14 +477,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Phone Field
+                // Phone Field with improved validation
                 CustomTextField(
                   label: 'Phone Number',
-                  hint: 'Enter your phone number',
+                  hint: 'Enter your phone number (05xxxxxxxx)',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   prefixIcon: const Icon(Icons.phone_outlined),
-                  validator: Validators.validatePhoneNumber,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  validator: _validatePhoneNumber,
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
@@ -386,21 +504,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Password Field
-                CustomTextField(
-                  label: 'Password',
-                  hint: 'Enter your password',
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                // Password Field with strength indicator
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomTextField(
+                      label: 'Password',
+                      hint: 'Enter your password',
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: _togglePasswordVisibility,
+                      ),
+                      validator: _validatePassword,
+                      textInputAction: TextInputAction.next,
                     ),
-                    onPressed: _togglePasswordVisibility,
-                  ),
-                  validator: Validators.validatePassword,
-                  textInputAction: TextInputAction.next,
+                    _buildPasswordStrengthIndicator(),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 
