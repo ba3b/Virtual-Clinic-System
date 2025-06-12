@@ -57,6 +57,54 @@ class AuthService {
     }
   }
 
+  Future<User?> registerUserByStaff(
+    String fullName,
+    String email,
+    String password,
+    String phoneNumber,
+    String address,
+    String userType,
+    String nationalId,
+    String gender,
+    DateTime dateOfBirth,
+    String? specialty, 
+  ) async {
+    try {
+      User? currentUser = _auth.currentUser;
+      String? currentUserEmail = currentUser?.email;
+      UserCredential result = await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+      User? newUser = result.user;
+      
+      if (newUser != null) {
+        await DatabaseService(uid: newUser.uid).createStaffManagedUserDocument(
+          result,
+          fullName,
+          phoneNumber,
+          address,
+          userType,
+          nationalId,
+          gender,
+          dateOfBirth,
+          specialty,
+        );
+        
+        await _auth.signOut();
+        
+        print('New user created successfully. Previous staff user email: $currentUserEmail');
+        print('Staff user will need to sign in again to continue.');
+      }
+      
+      return newUser;
+    } on FirebaseAuthException catch (e) {
+      print('Registration error: ${e.message}');
+      throw Exception(e.message ?? 'Registration failed');
+    } catch (e) {
+      print('Unexpected error: $e');
+      throw Exception('An unexpected error occurred');
+    }
+  }
+
   Future<void> signOut() async {
     try {
       return await _auth.signOut();
@@ -113,6 +161,8 @@ class AuthService {
         return 'The verification code is invalid. Please check and try again.';
       case 'weak-password':
         return 'Password is too weak. Please choose a stronger password.';
+      case 'email-already-in-use':
+        return 'An account with this email already exists.';
       default:
         return 'An error occurred. Please try again.';
     }

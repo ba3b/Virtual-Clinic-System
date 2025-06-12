@@ -100,6 +100,50 @@ class DatabaseService {
     }
   }
 
+  Future<void> createStaffManagedUserDocument(
+      UserCredential? userCredential,
+      String fullName,
+      String phoneNumber,
+      String address,
+      String userType,
+      String nationalId,
+      String gender,
+      DateTime dateOfBirth,
+      String? specialty) async {
+    if (userCredential != null && userCredential.user != null) {
+      UserModel user = UserModel(
+        userId: userCredential.user!.uid,
+        name: fullName,
+        email: userCredential.user!.email ?? '',
+        phoneNumber: phoneNumber,
+        address: address,
+        userType: userType,
+        fcmToken: '',
+        nationalId: nationalId,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
+      );
+
+      Map<String, dynamic> userData;
+
+      switch (userType) {
+        case 'doctor':
+          DoctorModel doctor = DoctorModel.fromUserModel(user,
+              specialty: specialty ?? DepartmentConstants.generalMedicine);
+          userData = doctor.toJson();
+          break;
+        case 'staff':
+          StaffModel staff = StaffModel.fromUserModel(user);
+          userData = staff.toJson();
+          break;
+        default:
+          userData = user.toJson();
+      }
+
+      await usersCollection.doc(userCredential.user!.uid).set(userData);
+    }
+  }
+
   Future<UserModel> getUserDetails(String userId) async {
     DocumentSnapshot<Object?> userSnapshot =
         await usersCollection.doc(userId).get();

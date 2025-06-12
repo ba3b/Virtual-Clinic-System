@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:virtual_clinic_system/api/auth_service.dart';
-import 'package:virtual_clinic_system/api/firestore_service.dart';
-import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
+import 'staff_register_user_screen.dart';
 
 class StaffProfileScreen extends StatefulWidget {
   const StaffProfileScreen({Key? key}) : super(key: key);
@@ -17,23 +16,14 @@ class StaffProfileScreen extends StatefulWidget {
 class _StaffProfileScreenState extends State<StaffProfileScreen>
     with TickerProviderStateMixin {
   final AuthService _auth = AuthService();
-  late DatabaseService _databaseService;
   late AnimationController _animationController;
   late AnimationController _cardAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  Map<String, int> _statistics = {
-    'pendingAppointments': 0,
-    'approvedToday': 0,
-    'vaccinationsScheduled': 0,
-    'totalProcessed': 0,
-  };
-
   @override
   void initState() {
     super.initState();
-    _databaseService = DatabaseService(uid: _auth.currentUser!.uid);
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
@@ -61,7 +51,6 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
     _animationController.forward();
     _cardAnimationController.forward();
 
-    _loadStatistics();
   }
 
   @override
@@ -69,29 +58,6 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
     _animationController.dispose();
     _cardAnimationController.dispose();
     super.dispose();
-  }
-
-  void _loadStatistics() {
-    // Load pending appointments
-    _databaseService.getPendingAppointments().listen((appointments) {
-      if (mounted) {
-        setState(() {
-          _statistics['pendingAppointments'] = appointments.length;
-
-          // Count vaccination appointments
-          _statistics['vaccinationsScheduled'] = appointments
-              .where((apt) => apt.type == AppointmentModel.typeVaccination)
-              .length;
-        });
-      }
-    });
-
-    // For demo purposes, setting some values
-    // In real app, these would be calculated from actual data
-    setState(() {
-      _statistics['approvedToday'] = 12;
-      _statistics['totalProcessed'] = 156;
-    });
   }
 
   void _showLogoutDialog() {
@@ -199,6 +165,24 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
     );
   }
 
+  Widget _buildRegisterUserButton() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: CommonButton(
+        text: 'Register New User',
+        backgroundColor: AppTheme.primaryColor,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const StaffRegisterUserScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -227,6 +211,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
                     const SizedBox(height: 24),
                     _buildDetailedInfo(staff),
                     const SizedBox(height: 24),
+                    _buildRegisterUserButton(),
                     _buildLogoutButton(),
                     const SizedBox(height: 32),
                   ],
