@@ -18,6 +18,8 @@ class _VaccinationScreenState extends State<VaccinationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late DatabaseService _databaseService;
+  final Map<String, TextEditingController> _vaccineTypeControllers =
+      {}; // New controllers map
 
   @override
   void initState() {
@@ -30,6 +32,9 @@ class _VaccinationScreenState extends State<VaccinationScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    for (var controller in _vaccineTypeControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -111,8 +116,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
           ),
           Expanded(
             child: StreamBuilder<List<AppointmentModel>>(
-              stream: _databaseService
-                  .getVaccinationAppointments(), 
+              stream: _databaseService.getVaccinationAppointments(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -244,6 +248,12 @@ class _VaccinationScreenState extends State<VaccinationScreen>
     final Color cardColor =
         isToday ? AppTheme.primaryColor : AppTheme.successColor;
 
+    // Ensure controller exists for this appointment
+    if (!_vaccineTypeControllers.containsKey(appointment.appointmentId)) {
+      _vaccineTypeControllers[appointment.appointmentId] =
+          TextEditingController();
+    }
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(
@@ -335,7 +345,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                   children: [
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.calendar_today_outlined,
                           size: 18,
                           color: AppTheme.primaryColor,
@@ -352,7 +362,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                     ),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.access_time_rounded,
                           size: 18,
                           color: AppTheme.primaryColor,
@@ -371,6 +381,35 @@ class _VaccinationScreenState extends State<VaccinationScreen>
               ),
               if (isToday) ...[
                 const SizedBox(height: 20),
+                TextField(
+                  controller:
+                      _vaccineTypeControllers[appointment.appointmentId],
+                  decoration: InputDecoration(
+                    labelText: 'Actual Vaccine Type *',
+                    hintText: 'e.g., Pfizer, AstraZeneca, Moderna',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: AppTheme.primaryColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: AppTheme.dividerColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryColor, width: 2),
+                    ),
+                    prefixIcon: const Icon(Icons.medical_services,
+                        color: AppTheme.primaryColor),
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                  ),
+                  style: AppTheme.bodyStyle,
+                ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -420,7 +459,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                         color: AppTheme.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.healing_rounded,
                         color: AppTheme.primaryColor,
                         size: 28,
@@ -579,6 +618,19 @@ class _VaccinationScreenState extends State<VaccinationScreen>
   }
 
   Future<void> _markAsCompleted(AppointmentModel appointment) async {
+    final controller = _vaccineTypeControllers[appointment.appointmentId];
+    final actualVaccineType = controller?.text.trim() ?? '';
+    if (actualVaccineType.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Please enter the actual vaccine type before completing'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
     try {
       await _databaseService.updateAppointmentStatus(
         appointment.appointmentId,
@@ -589,8 +641,10 @@ class _VaccinationScreenState extends State<VaccinationScreen>
         appointmentId: appointment.appointmentId,
         patientId: appointment.patientId,
         vaccineType: appointment.vaccinationType ?? 'Unknown',
+        actualVaccineType: actualVaccineType, 
       );
 
+      controller?.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

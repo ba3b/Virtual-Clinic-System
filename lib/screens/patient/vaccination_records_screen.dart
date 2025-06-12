@@ -358,6 +358,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
 
   Widget _buildVaccinationCard(Map<String, dynamic> vaccination, int index) {
     final String vaccineType = vaccination['vaccineType'] ?? 'Unknown Vaccine';
+    final String actualVaccineType = vaccination['actualVaccineType'] ?? 'Not specified';
     final DateTime? createdAt = vaccination['createdAt'];
 
     final List<LinearGradient> gradients = [
@@ -488,9 +489,22 @@ class VaccinationRecordsScreen extends StatelessWidget {
                         vaccineType,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        actualVaccineType,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Row(

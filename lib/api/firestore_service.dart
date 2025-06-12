@@ -899,6 +899,7 @@ class DatabaseService {
     required String appointmentId,
     required String patientId,
     required String vaccineType,
+    required String actualVaccineType,
   }) async {
     try {
       DocumentReference docRef = vaccinationRecordsCollection.doc();
@@ -908,6 +909,7 @@ class DatabaseService {
         'appointmentId': appointmentId,
         'patientId': patientId,
         'vaccineType': vaccineType,
+        'actualVaccineType': actualVaccineType,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
