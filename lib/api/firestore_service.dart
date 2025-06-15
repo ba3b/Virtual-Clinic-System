@@ -50,6 +50,33 @@ class DatabaseService {
     }
   }
 
+  Future<List<String>> _getAllStaffUserIds() async {
+    try {
+      QuerySnapshot snapshot = await usersCollection
+          .where('userType', isEqualTo: 'staff')
+          .get();
+      
+      return snapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      print('Error getting staff user IDs: $e');
+      return [];
+    }
+  }
+
+  Future<String> _getUserName(String userId) async {
+    try {
+      DocumentSnapshot doc = await usersCollection.doc(userId).get();
+      if (doc.exists) {
+        Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
+        return userData['name'] ?? 'Unknown User';
+      }
+      return 'Unknown User';
+    } catch (e) {
+      print('Error getting user name: $e');
+      return 'Unknown User';
+    }
+  }
+
   Future<void> createUserDocument(
       UserCredential? userCredential,
       String fullName,
@@ -97,6 +124,16 @@ class DatabaseService {
       }
 
       await usersCollection.doc(uid).set(userData);
+
+      if (userType != 'staff') {
+        List<String> staffIds = await _getAllStaffUserIds();
+        for (String staffId in staffIds) {
+          await createNotification(
+            userId: staffId,
+            message: "New $userType registered: $fullName",
+          );
+        }
+      }
     }
   }
 
@@ -141,6 +178,23 @@ class DatabaseService {
       }
 
       await usersCollection.doc(userCredential.user!.uid).set(userData);
+
+      // Notify all staff about new staff-managed user creation
+      List<String> staffIds = await _getAllStaffUserIds();
+      for (String staffId in staffIds) {
+        await createNotification(
+          userId: staffId,
+          message: "New $userType account created by staff: $fullName",
+        );
+      }
+
+      // If it's a doctor, notify the doctor about their account creation
+      if (userType == 'doctor') {
+        await createNotification(
+          userId: userCredential.user!.uid,
+          message: "Welcome Dr. $fullName! Your account has been created successfully.",
+        );
+      }
     }
   }
 
@@ -302,6 +356,25 @@ class DatabaseService {
 
       await docRef.set(messageWithId.toJson());
 
+      // Get appointment details to notify the other party
+      DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(message.appointmentId).get();
+      if (appointmentDoc.exists) {
+        Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+        String patientId = appointmentData['patientId'];
+        String? doctorId = appointmentData['doctorId'];
+        
+        String senderName = await _getUserName(message.senderId);
+        
+        // Notify the recipient
+        String recipientId = message.senderId == patientId ? doctorId ?? '' : patientId;
+        if (recipientId.isNotEmpty) {
+          await createNotification(
+            userId: recipientId,
+            message: "New message from $senderName in your appointment chat",
+          );
+        }
+      }
+
       return docRef.id;
     } catch (e) {
       print('Error sending message: $e');
@@ -419,6 +492,23 @@ class DatabaseService {
 
       await docRef.set(appointment.toJson());
 
+      // Notify all staff about new appointment request
+      String patientName = await _getUserName(patientId);
+      List<String> staffIds = await _getAllStaffUserIds();
+      
+      String appointmentDetails = appointmentType == AppointmentModel.typeVaccination 
+          ? "vaccination appointment for $vaccinationType"
+          : "$department appointment";
+      
+      String formattedDate = DateFormat('MMM dd, yyyy').format(appointmentDate);
+      
+      for (String staffId in staffIds) {
+        await createNotification(
+          userId: staffId,
+          message: "New $appointmentDetails requested by $patientName on $formattedDate at $appointmentTime",
+        );
+      }
+
       return docRef.id;
     } catch (e) {
       print('Error creating appointment: $e');
@@ -471,6 +561,39 @@ class DatabaseService {
       await appointmentsCollection.doc(appointmentId).update({
         'status': status,
       });
+
+      // Get appointment details for notification
+      DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
+      if (appointmentDoc.exists) {
+        Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+        String patientId = appointmentData['patientId'];
+        DateTime appointmentDateTime = appointmentData['dateTime'].toDate();
+        String appointmentType = appointmentData['type'];
+        
+        String formattedDate = DateFormat('MMM dd, yyyy').format(appointmentDateTime);
+        String formattedTime = DateFormat('h:mm a').format(appointmentDateTime);
+        
+        String appointmentDetails = appointmentType == AppointmentModel.typeVaccination 
+            ? "vaccination appointment"
+            : "${appointmentData['department']} appointment";
+
+        if (status == AppointmentModel.statusApproved) {
+          await createNotification(
+            userId: patientId,
+            message: "Your $appointmentDetails on $formattedDate at $formattedTime has been approved",
+          );
+        } else if (status == AppointmentModel.statusRejected) {
+          await createNotification(
+            userId: patientId,
+            message: "Your $appointmentDetails on $formattedDate at $formattedTime has been rejected",
+          );
+        } else if (status == AppointmentModel.statusCompleted) {
+          await createNotification(
+            userId: patientId,
+            message: "Your $appointmentDetails on $formattedDate has been completed",
+          );
+        }
+      }
     } catch (e) {
       print('Error updating appointment status: $e');
       throw Exception('Failed to update appointment status: $e');
@@ -484,6 +607,44 @@ class DatabaseService {
         'doctorId': doctorId,
         'status': AppointmentModel.statusApproved,
       });
+
+      // Get appointment and doctor details for notifications
+      DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
+      if (appointmentDoc.exists) {
+        Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+        String patientId = appointmentData['patientId'];
+        DateTime appointmentDateTime = appointmentData['dateTime'].toDate();
+        String appointmentType = appointmentData['type'];
+        
+        String patientName = await _getUserName(patientId);
+        String doctorName = await _getUserName(doctorId);
+        
+        String formattedDate = DateFormat('MMM dd, yyyy').format(appointmentDateTime);
+        String formattedTime = DateFormat('h:mm a').format(appointmentDateTime);
+        
+        String appointmentDetails = appointmentType == AppointmentModel.typeVaccination 
+            ? "vaccination appointment"
+            : "${appointmentData['department']} appointment";
+
+        // Notify patient about approval and doctor assignment
+        await createNotification(
+          userId: patientId,
+          message: "Your $appointmentDetails on $formattedDate at $formattedTime has been approved",
+        );
+
+        if (appointmentType != AppointmentModel.typeVaccination) {
+          await createNotification(
+            userId: patientId,
+            message: "Your appointment has been assigned to Dr. $doctorName",
+          );
+        }
+
+        // Notify doctor about new appointment assignment
+        await createNotification(
+          userId: doctorId,
+          message: "New $appointmentDetails assigned to you with $patientName on $formattedDate at $formattedTime",
+        );
+      }
     } catch (e) {
       print('Error assigning doctor to appointment: $e');
       throw Exception('Failed to assign doctor to appointment: $e');
@@ -595,6 +756,41 @@ class DatabaseService {
       await appointmentsCollection.doc(appointmentId).update({
         'status': AppointmentModel.statusCancelled,
       });
+
+      // Get appointment details for notification
+      DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
+      if (appointmentDoc.exists) {
+        Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+        String patientId = appointmentData['patientId'];
+        String? doctorId = appointmentData['doctorId'];
+        DateTime appointmentDateTime = appointmentData['dateTime'].toDate();
+        String appointmentType = appointmentData['type'];
+        
+        String patientName = await _getUserName(patientId);
+        String formattedDate = DateFormat('MMM dd, yyyy').format(appointmentDateTime);
+        String formattedTime = DateFormat('h:mm a').format(appointmentDateTime);
+        
+        String appointmentDetails = appointmentType == AppointmentModel.typeVaccination 
+            ? "vaccination appointment"
+            : "${appointmentData['department']} appointment";
+
+        // Notify doctor if assigned
+        if (doctorId != null) {
+          await createNotification(
+            userId: doctorId,
+            message: "$appointmentDetails with $patientName on $formattedDate at $formattedTime has been cancelled",
+          );
+        }
+
+        // Notify all staff about cancellation
+        List<String> staffIds = await _getAllStaffUserIds();
+        for (String staffId in staffIds) {
+          await createNotification(
+            userId: staffId,
+            message: "$appointmentDetails by $patientName on $formattedDate at $formattedTime has been cancelled",
+          );
+        }
+      }
     } catch (e) {
       print('Error cancelling appointment: $e');
       throw Exception('Failed to cancel appointment: $e');
@@ -701,6 +897,12 @@ class DatabaseService {
       await usersCollection.doc(patientId).update({
         'medicalHistory': FieldValue.arrayUnion([medicalHistoryEntry])
       });
+
+      // Notify patient about new diagnosis
+      await createNotification(
+        userId: patientId,
+        message: "New diagnosis has been added to your medical history",
+      );
     } catch (e) {
       print('Error adding diagnosis to medical history: $e');
       throw Exception('Failed to add diagnosis to medical history: $e');
@@ -777,6 +979,13 @@ class DatabaseService {
 
       await docRef.set(prescriptionData);
 
+      // Notify patient about new prescription
+      String doctorName = await _getUserName(doctorId);
+      await createNotification(
+        userId: patientId,
+        message: "New prescription has been issued by Dr. $doctorName",
+      );
+
       return docRef.id;
     } catch (e) {
       print('Error creating prescription: $e');
@@ -797,6 +1006,18 @@ class DatabaseService {
         'priceInSAR': priceInSAR,
         'status': 'expired',
       });
+
+      // Get prescription details to notify patient
+      DocumentSnapshot prescriptionDoc = await prescriptionsCollection.doc(prescriptionId).get();
+      if (prescriptionDoc.exists) {
+        Map<String, dynamic> prescriptionData = prescriptionDoc.data() as Map<String, dynamic>;
+        String patientId = prescriptionData['patientId'];
+        
+        await createNotification(
+          userId: patientId,
+          message: "Your prescription has been processed by the pharmacy. Total cost: ${priceInSAR.toStringAsFixed(2)} SAR",
+        );
+      }
     } catch (e) {
       print('Error updating prescription pharmacy details: $e');
       throw Exception('Failed to update prescription pharmacy details: $e');
@@ -916,6 +1137,13 @@ class DatabaseService {
       await usersCollection.doc(patientId).update({
         'eligibility': eligibility,
       });
+
+      // Notify patient about eligibility update
+      String eligibilityList = eligibility.join(', ');
+      await createNotification(
+        userId: patientId,
+        message: "Your department eligibility has been updated to: $eligibilityList",
+      );
     } catch (e) {
       print('Error updating patient eligibility: $e');
       throw Exception('Failed to update patient eligibility: $e');
@@ -959,6 +1187,12 @@ class DatabaseService {
 
       await docRef.set(vaccinationData);
 
+      // Notify patient about vaccination record
+      await createNotification(
+        userId: patientId,
+        message: "Vaccination record created: $actualVaccineType vaccine has been administered",
+      );
+
       return docRef.id;
     } catch (e) {
       print('Error creating vaccination record: $e');
@@ -998,6 +1232,36 @@ class DatabaseService {
         'callerType': callerType,
         'callerName': callerName,
       });
+
+      // Get appointment details to notify the other party
+      DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
+      if (appointmentDoc.exists) {
+        Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+        String patientId = appointmentData['patientId'];
+        String? doctorId = appointmentData['doctorId'];
+        
+        // Determine who to notify based on caller type
+        String notifyUserId = '';
+        if (callerType == 'patient' && doctorId != null) {
+          notifyUserId = doctorId;
+        } else if (callerType == 'doctor') {
+          notifyUserId = patientId;
+        }
+
+        if (notifyUserId.isNotEmpty) {
+          if (callState == 'calling') {
+            await createNotification(
+              userId: notifyUserId,
+              message: "Incoming call from $callerName for your appointment",
+            );
+          } else if (callState == 'ended') {
+            await createNotification(
+              userId: notifyUserId,
+              message: "Call with $callerName has ended",
+            );
+          }
+        }
+      }
     } catch (e) {
       print('Error updating call state: $e');
       throw Exception('Failed to update call state: $e');
