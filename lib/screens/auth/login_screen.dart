@@ -114,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Email Field
                 CustomTextField(
                   label: 'Email',
                   hint: 'Enter your email',
@@ -126,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Password Field
                 CustomTextField(
                   label: 'Password',
                   hint: 'Enter your password',
@@ -146,7 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   onFieldSubmitted: (_) => _login(),
                 ),
 
-                // Forgot Password Link
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -168,7 +165,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Login Button
                 CommonButton(
                   text: 'Login',
                   isLoading: _isLoading,
@@ -176,7 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

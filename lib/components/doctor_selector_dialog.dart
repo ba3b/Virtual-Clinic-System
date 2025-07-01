@@ -287,7 +287,6 @@ class _DoctorSelectorDialogState extends State<DoctorSelectorDialog> {
                           ? null
                           : () {
                               widget.onDoctorSelected(_selectedDoctor!);
-                              // Remove Navigator.pop(context) from here since we handle it in the parent
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,

@@ -19,7 +19,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
   late TabController _tabController;
   late DatabaseService _databaseService;
   final Map<String, TextEditingController> _vaccineTypeControllers =
-      {}; // New controllers map
+      {}; 
 
   @override
   void initState() {
@@ -248,7 +248,6 @@ class _VaccinationScreenState extends State<VaccinationScreen>
     final Color cardColor =
         isToday ? AppTheme.primaryColor : AppTheme.successColor;
 
-    // Ensure controller exists for this appointment
     if (!_vaccineTypeControllers.containsKey(appointment.appointmentId)) {
       _vaccineTypeControllers[appointment.appointmentId] =
           TextEditingController();

@@ -179,7 +179,6 @@ class DatabaseService {
 
       await usersCollection.doc(userCredential.user!.uid).set(userData);
 
-      // Notify all staff about new staff-managed user creation
       List<String> staffIds = await _getAllStaffUserIds();
       for (String staffId in staffIds) {
         await createNotification(
@@ -188,7 +187,6 @@ class DatabaseService {
         );
       }
 
-      // If it's a doctor, notify the doctor about their account creation
       if (userType == 'doctor') {
         await createNotification(
           userId: userCredential.user!.uid,
@@ -300,7 +298,7 @@ class DatabaseService {
               phoneNumber: userData['phoneNumber'] ?? '',
               address: userData['address'] ?? '',
               medicalHistory: _parseMedicalHistory(
-                  userData['medicalHistory']), // Use the parsing method
+                  userData['medicalHistory']),
               fcmToken: userData['fcmToken'] ?? '',
               nationalId: userData['nationalId'] ?? '',
               gender: userData['gender'] ?? '',
@@ -356,7 +354,6 @@ class DatabaseService {
 
       await docRef.set(messageWithId.toJson());
 
-      // Get appointment details to notify the other party
       DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(message.appointmentId).get();
       if (appointmentDoc.exists) {
         Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
@@ -365,7 +362,6 @@ class DatabaseService {
         
         String senderName = await _getUserName(message.senderId);
         
-        // Notify the recipient
         String recipientId = message.senderId == patientId ? doctorId ?? '' : patientId;
         if (recipientId.isNotEmpty) {
           await createNotification(
@@ -492,7 +488,6 @@ class DatabaseService {
 
       await docRef.set(appointment.toJson());
 
-      // Notify all staff about new appointment request
       String patientName = await _getUserName(patientId);
       List<String> staffIds = await _getAllStaffUserIds();
       
@@ -562,7 +557,6 @@ class DatabaseService {
         'status': status,
       });
 
-      // Get appointment details for notification
       DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
       if (appointmentDoc.exists) {
         Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
@@ -608,7 +602,6 @@ class DatabaseService {
         'status': AppointmentModel.statusApproved,
       });
 
-      // Get appointment and doctor details for notifications
       DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
       if (appointmentDoc.exists) {
         Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
@@ -626,7 +619,6 @@ class DatabaseService {
             ? "vaccination appointment"
             : "${appointmentData['department']} appointment";
 
-        // Notify patient about approval and doctor assignment
         await createNotification(
           userId: patientId,
           message: "Your $appointmentDetails on $formattedDate at $formattedTime has been approved",
@@ -639,7 +631,6 @@ class DatabaseService {
           );
         }
 
-        // Notify doctor about new appointment assignment
         await createNotification(
           userId: doctorId,
           message: "New $appointmentDetails assigned to you with $patientName on $formattedDate at $formattedTime",
@@ -757,7 +748,6 @@ class DatabaseService {
         'status': AppointmentModel.statusCancelled,
       });
 
-      // Get appointment details for notification
       DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
       if (appointmentDoc.exists) {
         Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
@@ -774,7 +764,6 @@ class DatabaseService {
             ? "vaccination appointment"
             : "${appointmentData['department']} appointment";
 
-        // Notify doctor if assigned
         if (doctorId != null) {
           await createNotification(
             userId: doctorId,
@@ -782,7 +771,6 @@ class DatabaseService {
           );
         }
 
-        // Notify all staff about cancellation
         List<String> staffIds = await _getAllStaffUserIds();
         for (String staffId in staffIds) {
           await createNotification(
@@ -898,7 +886,6 @@ class DatabaseService {
         'medicalHistory': FieldValue.arrayUnion([medicalHistoryEntry])
       });
 
-      // Notify patient about new diagnosis
       await createNotification(
         userId: patientId,
         message: "New diagnosis has been added to your medical history",
@@ -979,7 +966,6 @@ class DatabaseService {
 
       await docRef.set(prescriptionData);
 
-      // Notify patient about new prescription
       String doctorName = await _getUserName(doctorId);
       await createNotification(
         userId: patientId,
@@ -1007,7 +993,6 @@ class DatabaseService {
         'status': 'expired',
       });
 
-      // Get prescription details to notify patient
       DocumentSnapshot prescriptionDoc = await prescriptionsCollection.doc(prescriptionId).get();
       if (prescriptionDoc.exists) {
         Map<String, dynamic> prescriptionData = prescriptionDoc.data() as Map<String, dynamic>;
@@ -1138,7 +1123,6 @@ class DatabaseService {
         'eligibility': eligibility,
       });
 
-      // Notify patient about eligibility update
       String eligibilityList = eligibility.join(', ');
       await createNotification(
         userId: patientId,
@@ -1187,7 +1171,6 @@ class DatabaseService {
 
       await docRef.set(vaccinationData);
 
-      // Notify patient about vaccination record
       await createNotification(
         userId: patientId,
         message: "Vaccination record created: $actualVaccineType vaccine has been administered",
@@ -1233,14 +1216,12 @@ class DatabaseService {
         'callerName': callerName,
       });
 
-      // Get appointment details to notify the other party
       DocumentSnapshot appointmentDoc = await appointmentsCollection.doc(appointmentId).get();
       if (appointmentDoc.exists) {
         Map<String, dynamic> appointmentData = appointmentDoc.data() as Map<String, dynamic>;
         String patientId = appointmentData['patientId'];
         String? doctorId = appointmentData['doctorId'];
         
-        // Determine who to notify based on caller type
         String notifyUserId = '';
         if (callerType == 'patient' && doctorId != null) {
           notifyUserId = doctorId;

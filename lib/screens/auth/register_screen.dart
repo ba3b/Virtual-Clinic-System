@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -37,7 +36,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   
-  // Password strength tracking
   double _passwordStrength = 0.0;
   String _passwordStrengthText = '';
   Color _passwordStrengthColor = Colors.red;
@@ -94,11 +92,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     
     double strength = 0.0;
     
-    // Length check
     if (password.length >= 8) strength += 0.25;
     if (password.length >= 12) strength += 0.15;
     
-    // Character variety checks
     if (password.contains(RegExp(r'[a-z]'))) strength += 0.15;
     if (password.contains(RegExp(r'[A-Z]'))) strength += 0.15;
     if (password.contains(RegExp(r'[0-9]'))) strength += 0.15;
@@ -212,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _isLoading = true;
       });
       
-      User? result = await _auth.register(
+      final result = await _auth.register(
         _nameController.text.trim(), 
         _emailController.text.trim().toLowerCase(), 
         _passwordController.text, 
@@ -229,14 +225,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
       
       if (mounted) {
-        if(result == null){
+        if (result.error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registration failed. Please try again later.'),
+            SnackBar(
+              content: Text(result.error!),
               backgroundColor: AppTheme.errorColor,
             ),
           );
-        } else {
+        } else if (result.user != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Account created successfully!'),
@@ -246,6 +242,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const Wrapper()),
             (Route<dynamic> route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration failed. Please try again later.'),
+              backgroundColor: AppTheme.errorColor,
+            ),
           );
         }
       }
@@ -348,7 +351,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Name Field
                 CustomTextField(
                   label: 'Full Name',
                   hint: 'Enter your full name',
@@ -359,7 +361,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // National ID Field with improved validation
                 CustomTextField(
                   label: 'National ID',
                   hint: 'Enter your 10-digit national ID',
@@ -375,7 +376,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Gender Selection
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -419,7 +419,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Date of Birth Field
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -465,7 +464,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Email Field
                 CustomTextField(
                   label: 'Email',
                   hint: 'Enter your email',
@@ -477,7 +475,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Phone Field with improved validation
                 CustomTextField(
                   label: 'Phone Number',
                   hint: 'Enter your phone number (05xxxxxxxx)',
@@ -493,7 +490,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Address Field
                 CustomTextField(
                   label: 'Address',
                   hint: 'Enter your address',
@@ -504,7 +500,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Password Field with strength indicator
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -528,7 +523,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Confirm Password Field
                 CustomTextField(
                   label: 'Confirm Password',
                   hint: 'Confirm your password',
@@ -550,7 +544,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 32),
                 
-                // Register Button
                 CommonButton(
                   text: 'Register',
                   isLoading: _isLoading,
@@ -558,7 +551,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

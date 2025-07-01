@@ -76,7 +76,7 @@ class _AppointmentEditDialogState extends State<AppointmentEditDialog> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9, // Set explicit width
+        width: MediaQuery.of(context).size.width * 0.9, 
         constraints: BoxConstraints(
           maxWidth: 500,
           maxHeight: MediaQuery.of(context).size.height * 0.7,
@@ -116,7 +116,7 @@ class _AppointmentEditDialogState extends State<AppointmentEditDialog> {
                 ),
                 const SizedBox(width: 16),
                 SizedBox(
-                  width: 120, // Fixed width for the button
+                  width: 120, 
                   child: ElevatedButton(
                     onPressed: () {
                       final DateTime newDateTime = _combineDateAndTime();

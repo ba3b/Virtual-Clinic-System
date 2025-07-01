@@ -552,7 +552,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start, // Align items to the start vertically
+        crossAxisAlignment: CrossAxisAlignment.start, 
         children: [
           Text(
             label,
@@ -560,15 +560,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               color: AppTheme.textSecondaryColor,
             ),
           ),
-          const SizedBox(width: 8), // Add some space between label and value
+          const SizedBox(width: 8), 
           Expanded(
             child: Text(
               value,
               style: AppTheme.bodyStyle.copyWith(
                 fontWeight: FontWeight.w600,
               ),
-              textAlign: TextAlign.end, // Align text to the end
-              softWrap: true, // Allow text to wrap
+              textAlign: TextAlign.end, 
+              softWrap: true,
             ),
           ),
         ],

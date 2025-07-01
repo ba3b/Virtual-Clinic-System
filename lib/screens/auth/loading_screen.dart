@@ -19,13 +19,11 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
   void initState() {
     super.initState();
 
-    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     );
 
-    // Create fade-in animation
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -33,10 +31,8 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
       ),
     );
 
-    // Start animation
     _animationController.forward();
 
-    // Navigate to intro screen after delay
     Timer(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const Wrapper()),

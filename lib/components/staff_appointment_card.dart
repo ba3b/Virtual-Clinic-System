@@ -236,7 +236,6 @@ class StaffAppointmentCard extends StatelessWidget {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    // For vaccination appointments, show Verify button
                     if (appointment.type == AppointmentModel.typeVaccination && onVerify != null) ...[
                       Expanded(
                         flex: 2,
@@ -257,7 +256,6 @@ class StaffAppointmentCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                     ]
-                    // For other appointments, show Assign Doctor button
                     else if (onAssignDoctor != null) ...[
                       Expanded(
                         flex: 2,

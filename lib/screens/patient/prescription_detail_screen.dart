@@ -292,7 +292,6 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
         priceInSAR: price,
       );
 
-      // Update local data
       widget.prescriptionData['pharmacyRegistrationId'] = _pharmacyRegIdController.text.trim();
       widget.prescriptionData['pharmacyMedicationDetails'] = _medicationDetailsController.text.trim();
       widget.prescriptionData['priceInSAR'] = price;

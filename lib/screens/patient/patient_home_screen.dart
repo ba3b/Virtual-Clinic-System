@@ -315,10 +315,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         ),
         const SizedBox(height: 20),
         SizedBox(
-          height: 240, // Increased to accommodate shadows
+          height: 240,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 30), // Added bottom padding for shadows
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 30),
             itemCount: actions.length,
             separatorBuilder: (_, __) => const SizedBox(width: 20),
             itemBuilder: (context, i) {
@@ -367,14 +367,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 ),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
-                  // Colored glow shadow
                   BoxShadow(
                     color: gradientColors[0].withOpacity(0.4),
                     blurRadius: 25,
                     spreadRadius: -5,
                     offset: const Offset(0, 15),
                   ),
-                  // Deep shadow for depth
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
                     blurRadius: 30,
@@ -385,7 +383,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               ),
               child: Stack(
                 children: [
-                  // Animated gradient overlay
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(30),
@@ -402,7 +399,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     ),
                   ),
                   
-                  // Floating elements for visual interest
                   Positioned(
                     top: 20,
                     right: 20,
@@ -429,13 +425,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     ),
                   ),
                   
-                  // Main content
                   Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Icon with modern design
                         Container(
                           width: 80,
                           height: 80,
@@ -470,7 +464,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         
                         const SizedBox(height: 28),
                         
-                        // Text with better styling
                         Text(
                           label,
                           textAlign: TextAlign.center,
@@ -495,7 +488,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     ),
                   ),
                   
-                  // Top highlight border
                   Positioned(
                     top: 0,
                     left: 0,

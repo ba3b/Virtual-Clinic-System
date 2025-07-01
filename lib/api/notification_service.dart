@@ -9,7 +9,6 @@ class NotificationService {
   final CollectionReference _notificationsCollection =
       FirebaseFirestore.instance.collection('Notifications');
 
-  // Get notifications stream for a user
   Stream<List<NotificationModel>> getUserNotifications(String userId) {
     return _notificationsCollection
         .where('userId', isEqualTo: userId)
@@ -23,7 +22,6 @@ class NotificationService {
     });
   }
 
-  // Get unread count stream for a user
   Stream<int> getUnreadCountStream(String userId) {
     return _notificationsCollection
         .where('userId', isEqualTo: userId)
@@ -32,7 +30,6 @@ class NotificationService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Mark notification as read
   Future<void> markAsRead(String notificationId) async {
     try {
       await _notificationsCollection.doc(notificationId).update({
@@ -43,7 +40,6 @@ class NotificationService {
     }
   }
 
-  // Mark all notifications as read for a user
   Future<void> markAllAsRead(String userId) async {
     try {
       final unreadNotifications = await _notificationsCollection
@@ -61,7 +57,6 @@ class NotificationService {
     }
   }
 
-  // Delete notification
   Future<void> deleteNotification(String notificationId) async {
     try {
       await _notificationsCollection.doc(notificationId).delete();

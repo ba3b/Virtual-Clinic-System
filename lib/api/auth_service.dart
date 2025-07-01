@@ -9,19 +9,18 @@ class AuthService {
     return user != null ? UserId(uid: user.uid) : null;
   }
 
-  Future<User?> signIn(String email, String password) async {
+  Future<({User? user, String? error})> signIn(String email, String password) async {
     try {
       UserCredential result = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
       User? user = result.user;
-      return user;
+      return (user: user, error: null);
     } on FirebaseAuthException catch (e) {
-      print(e.message);
-      return null;
+      return (user: null, error: _getErrorMessage(e.code));
     }
   }
 
-  Future<User?> register(
+  Future<({User? user, String? error})> register(
     String fullName, 
     String email, 
     String password, 
@@ -50,10 +49,9 @@ class AuthService {
         );
       }
       
-      return user;
+      return (user: user, error: null);
     } on FirebaseAuthException catch (e) {
-      print(e.message);
-      return null;
+      return (user: null, error: _getErrorMessage(e.code));
     }
   }
 
@@ -117,7 +115,7 @@ class AuthService {
   Future<String?> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      return null; // Success
+      return null; 
     } on FirebaseAuthException catch (e) {
       return _getErrorMessage(e.code);
     } catch (e) {
@@ -128,7 +126,7 @@ class AuthService {
   Future<String?> verifyPasswordResetCode(String code) async {
     try {
       await _auth.verifyPasswordResetCode(code);
-      return null; // Success
+      return null;
     } on FirebaseAuthException catch (e) {
       return _getErrorMessage(e.code);
     } catch (e) {
@@ -139,7 +137,7 @@ class AuthService {
   Future<String?> confirmPasswordReset(String code, String newPassword) async {
     try {
       await _auth.confirmPasswordReset(code: code, newPassword: newPassword);
-      return null; // Success
+      return null; 
     } on FirebaseAuthException catch (e) {
       return _getErrorMessage(e.code);
     } catch (e) {
@@ -151,8 +149,12 @@ class AuthService {
     switch (code) {
       case 'user-not-found':
         return 'No account found with this email address.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
       case 'too-many-requests':
         return 'Too many requests. Please try again later.';
       case 'expired-action-code':
@@ -163,6 +165,8 @@ class AuthService {
         return 'Password is too weak. Please choose a stronger password.';
       case 'email-already-in-use':
         return 'An account with this email already exists.';
+      case 'invalid-credential':
+        return 'Invalid credentials. Please check your email and password.';
       default:
         return 'An error occurred. Please try again.';
     }

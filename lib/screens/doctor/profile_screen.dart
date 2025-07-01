@@ -94,7 +94,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                   apt.status == AppointmentModel.statusCompleted)
               .length;
 
-          // Get unique patients
           final uniquePatients =
               appointments.map((apt) => apt.patientId).toSet();
           _statistics['totalPatients'] = uniquePatients.length;
@@ -374,9 +373,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
           scale: _scaleAnimation,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Calculate item width based on available space
               final double itemWidth =
-                  (constraints.maxWidth - 12) / 2; // 12 for spacing
+                  (constraints.maxWidth - 12) / 2;
               final double itemHeight = 100;
 
               return Wrap(
