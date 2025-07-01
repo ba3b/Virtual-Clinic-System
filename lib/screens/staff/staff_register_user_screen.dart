@@ -41,7 +41,6 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // Password strength tracking
   double _passwordStrength = 0.0;
   String _passwordStrengthText = '';
   Color _passwordStrengthColor = Colors.red;
@@ -126,11 +125,9 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
 
     double strength = 0.0;
 
-    // Length check
     if (password.length >= 8) strength += 0.25;
     if (password.length >= 12) strength += 0.15;
 
-    // Character variety checks
     if (password.contains(RegExp(r'[a-z]'))) strength += 0.15;
     if (password.contains(RegExp(r'[A-Z]'))) strength += 0.15;
     if (password.contains(RegExp(r'[0-9]'))) strength += 0.15;
@@ -235,18 +232,17 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
       });
 
       try {
-        // Fixed parameter order - this was the main issue
         User? result = await _auth.registerUserByStaff(
-          _nameController.text.trim(),                              // fullName
-          _emailController.text.trim().toLowerCase(),               // email
-          _passwordController.text,                                 // password
-          _phoneController.text,                                    // phoneNumber
-          _addressController.text,                                  // address - FIXED!
-          _selectedUserType,                                        // userType - FIXED!
-          _nationalIdController.text.trim(),                        // nationalId - FIXED!
-          _selectedGender,                                          // gender - FIXED!
-          _selectedDateOfBirth!,                                    // dateOfBirth
-          _selectedUserType == 'doctor' ? _selectedSpecialty : null, // specialty
+          _nameController.text.trim(),
+          _emailController.text.trim().toLowerCase(),
+          _passwordController.text,
+          _phoneController.text,
+          _addressController.text,
+          _selectedUserType,
+          _nationalIdController.text.trim(),
+          _selectedGender,
+          _selectedDateOfBirth!,
+          _selectedUserType == 'doctor' ? _selectedSpecialty : null,
         );
 
         setState(() {
@@ -363,7 +359,6 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
               text: 'Continue to Login',
               onPressed: () {
                 Navigator.pop(context);
-                // Navigate back to the main/login screen
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
             ),
@@ -372,7 +367,6 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
       ),
     );
   }
-
 
   Widget _buildPasswordStrengthIndicator() {
     if (_passwordController.text.isEmpty) {
