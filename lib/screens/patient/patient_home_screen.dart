@@ -778,38 +778,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
           ),
-          const Spacer(),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                foregroundColor: color,
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(50, 30),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Read More',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward,
-                    color: color,
-                    size: 14,
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
