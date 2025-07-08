@@ -547,6 +547,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
     );
   }
 
+
   Widget _buildMedicalInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
