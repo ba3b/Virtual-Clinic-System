@@ -11,6 +11,7 @@ import '../../components/custom_bottom_nav.dart';
 import '../../components/notification_badge.dart';
 import '../../components/section_header.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import 'appointment_booking_screen.dart';
 import 'appointment_details_screen.dart';
 import 'appointments_screen.dart';
@@ -72,6 +73,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildAppBar() {
+    final tr = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -81,14 +83,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Virtual Clinic',
+                tr.translate('virtual_clinic'),
                 style: AppTheme.headingStyle.copyWith(
                   color: AppTheme.primaryColor,
                   fontSize: 20,
                 ),
               ),
-              const Text(
-                'King Faisal Medical Complex',
+              Text(
+                tr.translate('king_faisal_medical'),
                 style: AppTheme.bodySmallStyle,
               ),
             ],
@@ -124,6 +126,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildWelcomeCard() {
+    final tr = AppLocalizations.of(context);
     final user = Provider.of<UserId?>(context);
 
     return FutureBuilder<UserModel>(
@@ -177,7 +180,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome, ${patient.name}!',
+                          tr.translate('welcome_user').replaceAll('{name}', patient.name),
                           style: AppTheme.subheadingStyle.copyWith(
                             color: Colors.white,
                             fontSize: 20,
@@ -185,7 +188,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'How are you feeling today?',
+                          tr.translate('how_feeling'),
                           style: AppTheme.bodyStyle.copyWith(
                             color: Colors.white.withOpacity(0.8),
                           ),
@@ -212,7 +215,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text('Book Appointment'),
+                          child: Text(tr.translate('book_appointment')),
                         ),
                       ],
                     ),
@@ -235,10 +238,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildQuickActions() {
+    final tr = AppLocalizations.of(context);
     final actions = [
       {
         'icon': Icons.videocam_rounded,
-        'label': 'Virtual\nAppointment',
+        'label': tr.translate('virtual_appointment'),
         'color': AppTheme.primaryColor,
         'gradientColors': [
           const Color(0xFF667eea),
@@ -255,7 +259,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       },
       {
         'icon': Icons.person_rounded,
-        'label': 'Physical\nAppointment',
+        'label': tr.translate('physical_appointment'),
         'color': AppTheme.secondaryColor,
         'gradientColors': [
           const Color(0xFFf093fb),
@@ -272,7 +276,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       },
       {
         'icon': Icons.healing_rounded,
-        'label': 'Vaccination',
+        'label': tr.translate('vaccination'),
         'color': AppTheme.accentColor,
         'gradientColors': [
           const Color(0xFF4facfe),
@@ -289,7 +293,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       },
       {
         'icon': Icons.description_outlined,
-        'label': 'Prescriptions',
+        'label': tr.translate('prescriptions'),
         'color': Colors.orange,
         'gradientColors': [
           const Color(0xFFfa709a),
@@ -306,11 +310,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: SectionHeader(
-            title: 'Quick Actions',
-            subtitle: 'Access common features quickly',
+            title: tr.translate('quick_actions'),
+            subtitle: tr.translate('access_quickly'),
           ),
         ),
         const SizedBox(height: 20),
@@ -520,6 +524,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildUpcomingAppointments() {
+    final tr = AppLocalizations.of(context);
     final user = Provider.of<UserId?>(context);
 
     if (user == null) {
@@ -532,9 +537,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: SectionHeader(
-            title: 'Upcoming Appointments',
-            subtitle: 'Your scheduled appointments',
-            actionText: 'See All',
+            title: tr.translate('upcoming_appointments'),
+            subtitle: tr.translate('your_scheduled'),
+            actionText: tr.translate('see_all'),
             onActionTap: () {
               setState(() {
                 _currentIndex = 1;
@@ -585,7 +590,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No upcoming appointments',
+                        tr.translate('no_upcoming'),
                         style: AppTheme.bodyStyle.copyWith(
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -601,7 +606,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                             ),
                           );
                         },
-                        child: const Text('Book an appointment'),
+                        child: Text(tr.translate('book_an_appointment')),
                       ),
                     ],
                   ),
@@ -625,16 +630,16 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     builder: (context, snapshot) {
                       String doctorName;
                       if (appointment.doctorId == null) {
-                        doctorName = 'Awaiting Doctor';
+                        doctorName = tr.translate('awaiting_doctor');
                       } else if (snapshot.connectionState ==
                           ConnectionState.waiting) {
-                        doctorName = 'Loading...';
+                        doctorName = tr.translate('loading');
                       } else if (snapshot.hasError) {
-                        doctorName = 'Doctor Unavailable';
+                        doctorName = tr.translate('doctor_unavailable');
                       } else if (snapshot.hasData) {
-                        doctorName = 'Dr. ${snapshot.data!.name}';
+                        doctorName = tr.locale.languageCode == 'ar' ? 'د. ${snapshot.data!.name}' : 'Dr. ${snapshot.data!.name}';
                       } else {
-                        doctorName = 'Doctor Assigned';
+                        doctorName = tr.translate('doctor_assigned');
                       }
 
                       return Padding(
@@ -676,14 +681,15 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Widget _buildHealthTips() {
+    final tr = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: SectionHeader(
-            title: 'Health Tips',
-            subtitle: 'Stay healthy with these tips',
+            title: tr.translate('health_tips'),
+            subtitle: tr.translate('stay_healthy'),
           ),
         ),
         const SizedBox(height: 16),
@@ -694,25 +700,22 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             scrollDirection: Axis.horizontal,
             children: [
               _buildHealthTipCard(
-                title: 'Staying Hydrated',
-                description:
-                    'Drink 8 glasses of water daily for optimal health.',
+                title: tr.translate('staying_hydrated'),
+                description: tr.translate('drink_water'),
                 iconData: Icons.water_drop_outlined,
                 color: Colors.blue,
               ),
               const SizedBox(width: 16),
               _buildHealthTipCard(
-                title: 'Regular Exercise',
-                description:
-                    'At least 30 minutes of physical activity daily helps maintain health.',
+                title: tr.translate('regular_exercise'),
+                description: tr.translate('exercise_desc'),
                 iconData: Icons.fitness_center_outlined,
                 color: Colors.green,
               ),
               const SizedBox(width: 16),
               _buildHealthTipCard(
-                title: 'Balanced Diet',
-                description:
-                    'Eat plenty of fruits, vegetables, and whole grains.',
+                title: tr.translate('balanced_diet'),
+                description: tr.translate('diet_desc'),
                 iconData: Icons.restaurant_outlined,
                 color: Colors.orange,
               ),
@@ -785,6 +788,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -793,31 +797,31 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: _onNavTap,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home_rounded),
+            label: tr.translate('home'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today_rounded),
-            label: 'Appointments',
+            icon: const Icon(Icons.calendar_today_outlined),
+            activeIcon: const Icon(Icons.calendar_today_rounded),
+            label: tr.translate('appointments'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.list_outlined),
-            activeIcon: Icon(Icons.list),
-            label: 'Prescriptions',
+            icon: const Icon(Icons.list_outlined),
+            activeIcon: const Icon(Icons.list),
+            label: tr.translate('prescriptions'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.vaccines_outlined),
-            activeIcon: Icon(Icons.vaccines_rounded),
-            label: 'Vaccinations',
+            icon: const Icon(Icons.vaccines_outlined),
+            activeIcon: const Icon(Icons.vaccines_rounded),
+            label: tr.translate('vaccination'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline_rounded),
+            activeIcon: const Icon(Icons.person_rounded),
+            label: tr.translate('profile'),
           ),
         ],
       ),

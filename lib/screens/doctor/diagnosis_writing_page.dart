@@ -4,6 +4,7 @@ import '../../components/common_button.dart';
 import '../../components/custom_text_field.dart';
 import '../../models/appointment_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import 'prescription_page.dart';
 import '../../components/eligibility_management_dialog.dart';
 
@@ -59,7 +60,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading eligibility: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error_loading')}: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -104,8 +105,8 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Diagnosis saved successfully'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).translate('diagnosis_saved_successfully')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -128,7 +129,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving diagnosis: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error_saving_diagnosis')}: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -141,7 +142,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
-        title: const Text('Write Diagnosis'),
+        title: Text(AppLocalizations.of(context).translate('write_diagnosis')),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -199,7 +200,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Diagnosis for ${widget.patientName}',
+                        '${AppLocalizations.of(context).translate('diagnosis_for')} ${widget.patientName}',
                         style: AppTheme.subheadingStyle,
                       ),
                     ],
@@ -212,7 +213,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Step 1 of 2',
+                    AppLocalizations.of(context).translate('step_1_of_2'),
                     style: AppTheme.bodySmallStyle.copyWith(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.w600,
@@ -239,7 +240,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Write your diagnosis and update patient eligibility as needed. This will be saved to the patient\'s medical history.',
+                      AppLocalizations.of(context).translate('write_diagnosis_hint'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: Colors.blue[800],
                       ),
@@ -275,7 +276,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Patient Eligibility Management',
+                    AppLocalizations.of(context).translate('patient_eligibility_management'),
                     style: AppTheme.subheadingStyle,
                   ),
                 ),
@@ -289,7 +290,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
               )
             else ...[
               Text(
-                'Current Department Access (${_currentEligibility.length} departments):',
+                '${AppLocalizations.of(context).translate('current_department_access')} (${_currentEligibility.length}):',
                 style: AppTheme.bodyStyle.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textSecondaryColor,
@@ -315,7 +316,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'No department access assigned. Patient cannot book appointments.',
+                          AppLocalizations.of(context).translate('no_department_access'),
                           style: AppTheme.bodySmallStyle.copyWith(
                             color: Colors.orange[800],
                           ),
@@ -378,7 +379,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Tip: Update patient eligibility based on their condition, treatment progress, or referral needs.',
+                        AppLocalizations.of(context).translate('eligibility_tip'),
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: Colors.green[800],
                         ),
@@ -398,7 +399,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                     size: 18,
                   ),
                   label: Text(
-                    _loadingEligibility ? 'Loading Eligibility...' : 'Manage Patient Eligibility',
+                    _loadingEligibility ? AppLocalizations.of(context).translate('loading_eligibility') : AppLocalizations.of(context).translate('manage_patient_eligibility'),
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -442,22 +443,22 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Patient Diagnosis',
+                  AppLocalizations.of(context).translate('patient_diagnosis'),
                   style: AppTheme.subheadingStyle,
                 ),
               ],
             ),
             const SizedBox(height: 20),
             CustomTextField(
-              label: 'Diagnosis & Observations *',
-              hint: 'Enter your diagnosis, findings, and medical observations...',
+              label: AppLocalizations.of(context).translate('diagnosis_observations'),
+              hint: AppLocalizations.of(context).translate('diagnosis_hint_text'),
               controller: _diagnosisController,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter a diagnosis';
+                  return AppLocalizations.of(context).translate('please_enter_diagnosis');
                 }
                 if (value.length < 10) {
-                  return 'Please provide a more detailed diagnosis (at least 10 characters)';
+                  return AppLocalizations.of(context).translate('diagnosis_min_length');
                 }
                 return null;
               },
@@ -481,7 +482,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Tip: Include symptoms, examination findings, test results, and your clinical assessment.',
+                      AppLocalizations.of(context).translate('diagnosis_tip'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: Colors.green[800],
                       ),
@@ -500,7 +501,7 @@ class _DiagnosisWritingPageState extends State<DiagnosisWritingPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
       child: CommonButton(
-        text: 'Continue to Prescription',
+        text: AppLocalizations.of(context).translate('continue_to_prescription'),
         onPressed: _isSubmitting ? null : _saveDiagnosis,
         isLoading: _isSubmitting,
         backgroundColor: AppTheme.primaryColor,

@@ -4,8 +4,11 @@ import 'package:virtual_clinic_system/api/auth_service.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
+import 'package:provider/provider.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../localization/locale_provider.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({Key? key}) : super(key: key);
@@ -142,12 +145,12 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Logout',
+              AppLocalizations.of(context).translate('logout'),
               style: AppTheme.headingStyle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 12),
             Text(
-              'Are you sure you want to logout?',
+              AppLocalizations.of(context).translate('logout_confirmation'),
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
@@ -166,9 +169,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                       ),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).translate('cancel'),
+                      style: const TextStyle(
                         color: AppTheme.textPrimaryColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -193,9 +196,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Logout',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    child: Text(
+                      AppLocalizations.of(context).translate('logout'),
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                     ),
                   ),
                 ),
@@ -220,7 +223,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             }
         
             if (!snapshot.hasData) {
-              return const Center(child: Text('Error loading profile'));
+              return Center(child: Text(AppLocalizations.of(context).translate('error_loading_profile')));
             }
         
             final doctor = snapshot.data as DoctorModel;
@@ -238,6 +241,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                     _buildPersonalInfoSection(doctor),
                     const SizedBox(height: 16),
                     _buildProfessionalInfoSection(doctor),
+                    const SizedBox(height: 24),
+                    _buildLanguageSwitcher(),
                     const SizedBox(height: 24),
                     _buildLogoutButton(),
                     const SizedBox(height: 32),
@@ -365,7 +370,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Statistics Overview',
+          AppLocalizations.of(context).translate('statistics_overview'),
           style: AppTheme.headingStyle.copyWith(fontSize: 20),
         ),
         const SizedBox(height: 16),
@@ -385,7 +390,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                     width: itemWidth,
                     height: itemHeight,
                     child: _buildStatCard(
-                      title: 'Total Patients',
+                      title: AppLocalizations.of(context).translate('total_patients'),
                       value: _statistics['totalPatients'].toString(),
                       icon: Icons.people_outline_rounded,
                       color: Colors.blue,
@@ -396,7 +401,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                     width: itemWidth,
                     height: itemHeight,
                     child: _buildStatCard(
-                      title: "Today's Appointments",
+                      title: AppLocalizations.of(context).translate('todays_appointments'),
                       value: _statistics['todayAppointments'].toString(),
                       icon: Icons.calendar_today_rounded,
                       color: Colors.orange,
@@ -410,7 +415,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                     width: itemWidth,
                     height: itemHeight,
                     child: _buildStatCard(
-                      title: 'Completed',
+                      title: AppLocalizations.of(context).translate('completed'),
                       value: _statistics['completedAppointments'].toString(),
                       icon: Icons.check_circle_outline_rounded,
                       color: Colors.green,
@@ -421,7 +426,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                     width: itemWidth,
                     height: itemHeight,
                     child: _buildStatCard(
-                      title: 'Virtual Consultations',
+                      title: AppLocalizations.of(context).translate('virtual_consultations'),
                       value: _statistics['virtualConsultations'].toString(),
                       icon: Icons.video_call_rounded,
                       color: Colors.purple,
@@ -548,7 +553,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Personal Information',
+                AppLocalizations.of(context).translate('personal_information_title'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -556,25 +561,24 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildInfoRow(Icons.badge_outlined, 'National ID', doctor.nationalId),
-          _buildInfoRow(Icons.email_outlined, 'Email', doctor.email),
-          _buildInfoRow(Icons.phone_outlined, 'Phone', doctor.phoneNumber),
-          _buildInfoRow(Icons.location_on_outlined, 'Address', doctor.address),
+          _buildInfoRow(Icons.badge_outlined, AppLocalizations.of(context).translate('national_id'), doctor.nationalId),
+          _buildInfoRow(Icons.email_outlined, AppLocalizations.of(context).translate('email'), doctor.email),
+          _buildInfoRow(Icons.phone_outlined, AppLocalizations.of(context).translate('phone'), doctor.phoneNumber),
+          _buildInfoRow(Icons.location_on_outlined, AppLocalizations.of(context).translate('address'), doctor.address),
           _buildInfoRow(
             Icons.calendar_month_outlined,
-            'Date of Birth',
+            AppLocalizations.of(context).translate('date_of_birth'),
             DateFormat('dd MMMM yyyy').format(doctor.dateOfBirth),
           ),
           _buildInfoRow(
             Icons.wc_outlined,
-            'Gender',
-            doctor.gender.substring(0, 1).toUpperCase() +
-                doctor.gender.substring(1),
+            AppLocalizations.of(context).translate('gender'),
+            AppLocalizations.of(context).translate(doctor.gender.toLowerCase()),
           ),
           _buildInfoRow(
             Icons.cake_outlined,
-            'Age',
-            '${doctor.age} years',
+            AppLocalizations.of(context).translate('age'),
+            '${doctor.age} ${AppLocalizations.of(context).translate('years_old')}',
           ),
         ],
       ),
@@ -613,7 +617,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Professional Information',
+                AppLocalizations.of(context).translate('professional_information'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -622,11 +626,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
           ),
           const SizedBox(height: 20),
           _buildInfoRow(
-              Icons.medical_services_outlined, 'Specialty', doctor.specialty),
-          _buildInfoRow(Icons.schedule_outlined, 'Working Hours',
-              'Sun-Thu: 9:00 AM - 4:00 PM'),
-          _buildInfoRow(Icons.location_city_outlined, 'Hospital',
-              'King Faisal Medical Complex'),
+              Icons.medical_services_outlined, AppLocalizations.of(context).translate('specialty'), doctor.specialty),
+          _buildInfoRow(Icons.schedule_outlined, AppLocalizations.of(context).translate('working_hours'),
+              AppLocalizations.of(context).translate('sun_thu_hours')),
+          _buildInfoRow(Icons.location_city_outlined, AppLocalizations.of(context).translate('hospital'),
+              AppLocalizations.of(context).translate('king_faisal_hospital')),
         ],
       ),
     );
@@ -667,9 +671,90 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
     );
   }
 
+  Widget _buildLanguageSwitcher() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.language,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                AppLocalizations.of(context).translate('language'),
+                style: AppTheme.subheadingStyle.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, child) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<Locale>(
+                      title: const Text('English'),
+                      value: const Locale('en'),
+                      groupValue: localeProvider.locale,
+                      activeColor: AppTheme.primaryColor,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (Locale? newLocale) {
+                        if (newLocale != null) {
+                          localeProvider.setLocale(newLocale);
+                        }
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<Locale>(
+                      title: const Text('العربية'),
+                      value: const Locale('ar'),
+                      groupValue: localeProvider.locale,
+                      activeColor: AppTheme.primaryColor,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (Locale? newLocale) {
+                        if (newLocale != null) {
+                          localeProvider.setLocale(newLocale);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLogoutButton() {
     return CommonButton(
-      text: 'Logout',
+      text: AppLocalizations.of(context).translate('logout'),
       backgroundColor: Colors.red,
       onPressed: _showLogoutDialog,
     );

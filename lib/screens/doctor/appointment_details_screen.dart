@@ -6,6 +6,7 @@ import '../../components/custom_app_bar.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import 'diagnosis_writing_page.dart';
 import 'virtual_appointment_screen.dart';
 import 'dart:async';
@@ -133,15 +134,15 @@ class _DoctorAppointmentDetailsScreenState
           children: [
             const Icon(Icons.history, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
-            const Text('Medical History'),
+            Text(AppLocalizations.of(context).translate('medical_history')),
           ],
         ),
         content: SizedBox(
           width: double.maxFinite,
           height: 400,
           child: medicalHistory.isEmpty
-              ? const Center(
-                  child: Text('No medical history available'),
+              ? Center(
+                  child: Text(AppLocalizations.of(context).translate('no_medical_history')),
                 )
               : ListView.builder(
                   itemCount: medicalHistory.length,
@@ -226,12 +227,12 @@ class _DoctorAppointmentDetailsScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Medical History'),
-        content: const Text('No medical history available for this patient.'),
+        title: Text(AppLocalizations.of(context).translate('medical_history')),
+        content: Text(AppLocalizations.of(context).translate('no_medical_history')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).translate('close')),
           ),
         ],
       ),
@@ -263,9 +264,10 @@ class _DoctorAppointmentDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Appointment Details',
+      appBar: CustomAppBar(
+        title: tr.translate('appointment_details'),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: _isLoadingPatient
@@ -277,7 +279,7 @@ class _DoctorAppointmentDetailsScreenState
                 children: [
                   if (_canJoinVirtualMeeting()) ...[
                     CommonButton(
-                      text: 'Join Virtual Meeting',
+                      text: tr.translate('join_virtual_appointment'),
                       onPressed: _handleJoinVirtualMeeting,
                       backgroundColor: AppTheme.primaryColor,
                     ),
@@ -292,7 +294,7 @@ class _DoctorAppointmentDetailsScreenState
                   const SizedBox(height: 24),
 
                   CommonButton(
-                    text: 'View Medical History',
+                    text: tr.translate('view_medical_history'),
                     onPressed: _handleViewMedicalHistory,
                     backgroundColor: Colors.blue,
                   ),
@@ -300,7 +302,7 @@ class _DoctorAppointmentDetailsScreenState
 
                   if (_canWriteDiagnosis())
                     CommonButton(
-                      text: 'Write Diagnosis',
+                      text: tr.translate('write_diagnosis'),
                       onPressed: _handleWriteDiagnosis,
                       backgroundColor: AppTheme.primaryColor,
                     ),
@@ -389,7 +391,11 @@ class _AppointmentInfoCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${appointment.type[0].toUpperCase()}${appointment.type.substring(1)} Appointment',
+                        appointment.type.toLowerCase() == 'virtual'
+                            ? AppLocalizations.of(context).translate('virtual_appointment')
+                            : appointment.type.toLowerCase() == 'physical'
+                                ? AppLocalizations.of(context).translate('physical_appointment')
+                                : AppLocalizations.of(context).translate('vaccination_appointment'),
                         style: AppTheme.subheadingStyle.copyWith(fontSize: 16),
                       ),
                     ],
@@ -403,8 +409,7 @@ class _AppointmentInfoCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    appointment.status[0].toUpperCase() +
-                        appointment.status.substring(1),
+                    AppLocalizations.of(context).translate(appointment.status.toLowerCase()),
                     style: AppTheme.bodySmallStyle.copyWith(
                       color: _getStatusColor(),
                       fontWeight: FontWeight.w600,
@@ -421,17 +426,17 @@ class _AppointmentInfoCard extends StatelessWidget {
               children: [
                 _buildInfoItem(
                   Icons.calendar_today_outlined,
-                  'Date',
+                  AppLocalizations.of(context).translate('date'),
                   '${appointment.dateTime.day}/${appointment.dateTime.month}/${appointment.dateTime.year}',
                 ),
                 _buildInfoItem(
                   Icons.access_time_rounded,
-                  'Time',
+                  AppLocalizations.of(context).translate('time'),
                   '${appointment.dateTime.hour.toString().padLeft(2, '0')}:${appointment.dateTime.minute.toString().padLeft(2, '0')}',
                 ),
                 _buildInfoItem(
                   Icons.timer_outlined,
-                  'Duration',
+                  AppLocalizations.of(context).translate('duration'),
                   '20 mins',
                 ),
               ],
@@ -512,7 +517,7 @@ class _PatientDetailsCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'National ID: ${patient.nationalId}',
+                        '${AppLocalizations.of(context).translate('national_id')}: ${patient.nationalId}',
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -528,17 +533,17 @@ class _PatientDetailsCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildDetailItem('Age', '${patient.age} years'),
+                  child: _buildDetailItem(AppLocalizations.of(context).translate('age'), '${patient.age} ${AppLocalizations.of(context).translate('years_old')}'),
                 ),
                 Expanded(
-                  child: _buildDetailItem('Gender', patient.gender[0].toUpperCase() + patient.gender.substring(1)),
+                  child: _buildDetailItem(AppLocalizations.of(context).translate('gender'), AppLocalizations.of(context).translate(patient.gender.toLowerCase())),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _buildDetailItem('Phone', patient.phoneNumber),
+            _buildDetailItem(AppLocalizations.of(context).translate('phone'), patient.phoneNumber),
             const SizedBox(height: 12),
-            _buildDetailItem('Address', patient.address),
+            _buildDetailItem(AppLocalizations.of(context).translate('address'), patient.address),
           ],
         ),
       ),

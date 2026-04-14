@@ -5,6 +5,7 @@ import 'package:virtual_clinic_system/components/custom_bottom_nav.dart';
 import 'package:virtual_clinic_system/components/doctor_appointment_card.dart';
 import 'package:virtual_clinic_system/components/notification_badge.dart';
 import 'package:virtual_clinic_system/components/section_header.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
@@ -93,26 +94,27 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
       body: _getSelectedScreen(),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: const Icon(Icons.dashboard_outlined),
+            activeIcon: const Icon(Icons.dashboard),
+            label: tr.translate('dashboard'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Appointments',
+            icon: const Icon(Icons.calendar_today_outlined),
+            activeIcon: const Icon(Icons.calendar_today),
+            label: tr.translate('appointments'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline_rounded),
+            activeIcon: const Icon(Icons.person_rounded),
+            label: tr.translate('profile'),
           ),
         ],
       ),
@@ -133,9 +135,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _buildDashboardScreen() {
+    final tr = AppLocalizations.of(context);
     final user = Provider.of<UserId?>(context);
     if (user == null) {
-      return const Center(child: Text('User not found. Please log in again.'));
+      return Center(child: Text(tr.translate('error_loading')));
     }
 
     return StreamBuilder<UserModel>(
@@ -147,18 +150,18 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
         if (userSnapshot.hasError) {
           return Center(
-              child: Text('Error loading user data: ${userSnapshot.error}'));
+              child: Text('${tr.translate('error_loading')}: ${userSnapshot.error}'));
         }
 
         if (!userSnapshot.hasData) {
-          return const Center(child: Text('No user data found'));
+          return Center(child: Text(tr.translate('no_data')));
         }
 
         final UserModel currentUser = userSnapshot.data!;
 
         if (!currentUser.isDoctor) {
-          return const Center(
-              child: Text('Error: Only doctors can access this page'));
+          return Center(
+              child: Text(tr.translate('error_permission')));
         }
 
         final DoctorModel doctor = currentUser as DoctorModel;
@@ -175,7 +178,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             if (appointmentSnapshot.hasError) {
               return Center(
                   child: Text(
-                      'Error loading appointments: ${appointmentSnapshot.error}'));
+                      '${tr.translate('error_loading_appointments')}: ${appointmentSnapshot.error}'));
             }
 
             final List<AppointmentModel> allAppointments =
@@ -244,9 +247,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                         upcomingAppointments.length),
                     const SizedBox(height: 24),
                     SectionHeader(
-                      title: 'Today\'s Appointments',
-                      subtitle: 'Your schedule for today',
-                      actionText: todayAppointments.isEmpty ? null : 'See All',
+                      title: tr.translate('todays_appointments'),
+                      subtitle: tr.translate('your_schedule_today'),
+                      actionText: todayAppointments.isEmpty ? null : tr.translate('see_all'),
                       onActionTap: () {
                         setState(() {
                           _selectedIndex = 1;
@@ -257,9 +260,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     _buildAppointmentsList(todayAppointments),
                     const SizedBox(height: 24),
                     SectionHeader(
-                      title: 'Upcoming Appointments',
-                      subtitle: 'Your future schedule',
-                      actionText: upcomingAppointments.isEmpty ? null : 'See All',
+                      title: tr.translate('upcoming_appointments'),
+                      subtitle: tr.translate('your_scheduled'),
+                      actionText: upcomingAppointments.isEmpty ? null : tr.translate('see_all'),
                       onActionTap: () {
                         setState(() {
                           _selectedIndex = 1;
@@ -280,6 +283,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   Widget _buildDoctorInfoWidget(
       DoctorModel doctor, int todayCount, int upcomingCount) {
+    final tr = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -322,7 +326,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Dr. ${doctor.name}',
+                  '${tr.translate('dr_prefix')} ${doctor.name}',
                   style: AppTheme.subheadingStyle.copyWith(
                     color: Colors.white,
                     fontSize: 20,
@@ -337,9 +341,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildStatCard('Today', '$todayCount'),
+                    _buildStatCard(tr.translate('today'), '$todayCount'),
                     const SizedBox(width: 16),
-                    _buildStatCard('Upcoming', '$upcomingCount'),
+                    _buildStatCard(tr.translate('upcoming'), '$upcomingCount'),
                   ],
                 ),
               ],
@@ -379,6 +383,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _buildAppointmentsList(List<AppointmentModel> appointments) {
+    final tr = AppLocalizations.of(context);
     if (appointments.isEmpty) {
       return Center(
         child: Padding(
@@ -392,7 +397,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'No appointments',
+                tr.translate('no_appointments'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -410,7 +415,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       itemBuilder: (context, index) {
         final appointment = appointments[index];
         final patientName =
-            _patientNames[appointment.patientId] ?? 'Loading...';
+            _patientNames[appointment.patientId] ?? tr.translate('loading');
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
@@ -431,7 +436,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         builder: (context) => DoctorAppointmentDetailsScreen(
           appointment: appointment,
           patientName:
-              _patientNames[appointment.patientId] ?? 'Unknown Patient',
+              _patientNames[appointment.patientId] ?? AppLocalizations.of(context).translate('loading'),
         ),
       ),
     );

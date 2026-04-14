@@ -6,6 +6,7 @@ import '../../components/custom_app_bar.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import 'appointment_details_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
@@ -36,16 +37,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final user = Provider.of<UserId?>(context);
 
     if (user == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Text('Please login to view your appointments'),
+          child: Text(AppLocalizations.of(context).translate('login_view_appointments')),
         ),
       );
     }
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'My Appointments',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('my_appointments'),
         showBackButton: false,
         backgroundColor: AppTheme.primaryColor,
       ),
@@ -57,10 +58,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               controller: _tabController,
               indicatorColor: Colors.white,
               indicatorWeight: 3,
-              tabs: const [
-                Tab(text: 'Upcoming'),
-                Tab(text: 'Completed'),
-                Tab(text: 'Rejected'),
+              tabs: [
+                Tab(text: AppLocalizations.of(context).translate('upcoming')),
+                Tab(text: AppLocalizations.of(context).translate('completed')),
+                Tab(text: AppLocalizations.of(context).translate('rejected')),
               ],
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
@@ -88,7 +89,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error loading appointments: ${snapshot.error}',
+                          '${AppLocalizations.of(context).translate('error_loading_appointments')}: ${snapshot.error}',
                           textAlign: TextAlign.center,
                           style: AppTheme.bodyStyle.copyWith(color: Colors.red),
                         ),
@@ -97,7 +98,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                           onPressed: () {
                             setState(() {});
                           },
-                          child: const Text('Retry'),
+                          child: Text(AppLocalizations.of(context).translate('retry')),
                         ),
                       ],
                     ),
@@ -152,7 +153,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No appointments',
+              AppLocalizations.of(context).translate('no_appointments'),
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
@@ -175,12 +176,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: AppointmentCard(
-              doctorName: appointment.vaccinationType ?? 'Vaccination',
+              doctorName: appointment.vaccinationType ?? AppLocalizations.of(context).translate('vaccination'),
               appointmentDate: appointment.dateTime,
               appointmentType: appointment.type,
               status: appointment.status,
               onTap: () => _navigateToAppointmentDetails(
-                  appointment, appointment.vaccinationType ?? 'Vaccination'),
+                  appointment, appointment.vaccinationType ?? AppLocalizations.of(context).translate('vaccination')),
             ),
           );
         }
@@ -193,15 +194,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           builder: (context, snapshot) {
             String doctorName;
             if (appointment.doctorId == null) {
-              doctorName = 'Awaiting Doctor';
+              doctorName = AppLocalizations.of(context).translate('awaiting_doctor');
             } else if (snapshot.connectionState == ConnectionState.waiting) {
-              doctorName = 'Loading...';
+              doctorName = AppLocalizations.of(context).translate('loading');
             } else if (snapshot.hasError) {
-              doctorName = 'Doctor Unavailable';
+              doctorName = AppLocalizations.of(context).translate('doctor_unavailable');
             } else if (snapshot.hasData) {
-              doctorName = 'Dr. ${snapshot.data!.name}';
+              doctorName = '${AppLocalizations.of(context).translate('dr_prefix')} ${snapshot.data!.name}';
             } else {
-              doctorName = 'Doctor Assigned';
+              doctorName = AppLocalizations.of(context).translate('doctor_assigned');
             }
 
             return Padding(

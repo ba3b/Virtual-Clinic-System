@@ -5,6 +5,7 @@ import '../../components/custom_app_bar.dart';
 import '../../theme/theme.dart';
 import 'appointment_department_screen.dart';
 import 'appointment_vaccination_screen.dart';
+import '../../localization/app_localizations.dart';
 
 class AppointmentTypeScreen extends StatefulWidget {
   const AppointmentTypeScreen({Key? key}) : super(key: key);
@@ -19,22 +20,22 @@ class _AppointmentTypeScreenState extends State<AppointmentTypeScreen> {
   final List<Map<String, dynamic>> _appointmentTypes = [
     {
       'id': 'virtual',
-      'title': 'Virtual Appointment',
-      'description': 'Consult with doctors through video call from your home',
+      'titleKey': 'virtual_appointment',
+      'descriptionKey': 'virtual_desc',
       'icon': Icons.videocam_rounded,
       'color': AppTheme.primaryColor,
     },
     {
       'id': 'physical',
-      'title': 'Physical Appointment',
-      'description': 'Visit the hospital for in-person consultation',
+      'titleKey': 'physical_appointment',
+      'descriptionKey': 'physical_desc',
       'icon': Icons.person_rounded,
       'color': Colors.blue,
     },
     {
       'id': 'vaccination',
-      'title': 'Vaccination',
-      'description': 'Schedule your vaccination at the hospital',
+      'titleKey': 'vaccination',
+      'descriptionKey': 'vaccination_desc',
       'icon': Icons.healing_rounded,
       'color': Colors.green,
     },
@@ -71,8 +72,8 @@ class _AppointmentTypeScreenState extends State<AppointmentTypeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Book Appointment',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('book_appointment'),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SafeArea(
@@ -82,12 +83,12 @@ class _AppointmentTypeScreenState extends State<AppointmentTypeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Select Appointment Type',
+                AppLocalizations.of(context).translate('select_type'),
                 style: AppTheme.headingStyle,
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose the type of appointment you need',
+                AppLocalizations.of(context).translate('choose_appointment_type'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -101,8 +102,8 @@ class _AppointmentTypeScreenState extends State<AppointmentTypeScreen> {
                     final bool isSelected = type['id'] == _selectedType;
                     
                     return AppointmentTypeCard(
-                      title: type['title'],
-                      description: type['description'],
+                      title: AppLocalizations.of(context).translate(type['titleKey']),
+                      description: AppLocalizations.of(context).translate(type['descriptionKey']),
                       icon: type['icon'],
                       color: type['color'],
                       isSelected: isSelected,
@@ -113,7 +114,7 @@ class _AppointmentTypeScreenState extends State<AppointmentTypeScreen> {
               ),
               const SizedBox(height: 16),
               CommonButton(
-                text: 'Continue',
+                text: AppLocalizations.of(context).translate('continue_btn'),
                 onPressed: _selectedType != null ? _proceedToNextStep : () {},
               ),
             ],

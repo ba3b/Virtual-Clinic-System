@@ -7,6 +7,7 @@ import '../../components/doctor_selector_dialog.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 class StaffAppointmentDetailsScreen extends StatefulWidget {
   final AppointmentModel appointment;
@@ -40,8 +41,8 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Appointment Details',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('appointment_details'),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SingleChildScrollView(
@@ -129,7 +130,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_appointment.type[0].toUpperCase()}${_appointment.type.substring(1)} Appointment',
+                      '${AppLocalizations.of(context).translate(_appointment.type.toLowerCase())}',
                       style: AppTheme.headingStyle.copyWith(
                         fontSize: 18,
                         color: statusColor,
@@ -155,7 +156,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  _appointment.status[0].toUpperCase() + _appointment.status.substring(1),
+                  AppLocalizations.of(context).translate(_appointment.status.toLowerCase()),
                   style: AppTheme.bodySmallStyle.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.w600,
@@ -172,17 +173,17 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
             children: [
               _buildInfoItem(
                 Icons.calendar_today_outlined,
-                'Date',
+                AppLocalizations.of(context).translate('date'),
                 DateFormat('MMM dd, yyyy').format(_appointment.dateTime),
               ),
               _buildInfoItem(
                 Icons.access_time_rounded,
-                'Time',
+                AppLocalizations.of(context).translate('date_and_time'),
                 DateFormat('hh:mm a').format(_appointment.dateTime),
               ),
               _buildInfoItem(
                 Icons.timer_outlined,
-                'Duration',
+                AppLocalizations.of(context).translate('duration'),
                 '20 mins',
               ),
             ],
@@ -237,15 +238,15 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Patient Information',
+            AppLocalizations.of(context).translate('patient_info'),
             style: AppTheme.subheadingStyle,
           ),
           const SizedBox(height: 16),
-          _buildInfoRow('Name', widget.patientName),
-          _buildInfoRow('Patient ID', _appointment.patientId),
-          _buildInfoRow('Appointment Type', _appointment.type),
-          _buildInfoRow('Contact', '+966 50 123 4567'),
-          _buildInfoRow('Email', 'patient@example.com'),
+          _buildInfoRow(AppLocalizations.of(context).translate('full_name'), widget.patientName),
+          _buildInfoRow(AppLocalizations.of(context).translate('patient_id'), _appointment.patientId),
+          _buildInfoRow(AppLocalizations.of(context).translate('type'), AppLocalizations.of(context).translate(_appointment.type.toLowerCase())),
+          _buildInfoRow(AppLocalizations.of(context).translate('phone'), '+966 50 123 4567'),
+          _buildInfoRow(AppLocalizations.of(context).translate('email'), 'patient@example.com'),
         ],
       ),
     );
@@ -298,7 +299,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Doctor Assignment',
+            AppLocalizations.of(context).translate('doctor'),
             style: AppTheme.subheadingStyle,
           ),
           const SizedBox(height: 16),
@@ -330,7 +331,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                         ),
                       ),
                       Text(
-                        'General Medicine',
+                        AppLocalizations.of(context).translate('dept_general_medicine'),
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -343,7 +344,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                     onPressed: _assignDoctor,
                     icon: const Icon(Icons.edit),
                     color: Colors.blue,
-                    tooltip: 'Reassign Doctor',
+                    tooltip: AppLocalizations.of(context).translate('edit'),
                   ),
                 ],
               ],
@@ -359,14 +360,14 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'No doctor assigned yet',
+                      AppLocalizations.of(context).translate('not_assigned_yet'),
                       style: AppTheme.bodyStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                       ),
                     ),
                   ),
                   CommonButton(
-                    text: 'Assign Doctor',
+                    text: AppLocalizations.of(context).translate('assign_doctor'),
                     onPressed: _assignDoctor,
                     backgroundColor: Colors.blue,
                     width: 150,
@@ -383,7 +384,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'Vaccination appointment - no doctor assignment needed',
+                      AppLocalizations.of(context).translate('vaccination_appointment'),
                       style: AppTheme.bodyStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                       ),
@@ -407,7 +408,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Actions',
+          AppLocalizations.of(context).translate('appointment_info'), // changed from 'Actions'
           style: AppTheme.subheadingStyle,
         ),
         const SizedBox(height: 16),
@@ -415,7 +416,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
           children: [
             Expanded(
               child: CommonButton(
-                text: 'Verify Appointment',
+                text: AppLocalizations.of(context).translate('verify'),
                 onPressed: _verifyAppointment,
                 backgroundColor: AppTheme.successColor,
               ),
@@ -423,7 +424,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
             const SizedBox(height: 16),
             Expanded(
               child: CommonButton(
-                text: 'Edit Details',
+                text: AppLocalizations.of(context).translate('edit'),
                 onPressed: _editAppointment,
                 backgroundColor: Colors.blue,
               ),
@@ -432,7 +433,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
         ),
         const SizedBox(height: 16),
         CommonButton(
-          text: 'Delete Appointment',
+          text: AppLocalizations.of(context).translate('cancel_appointment'),
           onPressed: _deleteAppointment,
           backgroundColor: AppTheme.errorColor,
         ),
@@ -496,8 +497,8 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
               });
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Appointment verified successfully'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context).translate('vaccination_verified')),
                   backgroundColor: AppTheme.successColor,
                 ),
               );
@@ -507,7 +508,7 @@ class _StaffAppointmentDetailsScreenState extends State<StaffAppointmentDetailsS
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.successColor,
             ),
-            child: const Text('Verify'),
+            child: Text(AppLocalizations.of(context).translate('verify')),
           ),
         ],
       ),

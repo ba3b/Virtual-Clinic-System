@@ -20,6 +20,41 @@ class AppointmentModel {
   static const String typePhysical = 'physical';
   static const String typeVaccination = 'vaccination';
 
+  /// Returns the translation key for the appointment status.
+  /// Use `AppLocalizations.of(context).translate(appointment.statusTranslationKey)`.
+  String get statusTranslationKey {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'approved';
+      case 'rejected':
+        return 'rejected';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      case 'in_progress':
+        return 'in_progress';
+      case 'pending':
+      default:
+        return 'pending';
+    }
+  }
+
+  /// Returns the translation key for the appointment type.
+  /// Use `AppLocalizations.of(context).translate(appointment.typeTranslationKey)`.
+  String get typeTranslationKey {
+    switch (type.toLowerCase()) {
+      case 'virtual':
+        return 'virtual_appointment';
+      case 'physical':
+        return 'physical_appointment';
+      case 'vaccination':
+        return 'vaccination_appointment';
+      default:
+        return type;
+    }
+  }
+
   AppointmentModel({
     required this.appointmentId,
     required this.patientId,

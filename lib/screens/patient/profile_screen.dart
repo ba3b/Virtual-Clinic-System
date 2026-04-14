@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:virtual_clinic_system/api/auth_service.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
+import 'package:provider/provider.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../localization/locale_provider.dart';
 
 class PatientProfileScreen extends StatefulWidget {
   const PatientProfileScreen({Key? key}) : super(key: key);
@@ -89,12 +92,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Logout',
+              AppLocalizations.of(context).translate('logout'),
               style: AppTheme.headingStyle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 12),
             Text(
-              'Are you sure you want to logout?',
+              AppLocalizations.of(context).translate('logout_confirmation'),
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
@@ -113,9 +116,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
                       ),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).translate('cancel'),
+                      style: const TextStyle(
                         color: AppTheme.textPrimaryColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -140,9 +143,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Logout',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    child: Text(
+                      AppLocalizations.of(context).translate('logout'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -167,7 +170,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
 
           if (!snapshot.hasData) {
             return Center(
-                child: Text('Error loading profile: ${snapshot.error}'));
+                child: Text('${AppLocalizations.of(context).translate('error_loading_profile')} ${snapshot.error}'));
           }
 
           final user = snapshot.data as PatientModel;
@@ -213,6 +216,40 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       floating: false,
       pinned: true,
       backgroundColor: AppTheme.primaryColor,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.language, color: Colors.white),
+          onPressed: () {
+             showDialog(
+               context: context,
+               builder: (context) {
+                 return AlertDialog(
+                   title: Text(AppLocalizations.of(context).translate('change_language')),
+                   content: Column(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       ListTile(
+                         title: Text(AppLocalizations.of(context).translate('language_en')),
+                         onTap: () {
+                           Provider.of<LocaleProvider>(context, listen: false).setLocale(const Locale('en'));
+                           Navigator.pop(context);
+                         },
+                       ),
+                       ListTile(
+                         title: Text(AppLocalizations.of(context).translate('language_ar')),
+                         onTap: () {
+                           Provider.of<LocaleProvider>(context, listen: false).setLocale(const Locale('ar'));
+                           Navigator.pop(context);
+                         },
+                       ),
+                     ],
+                   ),
+                 );
+               },
+             );
+          },
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -255,7 +292,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           ),
         ),
         title: Text(
-          'My Profile',
+          AppLocalizations.of(context).translate('my_profile'),
           style: AppTheme.headingStyle.copyWith(
             color: Colors.white,
             fontSize: 20,
@@ -319,7 +356,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Patient ID: ${user.nationalId}',
+              '${AppLocalizations.of(context).translate('patient_id')} ${user.nationalId}',
               style: AppTheme.bodySmallStyle.copyWith(
                 color: AppTheme.primaryColor,
                 fontWeight: FontWeight.w600,
@@ -339,8 +376,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           Expanded(
             child: _buildStatCard(
               icon: Icons.cake_outlined,
-              label: 'Age',
-              value: '${user.age} years',
+              label: AppLocalizations.of(context).translate('age'),
+              value: '${user.age} ${AppLocalizations.of(context).translate('years_old')}',
               color: Colors.blue,
             ),
           ),
@@ -348,8 +385,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           Expanded(
             child: _buildStatCard(
               icon: Icons.health_and_safety_outlined,
-              label: 'Status',
-              value: 'Active',
+              label: AppLocalizations.of(context).translate('status'),
+              value: AppLocalizations.of(context).translate('active'),
               color: Colors.green,
             ),
           ),
@@ -439,7 +476,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Personal Information',
+                AppLocalizations.of(context).translate('personal_information'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -447,20 +484,19 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildInfoRow(Icons.badge_outlined, 'National ID', user.nationalId),
-          _buildInfoRow(Icons.email_outlined, 'Email', user.email),
-          _buildInfoRow(Icons.phone_outlined, 'Phone', user.phoneNumber),
-          _buildInfoRow(Icons.location_on_outlined, 'Address', user.address),
+          _buildInfoRow(Icons.badge_outlined, AppLocalizations.of(context).translate('national_id'), user.nationalId),
+          _buildInfoRow(Icons.email_outlined, AppLocalizations.of(context).translate('email'), user.email),
+          _buildInfoRow(Icons.phone_outlined, AppLocalizations.of(context).translate('phone'), user.phoneNumber),
+          _buildInfoRow(Icons.location_on_outlined, AppLocalizations.of(context).translate('address'), user.address),
           _buildInfoRow(
             Icons.calendar_month_outlined,
-            'Date of Birth',
-            DateFormat('dd MMMM yyyy').format(user.dateOfBirth),
+            AppLocalizations.of(context).translate('date_of_birth'),
+            DateFormat('dd MMMM yyyy', Localizations.localeOf(context).languageCode).format(user.dateOfBirth),
           ),
           _buildInfoRow(
             Icons.wc_outlined,
-            'Gender',
-            user.gender.substring(0, 1).toUpperCase() +
-                user.gender.substring(1),
+            AppLocalizations.of(context).translate('gender'),
+            AppLocalizations.of(context).translate(user.gender),
           ),
         ],
       ),
@@ -500,7 +536,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Medical Information',
+                AppLocalizations.of(context).translate('medical_information'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -509,7 +545,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           ),
           const SizedBox(height: 20),
           _buildMedicalInfoRow(
-              'Eligible Departments', user.eligibility.join(', ')),
+              AppLocalizations.of(context).translate('eligible_departments'), user.eligibility.join(', ')),
         ],
       ),
     );
@@ -583,7 +619,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
     return Container(
       transform: Matrix4.translationValues(0, -20, 0),
       child: CommonButton(
-        text: 'Logout',
+        text: AppLocalizations.of(context).translate('logout'),
         backgroundColor: Colors.red,
         onPressed: _showLogoutDialog,
       ),

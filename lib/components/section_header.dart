@@ -13,8 +13,8 @@ class SectionHeader extends StatelessWidget {
     Key? key,
     required this.title,
     this.subtitle,
-    this.titleAlign = TextAlign.left,
-    this.subtitleAlign = TextAlign.left,
+    this.titleAlign = TextAlign.start,
+    this.subtitleAlign = TextAlign.start,
     this.onActionTap,
     this.actionText,
   }) : super(key: key);

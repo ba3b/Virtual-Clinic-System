@@ -6,6 +6,7 @@ import '../../components/custom_text_field.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 
 class PrescriptionPage extends StatefulWidget {
   final AppointmentModel appointment;
@@ -59,8 +60,8 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Prescription submitted successfully! Appointment completed.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).translate('prescription_submitted_successfully')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -75,7 +76,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error submitting prescription: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error_submitting_prescription')}: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -87,21 +88,21 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
     final shouldSkip = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Skip Prescription'),
-        content: const Text(
-          'Are you sure you want to complete this appointment without writing a prescription?'
+        title: Text(AppLocalizations.of(context).translate('skip_prescription')),
+        content: Text(
+          AppLocalizations.of(context).translate('skip_prescription_confirm')
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).translate('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
             ),
-            child: const Text('Skip Prescription'),
+            child: Text(AppLocalizations.of(context).translate('skip_prescription')),
           ),
         ],
       ),
@@ -122,8 +123,8 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Appointment completed successfully'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).translate('appointment_completed_successfully')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -138,7 +139,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error completing appointment: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error_completing_appointment')}: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -151,7 +152,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
-        title: const Text('Write Prescription'),
+        title: Text(AppLocalizations.of(context).translate('write_prescription')),
         automaticallyImplyLeading: false, 
       ),
       body: SingleChildScrollView(
@@ -206,7 +207,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Prescription for ${widget.patientName}',
+                        '${AppLocalizations.of(context).translate('prescription_for')} ${widget.patientName}',
                         style: AppTheme.subheadingStyle,
                       ),
                     ],
@@ -219,7 +220,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Step 2 of 2',
+                    AppLocalizations.of(context).translate('step_2_of_2'),
                     style: AppTheme.bodySmallStyle.copyWith(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.w600,
@@ -246,7 +247,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'This prescription will be saved to the patient\'s medical records and the appointment will be marked as completed.',
+                      AppLocalizations.of(context).translate('prescription_save_hint'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: Colors.amber[800],
                       ),
@@ -281,19 +282,19 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Prescription Details',
+                  AppLocalizations.of(context).translate('prescription_details'),
                   style: AppTheme.subheadingStyle,
                 ),
               ],
             ),
             const SizedBox(height: 20),
             CustomTextField(
-              label: 'Medication Details *',
-              hint: 'Enter medication name, strength, and form (e.g., Amoxicillin 500mg tablets)',
+              label: AppLocalizations.of(context).translate('medication_details_label'),
+              hint: AppLocalizations.of(context).translate('medication_hint'),
               controller: _medicationController,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter medication details';
+                  return AppLocalizations.of(context).translate('medication_details_empty');
                 }
                 return null;
               },
@@ -301,12 +302,12 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
             ),
             const SizedBox(height: 16),
             CustomTextField(
-              label: 'Dosage Instructions *',
-              hint: 'Enter dosage frequency and instructions (e.g., Take 1 tablet twice daily with food)',
+              label: '${AppLocalizations.of(context).translate('dosage_instructions')} *',
+              hint: AppLocalizations.of(context).translate('dosage_hint'),
               controller: _dosageController,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter dosage instructions';
+                  return AppLocalizations.of(context).translate('dosage_instructions_empty');
                 }
                 return null;
               },
@@ -324,14 +325,14 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
       child: Column(
         children: [
           CommonButton(
-            text: 'Complete & Submit Prescription',
+            text: AppLocalizations.of(context).translate('submit_prescription'),
             onPressed: _isSubmitting ? null : _submitPrescription,
             isLoading: _isSubmitting,
             backgroundColor: AppTheme.primaryColor,
           ),
           const SizedBox(height: 12),
           CommonButton(
-            text: 'Complete Without Prescription',
+            text: AppLocalizations.of(context).translate('complete_without_prescription'),
             onPressed: _isSubmitting ? null : _skipPrescription,
             backgroundColor: Colors.grey[600],
           ),

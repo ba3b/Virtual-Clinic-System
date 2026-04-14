@@ -24,4 +24,21 @@ class DepartmentConstants {
     psychiatry,
     endocrinology,
   ];
+
+  static String getTranslationKey(String department) {
+    switch (department) {
+      case generalMedicine: return 'dept_general_medicine';
+      case pediatrics: return 'dept_pediatrics';
+      case dermatology: return 'dept_dermatology';
+      case ophthalmology: return 'dept_ophthalmology';
+      case ent: return 'dept_ent';
+      case orthopedics: return 'dept_orthopedics';
+      case cardiology: return 'dept_cardiology';
+      case neurology: return 'dept_neurology';
+      case obgyn: return 'dept_obgyn';
+      case psychiatry: return 'dept_psychiatry';
+      case endocrinology: return 'dept_endocrinology';
+      default: return department;
+    }
+  }
 }

@@ -5,6 +5,7 @@ import '../../components/common_button.dart';
 import '../../theme/theme.dart';
 import '../../utils/validators.dart';
 import '../../api/auth_service.dart';
+import '../../localization/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -71,11 +72,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildEmailForm() {
+    final tr = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Reset Password',
+        Text(
+          tr.translate('reset_password'),
           style: AppTheme.headingStyle,
         ),
         const SizedBox(height: 8),
@@ -88,8 +90,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const SizedBox(height: 32),
         
         CustomTextField(
-          label: 'Email',
-          hint: 'Enter your email',
+          label: tr.translate('email'),
+          hint: tr.translate('enter_email'),
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           prefixIcon: const Icon(Icons.email_outlined),
@@ -101,7 +103,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const SizedBox(height: 32),
         
         CommonButton(
-          text: 'Send Reset Link',
+          text: tr.translate('send_link'),
           isLoading: _isLoading,
           onPressed: _isLoading ? null : _sendResetEmail,
         ),
@@ -207,9 +209,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Forgot Password',
+      appBar: CustomAppBar(
+        title: tr.translate('forgot_password'),
         backgroundColor: Colors.transparent,
         textColor: AppTheme.textPrimaryColor,
       ),

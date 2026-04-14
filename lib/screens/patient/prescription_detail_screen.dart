@@ -5,6 +5,7 @@ import '../../components/custom_app_bar.dart';
 import '../../theme/theme.dart';
 import '../../api/firestore_service.dart';
 import '../../models/user_model.dart';
+import '../../localization/app_localizations.dart';
 
 class PrescriptionDetailScreen extends StatefulWidget {
   final Map<String, dynamic> prescriptionData;
@@ -57,8 +58,8 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
     final bool isExpired = daysUntilExpiry < 0 || prescriptionStatus == 'expired';
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Prescription Details',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('prescription_details'),
         backgroundColor: AppTheme.primaryColor,
       ),
       backgroundColor: AppTheme.backgroundColor,
@@ -100,7 +101,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
           });
         },
         icon: const Icon(Icons.local_pharmacy),
-        label: const Text('Fill Pharmacy Details'),
+        label: Text(AppLocalizations.of(context).translate('fill_pharmacy_details')),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
@@ -140,7 +141,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Pharmacy Information',
+                AppLocalizations.of(context).translate('pharmacy_information'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: AppTheme.primaryColor,
                 ),
@@ -161,11 +162,11 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
   Widget _buildPharmacyDisplayInfo() {
     return Column(
       children: [
-        _buildDetailItem('Pharmacy Registration ID', widget.prescriptionData['pharmacyRegistrationId'] ?? ''),
+        _buildDetailItem(AppLocalizations.of(context).translate('pharmacy_reg_id'), widget.prescriptionData['pharmacyRegistrationId'] ?? ''),
         const SizedBox(height: 16),
-        _buildDetailItem('Medication Details', widget.prescriptionData['pharmacyMedicationDetails'] ?? ''),
+        _buildDetailItem(AppLocalizations.of(context).translate('medication_details'), widget.prescriptionData['pharmacyMedicationDetails'] ?? ''),
         const SizedBox(height: 16),
-        _buildDetailItem('Price', '${widget.prescriptionData['priceInSAR']?.toStringAsFixed(2) ?? '0.00'} SAR'),
+        _buildDetailItem(AppLocalizations.of(context).translate('price'), '${widget.prescriptionData['priceInSAR']?.toStringAsFixed(2) ?? '0.00'} SAR'),
       ],
     );
   }
@@ -178,7 +179,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
           TextFormField(
             controller: _pharmacyRegIdController,
             decoration: InputDecoration(
-              labelText: 'Pharmacy Registration ID *',
+              labelText: AppLocalizations.of(context).translate('pharmacy_reg_id_label'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -186,7 +187,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Pharmacy Registration ID is required';
+                return AppLocalizations.of(context).translate('pharmacy_reg_id_empty');
               }
               return null;
             },
@@ -195,7 +196,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
           TextFormField(
             controller: _medicationDetailsController,
             decoration: InputDecoration(
-              labelText: 'Medication Details *',
+              labelText: AppLocalizations.of(context).translate('medication_details_label'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -204,7 +205,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
             maxLines: 3,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Medication details are required';
+                return AppLocalizations.of(context).translate('medication_details_empty');
               }
               return null;
             },
@@ -213,7 +214,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
           TextFormField(
             controller: _priceController,
             decoration: InputDecoration(
-              labelText: 'Price (SAR) *',
+              labelText: AppLocalizations.of(context).translate('price_sar_label'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -223,11 +224,11 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Price is required';
+                return AppLocalizations.of(context).translate('price_empty');
               }
               final price = double.tryParse(value.trim());
               if (price == null || price <= 0) {
-                return 'Please enter a valid price';
+                return AppLocalizations.of(context).translate('invalid_price');
               }
               return null;
             },
@@ -242,7 +243,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                       _isPharmacyFormVisible = false;
                     });
                   },
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context).translate('cancel')),
                 ),
               ),
               const SizedBox(width: 16),
@@ -262,7 +263,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Received'),
+                      : Text(AppLocalizations.of(context).translate('received')),
                 ),
               ),
             ],
@@ -299,8 +300,8 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pharmacy details updated successfully'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).translate('pharmacy_details_updated')),
             backgroundColor: Colors.green,
           ),
         );
@@ -422,7 +423,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                   children: [
                     Text(
                       widget.prescriptionData['medicationDetails'] ??
-                          'Unknown Medication',
+                          AppLocalizations.of(context).translate('unknown_medication'),
                       style: AppTheme.headingStyle.copyWith(
                         fontSize: 20,
                         color: isExpired
@@ -453,7 +454,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              prescriptionStatus == 'expired' ? 'RECEIVED' : 'EXPIRED',
+                              prescriptionStatus == 'expired' ? AppLocalizations.of(context).translate('received_caps') : AppLocalizations.of(context).translate('expired_caps'),
                               style: AppTheme.bodySmallStyle.copyWith(
                                 color: AppTheme.errorColor,
                                 fontWeight: FontWeight.bold,
@@ -482,7 +483,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'EXPIRES ${daysUntilExpiry == 0 ? 'TODAY' : 'IN ${daysUntilExpiry}D'}',
+                              daysUntilExpiry == 0 ? AppLocalizations.of(context).translate('expires_today_caps') : '${AppLocalizations.of(context).translate('expires_in_caps')} $daysUntilExpiry ${AppLocalizations.of(context).translate('days_short').toUpperCase()}',
                               style: AppTheme.bodySmallStyle.copyWith(
                                 color: AppTheme.errorColor,
                                 fontWeight: FontWeight.bold,
@@ -511,7 +512,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'ACTIVE',
+                              AppLocalizations.of(context).translate('active_caps'),
                               style: AppTheme.bodySmallStyle.copyWith(
                                 color: AppTheme.successColor,
                                 fontWeight: FontWeight.bold,
@@ -533,13 +534,13 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
             children: [
               _buildInfoItem(
                 Icons.calendar_today_outlined,
-                'Issued Date',
-                DateFormat('MMM dd, yyyy').format(createdAt),
+                AppLocalizations.of(context).translate('issued_date'),
+                DateFormat('MMM dd, yyyy', Localizations.localeOf(context).languageCode).format(createdAt),
               ),
               _buildInfoItem(
                 Icons.access_time_outlined,
-                'Valid Until',
-                DateFormat('MMM dd, yyyy').format(expiryDate),
+                AppLocalizations.of(context).translate('valid_until'),
+                DateFormat('MMM dd, yyyy', Localizations.localeOf(context).languageCode).format(expiryDate),
                 textColor: isExpired
                     ? AppTheme.errorColor
                     : isExpiringSoon
@@ -610,7 +611,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Medication Details',
+                AppLocalizations.of(context).translate('medication_details'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: AppTheme.primaryColor,
                 ),
@@ -618,11 +619,11 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildDetailItem('Medication',
-              widget.prescriptionData['medicationDetails'] ?? 'Not specified'),
+          _buildDetailItem(AppLocalizations.of(context).translate('medication'),
+              widget.prescriptionData['medicationDetails'] ?? AppLocalizations.of(context).translate('not_specified')),
           const SizedBox(height: 20),
           Text(
-            'Dosage Instructions',
+            AppLocalizations.of(context).translate('dosage_instructions'),
             style: AppTheme.bodyStyle.copyWith(
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
@@ -639,7 +640,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
             ),
             child: Text(
               widget.prescriptionData['dosageInstructions'] ??
-                  'No instructions provided',
+                  AppLocalizations.of(context).translate('no_instructions_provided'),
               style: AppTheme.bodyStyle.copyWith(
                 height: 1.5,
               ),
@@ -702,7 +703,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Prescribed By',
+                AppLocalizations.of(context).translate('prescribed_by'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: AppTheme.primaryColor,
                 ),
@@ -745,14 +746,14 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Dr. ${widget.prescriptionData['doctorName'] ?? 'Unknown Doctor'}',
+                      '${AppLocalizations.of(context).translate('dr_prefix')} ${widget.prescriptionData['doctorName'] ?? AppLocalizations.of(context).translate('unknown_doctor')}',
                       style: AppTheme.subheadingStyle.copyWith(
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.prescriptionData['doctorSpecialty'] ?? 'General Medicine',
+                      widget.prescriptionData['doctorSpecialty'] ?? AppLocalizations.of(context).translate('general_medicine'),
                       style: AppTheme.bodyStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                       ),
@@ -778,7 +779,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Verified Doctor',
+                            AppLocalizations.of(context).translate('verified_doctor'),
                             style: AppTheme.bodySmallStyle.copyWith(
                               color: AppTheme.successColor,
                               fontWeight: FontWeight.w600,
@@ -832,7 +833,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Prescription Validity',
+                AppLocalizations.of(context).translate('prescription_validity'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: isExpired
                       ? AppTheme.errorColor
@@ -851,7 +852,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Issued Date',
+                      AppLocalizations.of(context).translate('issued_date'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                         fontWeight: FontWeight.w600,
@@ -859,7 +860,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('MMMM dd, yyyy').format(createdAt),
+                      DateFormat('MMMM dd, yyyy', Localizations.localeOf(context).languageCode).format(createdAt),
                       style: AppTheme.bodyStyle.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -872,7 +873,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Expiry Date',
+                      AppLocalizations.of(context).translate('expiry_date'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: AppTheme.textSecondaryColor,
                         fontWeight: FontWeight.w600,
@@ -880,7 +881,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('MMMM dd, yyyy').format(expiryDate),
+                      DateFormat('MMMM dd, yyyy', Localizations.localeOf(context).languageCode).format(expiryDate),
                       style: AppTheme.bodyStyle.copyWith(
                         fontWeight: FontWeight.w600,
                         color: isExpired ? AppTheme.errorColor : null,
@@ -922,11 +923,11 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
                   child: Text(
                     isExpired
                         ? prescriptionStatus == 'expired'
-                            ? 'This prescription has been received from the pharmacy.'
-                            : 'This prescription has expired and is no longer valid.'
+                            ? AppLocalizations.of(context).translate('prescription_received_msg')
+                            : AppLocalizations.of(context).translate('prescription_expired_msg')
                         : isExpiringSoon
-                            ? 'This prescription expires ${daysUntilExpiry == 0 ? 'today' : 'in $daysUntilExpiry day${daysUntilExpiry == 1 ? '' : 's'}'}.'
-                            : 'This prescription is valid for ${daysUntilExpiry} more day${daysUntilExpiry == 1 ? '' : 's'}.',
+                            ? daysUntilExpiry == 0 ? AppLocalizations.of(context).translate('prescription_expires_today_msg') : '${AppLocalizations.of(context).translate('prescription_expires_in_msg')} $daysUntilExpiry ${AppLocalizations.of(context).translate('days')}'
+                            : '${AppLocalizations.of(context).translate('prescription_valid_for_msg')} $daysUntilExpiry ${AppLocalizations.of(context).translate('days')}',
                     style: AppTheme.bodyStyle.copyWith(
                       color: isExpired
                           ? AppTheme.errorColor
@@ -965,7 +966,7 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Important Notes',
+                AppLocalizations.of(context).translate('important_notes'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: Colors.amber[700],
                 ),
@@ -975,27 +976,27 @@ class _PrescriptionDetailScreenState extends State<PrescriptionDetailScreen> {
           const SizedBox(height: 16),
           _buildNoteItem(
             Icons.warning_amber_rounded,
-            'Take medication exactly as prescribed by your doctor.',
+            AppLocalizations.of(context).translate('note_medication_exactly'),
           ),
           const SizedBox(height: 12),
           _buildNoteItem(
             Icons.access_time,
-            'Complete the full course even if you feel better.',
+            AppLocalizations.of(context).translate('note_full_course'),
           ),
           const SizedBox(height: 12),
           _buildNoteItem(
             Icons.child_care,
-            'Keep out of reach of children.',
+            AppLocalizations.of(context).translate('note_children'),
           ),
           const SizedBox(height: 12),
           _buildNoteItem(
             Icons.thermostat,
-            'Store at room temperature unless specified otherwise.',
+            AppLocalizations.of(context).translate('note_store_room_temp'),
           ),
           const SizedBox(height: 12),
           _buildNoteItem(
             Icons.phone,
-            'Contact your doctor if you experience any side effects.',
+            AppLocalizations.of(context).translate('note_contact_doctor'),
           ),
         ],
       ),

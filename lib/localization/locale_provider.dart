@@ -25,11 +25,22 @@ class LocaleProvider extends ChangeNotifier {
   bool get isArabic => _locale.languageCode == 'ar';
 
   /// Load the previously saved locale from SharedPreferences.
+  /// On first launch (no saved preference), defaults to the device locale
+  /// so that Arabic device users get Arabic automatically.
   /// Call this once during app startup (before runApp or in main).
   Future<void> loadSavedLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final langCode = prefs.getString(_languageKey) ?? 'en';
-    _locale = Locale(langCode);
+    final savedCode = prefs.getString(_languageKey);
+    if (savedCode != null) {
+      // User has previously chosen a language — honour their choice.
+      _locale = Locale(savedCode);
+    } else {
+      // First launch: mirror the device locale if it is Arabic.
+      final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
+      final langCode = deviceLocale.languageCode == 'ar' ? 'ar' : 'en';
+      _locale = Locale(langCode);
+      await prefs.setString(_languageKey, langCode);
+    }
     notifyListeners();
   }
 

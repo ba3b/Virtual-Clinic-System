@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/theme.dart';
+import '../localization/app_localizations.dart';
 
 class CustomTextField extends StatelessWidget {
   final String label;
@@ -58,7 +59,12 @@ class CustomTextField extends StatelessWidget {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          validator: validator,
+          validator: validator != null 
+              ? (val) {
+                  final result = validator!(val);
+                  return result != null ? AppLocalizations.of(context).translate(result) : null;
+                }
+              : null,
           inputFormatters: inputFormatters,
           maxLines: maxLines,
           maxLength: maxLength,

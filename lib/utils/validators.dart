@@ -1,12 +1,12 @@
 class Validators {
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Email is required';
+      return 'email_required';
     }
     
     final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegExp.hasMatch(value)) {
-      return 'Please enter a valid email address';
+      return 'invalid_email';
     }
     
     return null;
@@ -14,11 +14,11 @@ class Validators {
 
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password is required';
+      return 'password_required';
     }
     
     if (value.length < 6) {
-      return 'Password must be at least 6 characters';
+      return 'password_min_length';
     }
     
     return null;
@@ -26,11 +26,11 @@ class Validators {
 
   static String? validateName(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Name is required';
+      return 'name_required';
     }
     
     if (value.length < 2) {
-      return 'Name must be at least 2 characters';
+      return 'name_min_length';
     }
     
     return null;
@@ -38,12 +38,12 @@ class Validators {
 
   static String? validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Phone number is required';
+      return 'phone_required';
     }
     
     final phoneRegExp = RegExp(r'^\+?[0-9]{10,15}$');
     if (!phoneRegExp.hasMatch(value)) {
-      return 'Please enter a valid phone number';
+      return 'invalid_phone';
     }
     
     return null;
@@ -51,11 +51,11 @@ class Validators {
 
   static String? validateAddress(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Address is required';
+      return 'address_required';
     }
     
     if (value.length < 5) {
-      return 'Please enter a complete address';
+      return 'address_incomplete';
     }
     
     return null;
@@ -63,15 +63,15 @@ class Validators {
 
   static String? validateConfirmationCode(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Confirmation code is required';
+      return 'code_required';
     }
     
     if (value.length != 6) {
-      return 'Code must be 6 digits';
+      return 'code_length';
     }
     
     if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-      return 'Code must contain only numbers';
+      return 'code_numbers_only';
     }
     
     return null;
@@ -79,11 +79,11 @@ class Validators {
 
   static String? validateConfirmPassword(String? value, String password) {
     if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
+      return 'confirm_password_required';
     }
     
     if (value != password) {
-      return 'Passwords do not match';
+      return 'passwords_dont_match';
     }
     
     return null;

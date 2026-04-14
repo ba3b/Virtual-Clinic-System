@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../constants/departments.dart';
+import '../../constants/vaccinations.dart';
 
 class AppointmentConfirmationScreen extends StatelessWidget {
   final Map<String, dynamic> appointmentData;
@@ -16,19 +19,19 @@ class AppointmentConfirmationScreen extends StatelessWidget {
     return '${date.day}/${date.month}/${date.year} at $time';
   }
 
-  String _getAppointmentTitle() {
+  String _getAppointmentTitle(BuildContext context) {
     final type = appointmentData['appointmentType'] as String;
     
     if (type == 'vaccination') {
-      return 'Vaccination: ${appointmentData['vaccinationType']}';
+      return '${AppLocalizations.of(context).translate('vaccination')}: ${AppLocalizations.of(context).translate(VaccinationConstants.getTranslationKey(appointmentData['vaccinationType']))}';
     } else if (type == 'virtual') {
-      return 'Virtual Appointment: ${appointmentData['department']}';
+      return '${AppLocalizations.of(context).translate('virtual')}: ${AppLocalizations.of(context).translate(DepartmentConstants.getTranslationKey(appointmentData['department']))}';
     } else {
-      return 'Physical Appointment: ${appointmentData['department']}';
+      return '${AppLocalizations.of(context).translate('physical')}: ${AppLocalizations.of(context).translate(DepartmentConstants.getTranslationKey(appointmentData['department']))}';
     }
   }
 
-  Widget _buildAppointmentDetails() {
+  Widget _buildAppointmentDetails(BuildContext context) {
     final iconData = appointmentData['appointmentType'] == 'virtual'
         ? Icons.videocam_rounded
         : appointmentData['appointmentType'] == 'physical'
@@ -64,7 +67,7 @@ class AppointmentConfirmationScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              _getAppointmentTitle(),
+              _getAppointmentTitle(context),
               style: AppTheme.subheadingStyle.copyWith(
                 fontSize: 18,
               ),
@@ -89,7 +92,7 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Pending Confirmation',
+                AppLocalizations.of(context).translate('pending_confirmation'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: Colors.amber.shade800,
                   fontWeight: FontWeight.w600,
@@ -99,7 +102,7 @@ class AppointmentConfirmationScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.info_outline,
@@ -109,7 +112,7 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Your appointment is pending confirmation. You will receive a notification once confirmed.',
+                    AppLocalizations.of(context).translate('pending_confirmation_desc'),
                     style: AppTheme.bodySmallStyle,
                   ),
                 ),
@@ -136,27 +139,27 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                   size: 64,
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Appointment Successfully Booked!',
+                Text(
+                  AppLocalizations.of(context).translate('appointment_success_booked'),
                   style: AppTheme.headingStyle,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your appointment has been booked and is pending confirmation',
+                  AppLocalizations.of(context).translate('appointment_success_desc'),
                   style: AppTheme.bodyStyle.copyWith(
                     color: AppTheme.textSecondaryColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                _buildAppointmentDetails(),
+                _buildAppointmentDetails(context),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
-                  child: const Text('Back to Home'),
+                  child: Text(AppLocalizations.of(context).translate('back_to_home')),
                 ),
                 const SizedBox(height: 8),
               ],

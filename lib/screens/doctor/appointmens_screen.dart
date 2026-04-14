@@ -6,6 +6,7 @@ import '../../components/doctor_appointment_card.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import 'appointment_details_screen.dart';
 
 class AppointmentsViewScreen extends StatefulWidget {
@@ -87,17 +88,18 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     final user = Provider.of<UserId?>(context);
     
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('User not found. Please log in again.')),
+      return Scaffold(
+        body: Center(child: Text(tr.translate('error_loading'))),
       );
     }
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'My Appointments',
+      appBar: CustomAppBar(
+        title: tr.translate('my_appointments'),
         backgroundColor: AppTheme.primaryColor,
         showBackButton: false,
       ),
@@ -111,9 +113,9 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
               indicatorWeight: 3,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white.withOpacity(0.7),
-              tabs: const [
-                Tab(text: 'Upcoming'),
-                Tab(text: 'Completed'),
+              tabs: [
+                Tab(text: tr.translate('upcoming')),
+                Tab(text: tr.translate('completed')),
               ],
             ),
           ),
@@ -137,7 +139,7 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error loading appointments',
+                          tr.translate('error_loading_appointments'),
                           style: AppTheme.bodyStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -192,6 +194,7 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
   }
 
   Widget _buildAppointmentsList(List<AppointmentModel> appointments, String type) {
+    final tr = AppLocalizations.of(context);
     if (appointments.isEmpty) {
       return Center(
         child: Column(
@@ -205,8 +208,8 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
             const SizedBox(height: 16),
             Text(
               type == 'upcoming' 
-                  ? 'No upcoming appointments' 
-                  : 'No completed appointments',
+                  ? tr.translate('no_upcoming') 
+                  : tr.translate('no_completed_appointments'),
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
@@ -214,8 +217,8 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
             const SizedBox(height: 8),
             Text(
               type == 'upcoming'
-                  ? 'Your future appointments will appear here'
-                  : 'Your appointment history will appear here',
+                  ? tr.translate('future_appointments_appear_here')
+                  : tr.translate('appointment_history_appear_here'),
               style: AppTheme.bodySmallStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
@@ -231,7 +234,7 @@ class _AppointmentsViewScreenState extends State<AppointmentsViewScreen> with Si
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        final patientName = _patientNames[appointment.patientId] ?? 'Loading...';
+        final patientName = _patientNames[appointment.patientId] ?? tr.translate('loading');
         
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),

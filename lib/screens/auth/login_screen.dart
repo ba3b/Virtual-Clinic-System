@@ -6,6 +6,7 @@ import '../../components/custom_text_field.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
 import '../../utils/validators.dart';
+import '../../localization/app_localizations.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -57,15 +58,15 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         if (result == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login failed. Please check your credentials.'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).translate('login_failed')),
               backgroundColor: AppTheme.errorColor,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You have logged in successfully!'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).translate('login_success')),
               backgroundColor: AppTheme.successColor,
             ),
           );
@@ -80,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -99,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
                 Text(
-                  'Login',
+                  tr.translate('login'),
                   style: AppTheme.headingStyle.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -107,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Welcome back! Please login to your account',
+                  tr.translate('welcome_back'),
                   style: AppTheme.bodyStyle.copyWith(
                     color: AppTheme.textSecondaryColor,
                   ),
@@ -115,8 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
 
                 CustomTextField(
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: tr.translate('email'),
+                  hint: tr.translate('enter_email'),
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined),
@@ -126,8 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
 
                 CustomTextField(
-                  label: 'Password',
-                  hint: 'Enter your password',
+                  label: tr.translate('password'),
+                  hint: tr.translate('enter_password'),
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   prefixIcon: const Icon(Icons.lock_outline),
@@ -155,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     },
                     child: Text(
-                      'Forgot Password?',
+                      tr.translate('forgot_password'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
@@ -166,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 CommonButton(
-                  text: 'Login',
+                  text: tr.translate('login'),
                   isLoading: _isLoading,
                   onPressed: _login,
                 ),
@@ -175,8 +177,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Don\'t have an account?',
+                    Text(
+                      tr.translate('dont_have_account'),
                       style: AppTheme.bodySmallStyle,
                     ),
                     TextButton(
@@ -188,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       child: Text(
-                        'Register',
+                        tr.translate('register'),
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/app_localizations.dart';
 import '../theme/theme.dart';
 
 class AppLogo extends StatelessWidget {
@@ -13,6 +14,7 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -41,7 +43,7 @@ class AppLogo extends StatelessWidget {
         if (showText) ...[
           const SizedBox(height: 16),
           Text(
-            'Virtual Clinic',
+            loc.tr('virtual_clinic'),
             style: AppTheme.headingStyle.copyWith(
               color: AppTheme.primaryColor,
               fontSize: 28,
@@ -50,7 +52,7 @@ class AppLogo extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'King Faisal Medical Complex',
+            loc.tr('king_faisal_medical'),
             style: AppTheme.bodyStyle.copyWith(
               color: AppTheme.textSecondaryColor,
             ),

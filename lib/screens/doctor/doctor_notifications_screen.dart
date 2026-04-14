@@ -6,6 +6,7 @@ import 'package:virtual_clinic_system/components/notification_item.dart';
 import 'package:virtual_clinic_system/models/notification_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 class DoctorNotificationsScreen extends StatelessWidget {
   const DoctorNotificationsScreen({Key? key}) : super(key: key);
@@ -17,9 +18,9 @@ class DoctorNotificationsScreen extends StatelessWidget {
   void _markAllAsRead(String userId, BuildContext context) async {
     await NotificationService().markAllAsRead(userId);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
           backgroundColor: Colors.green,
-          content: Text('All notifications marked as read')),
+          content: Text(AppLocalizations.of(context).translate('mark_all_read'))),
     );
   }
 
@@ -33,15 +34,15 @@ class DoctorNotificationsScreen extends StatelessWidget {
 
     if (user == null) {
       return Scaffold(
-        appBar: const CustomAppBar(
-            title: 'Notifications', backgroundColor: AppTheme.primaryColor),
-        body: const Center(child: Text('Please log in to view notifications')),
+        appBar: CustomAppBar(
+            title: AppLocalizations.of(context).translate('notifications'), backgroundColor: AppTheme.primaryColor),
+        body: Center(child: Text(AppLocalizations.of(context).translate('login_view_notifications'))),
       );
     }
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Notifications',
+        title: AppLocalizations.of(context).translate('notifications'),
         backgroundColor: AppTheme.primaryColor,
         actions: [
           IconButton(
@@ -58,28 +59,28 @@ class DoctorNotificationsScreen extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('${AppLocalizations.of(context).translate('error_colon')} ${snapshot.error}'));
           }
 
           final notifications = snapshot.data ?? [];
 
-          return _buildNotificationsList(notifications);
+          return _buildNotificationsList(notifications, context);
         },
       ),
     );
   }
 
-  Widget _buildNotificationsList(List<NotificationModel> notifications) {
+  Widget _buildNotificationsList(List<NotificationModel> notifications, BuildContext context) {
     if (notifications.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.notifications_off_outlined,
+            const Icon(Icons.notifications_off_outlined,
                 size: 64, color: AppTheme.textSecondaryColor),
-            SizedBox(height: 16),
-            Text('No notifications',
-                style: TextStyle(color: AppTheme.textSecondaryColor)),
+            const SizedBox(height: 16),
+            Text(AppLocalizations.of(context).translate('no_notifications'),
+                style: const TextStyle(color: AppTheme.textSecondaryColor)),
           ],
         ),
       );

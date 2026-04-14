@@ -9,6 +9,7 @@ import '../../components/custom_text_field.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
 import '../../utils/validators.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 class StaffRegisterUserScreen extends StatefulWidget {
   const StaffRegisterUserScreen({super.key});
@@ -434,10 +435,12 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: const CustomAppBar(
-        title: 'Register New User',
+      appBar: CustomAppBar(
+        title: l10n.translate('register_user'),
         backgroundColor: Colors.transparent,
         textColor: AppTheme.textPrimaryColor,
       ),
@@ -515,9 +518,9 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Register New User',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).translate('register_user'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -572,7 +575,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'User Type',
+                AppLocalizations.of(context).translate('user_type'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -619,7 +622,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          option['label'],
+                          AppLocalizations.of(context).translate(option['value']),
                           style: TextStyle(
                             color: isSelected
                                 ? AppTheme.primaryColor
@@ -672,7 +675,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Personal Information',
+                AppLocalizations.of(context).translate('personal_info'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -681,7 +684,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
           ),
           const SizedBox(height: 20),
           CustomTextField(
-            label: 'Full Name',
+            label: AppLocalizations.of(context).translate('full_name'),
             hint: 'Enter full name',
             controller: _nameController,
             prefixIcon: const Icon(Icons.person_outline),
@@ -690,8 +693,8 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
           ),
           const SizedBox(height: 16),
           CustomTextField(
-            label: 'National ID',
-            hint: 'Enter 10-digit national ID',
+            label: AppLocalizations.of(context).translate('national_id'),
+            hint: '',
             controller: _nationalIdController,
             prefixIcon: const Icon(Icons.badge_outlined),
             keyboardType: TextInputType.number,
@@ -710,7 +713,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Gender',
+                      AppLocalizations.of(context).translate('gender'),
                       style: AppTheme.bodyStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -747,7 +750,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
                                     color: AppTheme.textSecondaryColor,
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(option['label']),
+                                  Text(AppLocalizations.of(context).translate(option['value'])),
                                 ],
                               ),
                             );
@@ -824,7 +827,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Medical Specialty',
+                      AppLocalizations.of(context).translate('specialty'),
                       style: AppTheme.bodyStyle.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppTheme.primaryColor,
@@ -971,8 +974,8 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
           ),
           const SizedBox(height: 20),
           CustomTextField(
-            label: 'Email',
-            hint: 'Enter email address',
+            label: AppLocalizations.of(context).translate('email'),
+            hint: '',
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             prefixIcon: const Icon(Icons.email_outlined),
@@ -981,8 +984,8 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
           ),
           const SizedBox(height: 16),
           CustomTextField(
-            label: 'Phone Number',
-            hint: 'Enter phone number (05xxxxxxxx)',
+            label: AppLocalizations.of(context).translate('phone_number'),
+            hint: '',
             controller: _phoneController,
             keyboardType: TextInputType.phone,
             prefixIcon: const Icon(Icons.phone_outlined),
@@ -995,8 +998,8 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
           ),
           const SizedBox(height: 16),
           CustomTextField(
-            label: 'Address',
-            hint: 'Enter address',
+            label: AppLocalizations.of(context).translate('address'),
+            hint: '',
             controller: _addressController,
             prefixIcon: const Icon(Icons.location_on_outlined),
             validator: Validators.validateAddress,
@@ -1052,8 +1055,8 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CustomTextField(
-                label: 'Password',
-                hint: 'Enter password',
+                label: AppLocalizations.of(context).translate('password'),
+                hint: '',
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 prefixIcon: const Icon(Icons.lock_outline),
@@ -1073,8 +1076,8 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
           ),
           const SizedBox(height: 16),
           CustomTextField(
-            label: 'Confirm Password',
-            hint: 'Confirm password',
+            label: AppLocalizations.of(context).translate('confirm_password'),
+            hint: '',
             controller: _confirmPasswordController,
             obscureText: _obscureConfirmPassword,
             prefixIcon: const Icon(Icons.lock_outline),
@@ -1100,7 +1103,7 @@ class _StaffRegisterUserScreenState extends State<StaffRegisterUserScreen>
 
   Widget _buildRegisterButton() {
     return CommonButton(
-      text: 'Register ${_selectedUserType == 'doctor' ? 'Doctor' : 'Staff'}',
+      text: _selectedUserType == 'doctor' ? AppLocalizations.of(context).translate('register_doctor') : AppLocalizations.of(context).translate('register_staff'),
       isLoading: _isLoading,
       onPressed: _registerUser,
     );

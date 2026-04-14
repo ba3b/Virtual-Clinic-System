@@ -8,6 +8,7 @@ import '../../components/custom_text_field.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
 import '../../utils/validators.dart';
+import '../../localization/app_localizations.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -321,9 +322,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Create Account',
+      appBar: CustomAppBar(
+        title: tr.translate('create_account'),
         backgroundColor: Colors.transparent,
         textColor: AppTheme.textPrimaryColor,
       ),
@@ -336,7 +338,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sign Up',
+                  tr.translate('register'),
                   style: AppTheme.headingStyle.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -352,8 +354,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 24),
                 
                 CustomTextField(
-                  label: 'Full Name',
-                  hint: 'Enter your full name',
+                  label: tr.translate('full_name'),
+                  hint: tr.translate('full_name'),
                   controller: _nameController,
                   prefixIcon: const Icon(Icons.person_outline),
                   validator: Validators.validateName,
@@ -380,7 +382,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Gender',
+                      tr.translate('select_gender'),
                       style: AppTheme.bodyStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -423,7 +425,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Date of Birth',
+                      tr.translate('date_of_birth'),
                       style: AppTheme.bodyStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -465,8 +467,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 
                 CustomTextField(
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: tr.translate('email'),
+                  hint: tr.translate('enter_email'),
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined),
@@ -476,8 +478,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 
                 CustomTextField(
-                  label: 'Phone Number',
-                  hint: 'Enter your phone number (05xxxxxxxx)',
+                  label: tr.translate('phone_number'),
+                  hint: tr.translate('phone_number'),
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   prefixIcon: const Icon(Icons.phone_outlined),
@@ -491,8 +493,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 
                 CustomTextField(
-                  label: 'Address',
-                  hint: 'Enter your address',
+                  label: tr.translate('address'),
+                  hint: tr.translate('address'),
                   controller: _addressController,
                   prefixIcon: const Icon(Icons.location_on_outlined),
                   validator: Validators.validateAddress,
@@ -504,8 +506,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CustomTextField(
-                      label: 'Password',
-                      hint: 'Enter your password',
+                      label: tr.translate('password'),
+                      hint: tr.translate('enter_password'),
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       prefixIcon: const Icon(Icons.lock_outline),
@@ -524,8 +526,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 
                 CustomTextField(
-                  label: 'Confirm Password',
-                  hint: 'Confirm your password',
+                  label: tr.translate('confirm_password'),
+                  hint: tr.translate('confirm_password'),
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   prefixIcon: const Icon(Icons.lock_outline),
@@ -545,7 +547,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 32),
                 
                 CommonButton(
-                  text: 'Register',
+                  text: tr.translate('create_account'),
                   isLoading: _isLoading,
                   onPressed: _register,
                 ),
@@ -554,8 +556,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Already have an account?',
+                    Text(
+                      tr.translate('already_have_account'),
                       style: AppTheme.bodySmallStyle,
                     ),
                     TextButton(
@@ -566,7 +568,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         );
                       },
                       child: Text(
-                        'Login',
+                        tr.translate('login'),
                         style: AppTheme.bodySmallStyle.copyWith(
                           color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,

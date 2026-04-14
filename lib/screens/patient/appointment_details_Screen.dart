@@ -7,6 +7,7 @@ import '../../components/custom_app_bar.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import 'dart:async';
 
 class AppointmentDetailsScreen extends StatefulWidget {
@@ -106,8 +107,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Appointment cancelled successfully'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('appointment_cancelled_success')),
           backgroundColor: Colors.green,
         ),
       );
@@ -115,35 +116,36 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       Navigator.pop(context);
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error cancelling appointment: $e';
+        _errorMessage = '${AppLocalizations.of(context).translate('error_cancelling_appointment')}: $e';
         _isLoading = false;
       });
     }
   }
 
-  String _formatDateTime() {
+  String _formatDateTime(BuildContext context) {
     final date = widget.appointmentData['appointmentDate'] as DateTime? ??
         widget.appointmentData['dateTime'] as DateTime?;
     
     if (date != null) {
-      return DateFormat('EEEE, MMMM dd, yyyy \'at\' h:mm a').format(date);
+      final locale = Localizations.localeOf(context).languageCode;
+      return '${DateFormat.yMMMMEEEEd(locale).format(date)} - ${DateFormat.jm(locale).format(date)}';
     }
-    return 'Date not available';
+    return AppLocalizations.of(context).translate('date_not_available');
   }
 
-  String _getAppointmentTitle() {
+  String _getAppointmentTitle(BuildContext context) {
     final type = widget.appointmentData['appointmentType'] as String;
 
     if (type == 'vaccination') {
-      return 'Vaccination Appointment';
+      return AppLocalizations.of(context).translate('vaccination_appointment');
     } else if (type == 'virtual') {
-      return 'Virtual Consultation';
+      return AppLocalizations.of(context).translate('virtual_consultation');
     } else {
-      return 'Physical Consultation';
+      return AppLocalizations.of(context).translate('physical_consultation');
     }
   }
 
-  Widget _buildStatusChip() {
+  Widget _buildStatusChip(BuildContext context) {
     final status = widget.appointmentData['status'] as String;
 
     late final Color color;
@@ -154,27 +156,27 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       case AppointmentModel.statusPending:
         color = Colors.amber;
         icon = Icons.pending_outlined;
-        displayText = 'Pending Review';
+        displayText = AppLocalizations.of(context).translate('pending_review');
         break;
       case AppointmentModel.statusApproved:
         color = Colors.green;
         icon = Icons.check_circle_outline;
-        displayText = 'Approved';
+        displayText = AppLocalizations.of(context).translate('approved');
         break;
       case AppointmentModel.statusRejected:
         color = Colors.red;
         icon = Icons.cancel_outlined;
-        displayText = 'Rejected';
+        displayText = AppLocalizations.of(context).translate('rejected');
         break;
       case AppointmentModel.statusCompleted:
         color = Colors.green;
         icon = Icons.task_alt;
-        displayText = 'Completed';
+        displayText = AppLocalizations.of(context).translate('completed');
         break;
       case AppointmentModel.statusCancelled:
         color = Colors.grey;
         icon = Icons.cancel_outlined;
-        displayText = 'Cancelled';
+        displayText = AppLocalizations.of(context).translate('cancelled');
         break;
       default:
         color = Colors.grey;
@@ -280,8 +282,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: const CustomAppBar(
-        title: 'Appointment Details',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('appointment_details'),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: _isLoadingData
@@ -325,7 +327,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _getAppointmentTitle(),
+                            _getAppointmentTitle(context),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 22,
@@ -335,7 +337,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _formatDateTime(),
+                            _formatDateTime(context),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -344,7 +346,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
-                          _buildStatusChip(),
+                          _buildStatusChip(context),
                         ],
                       ),
                     ),
@@ -362,7 +364,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Appointment Information',
+                            AppLocalizations.of(context).translate('appointment_info'),
                             style:
                                 AppTheme.subheadingStyle.copyWith(fontSize: 18),
                           ),
@@ -370,27 +372,27 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                           if (appointmentType != 'vaccination') ...[
                             _buildInfoRow(
                               Icons.local_hospital_outlined,
-                              'Department',
+                              AppLocalizations.of(context).translate('department'),
                               widget.appointmentData['department'] as String? ??
-                                  'General',
+                                  AppLocalizations.of(context).translate('general'),
                             ),
                             _buildInfoRow(
                               Icons.person_outline,
-                              'Doctor',
+                              AppLocalizations.of(context).translate('doctor'),
                               _doctorDetails?.name != null
-                                  ? 'Dr. ${_doctorDetails!.name}'
+                                  ? '${AppLocalizations.of(context).translate('dr_prefix')} ${_doctorDetails!.name}'
                                   : widget.appointmentData['doctorName']
                                           as String? ??
-                                      'Not assigned yet',
+                                      AppLocalizations.of(context).translate('not_assigned_yet'),
                             ),
                           ],
                           if (appointmentType == 'vaccination')
                             _buildInfoRow(
                               Icons.vaccines_outlined,
-                              'Vaccination Type',
+                              AppLocalizations.of(context).translate('vaccination_type'),
                               widget.appointmentData['vaccinationType']
                                       as String? ??
-                                  'Standard Vaccination',
+                                  AppLocalizations.of(context).translate('standard_vaccination'),
                             ),
                         ],
                       ),
@@ -429,20 +431,20 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                                 ),
                               );
                             },
-                            child: const Padding(
-                              padding: EdgeInsets.all(20),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.videocam_rounded,
                                     color: Colors.white,
                                     size: 24,
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
-                                    'Join Virtual Appointment',
-                                    style: TextStyle(
+                                    AppLocalizations.of(context).translate('join_virtual_appointment'),
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -492,9 +494,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                                 ),
                                 elevation: 2,
                               ),
-                              child: const Text(
-                                'Cancel Appointment',
-                                style: TextStyle(
+                              child: Text(
+                                AppLocalizations.of(context).translate('cancel_appointment'),
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),

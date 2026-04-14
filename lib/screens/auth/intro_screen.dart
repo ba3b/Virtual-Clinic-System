@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../components/app_logo.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../localization/locale_provider.dart';
+import 'package:provider/provider.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -15,8 +18,13 @@ class IntroScreen extends StatefulWidget {
 class _IntroScreenState extends State<IntroScreen> {
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.read<LocaleProvider>().toggleLocale(),
+        child: const Icon(Icons.language),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -31,7 +39,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         const AppLogo(size: 150),
                         const SizedBox(height: 48),
                         Text(
-                          'Welcome to Virtual Clinic',
+                          tr.translate('welcome_title'),
                           style: AppTheme.headingStyle.copyWith(
                             fontSize: 28,
                           ),
@@ -39,7 +47,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Your health journey starts here. Connect with doctors, book appointments, and manage your healthcare needs all in one place.',
+                          tr.translate('welcome_subtitle'),
                           style: AppTheme.bodyStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -52,7 +60,7 @@ class _IntroScreenState extends State<IntroScreen> {
               ),
               const SizedBox(height: 24),
               CommonButton(
-                text: 'Login',
+                text: tr.translate('login'),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -62,7 +70,7 @@ class _IntroScreenState extends State<IntroScreen> {
               ),
               const SizedBox(height: 16),
               CommonButton(
-                text: 'Register',
+                text: tr.translate('register'),
                 isOutlined: true,
                 onPressed: () {
                   Navigator.push(

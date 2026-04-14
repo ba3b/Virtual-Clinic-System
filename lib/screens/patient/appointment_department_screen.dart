@@ -5,6 +5,8 @@ import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../constants/departments.dart';
 import 'appointment_date_screen.dart';
 
 class AppointmentDepartmentScreen extends StatefulWidget {
@@ -48,7 +50,9 @@ class _AppointmentDepartmentScreenState extends State<AppointmentDepartmentScree
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: widget.appointmentType == 'virtual' ? 'Virtual Appointment' : 'Physical Appointment',
+        title: AppLocalizations.of(context).translate(
+          widget.appointmentType == 'virtual' ? 'virtual_appointment' : 'physical_appointment'
+        ),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SafeArea(
@@ -58,12 +62,12 @@ class _AppointmentDepartmentScreenState extends State<AppointmentDepartmentScree
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Select Department',
+                AppLocalizations.of(context).translate('select_department'),
                 style: AppTheme.headingStyle,
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose the medical department for your appointment',
+                AppLocalizations.of(context).translate('choose_department_desc'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -80,15 +84,15 @@ class _AppointmentDepartmentScreenState extends State<AppointmentDepartmentScree
                     if (snapshot.hasError) {
                       return Center(
                         child: Text(
-                          'Error loading eligibility data: ${snapshot.error}',
+                          '${AppLocalizations.of(context).translate('error_loading')}: ${snapshot.error}',
                           style: AppTheme.bodyStyle.copyWith(color: Colors.red),
                         ),
                       );
                     }
 
                     if (!snapshot.hasData || !snapshot.data!.isPatient) {
-                      return const Center(
-                        child: Text('No eligibility data found or user is not a patient'),
+                      return Center(
+                        child: Text(AppLocalizations.of(context).translate('no_eligibility_data')),
                       );
                     }
 
@@ -96,8 +100,8 @@ class _AppointmentDepartmentScreenState extends State<AppointmentDepartmentScree
                     final eligibleDepartments = patientModel.eligibility;
 
                     if (eligibleDepartments.isEmpty) {
-                      return const Center(
-                        child: Text('You are not eligible for any departments yet.'),
+                      return Center(
+                        child: Text(AppLocalizations.of(context).translate('not_eligible')),
                       );
                     }
 
@@ -144,7 +148,9 @@ class _AppointmentDepartmentScreenState extends State<AppointmentDepartmentScree
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Text(
-                                      department,
+                                      AppLocalizations.of(context).translate(
+                                        DepartmentConstants.getTranslationKey(department)
+                                      ),
                                       style: AppTheme.subheadingStyle.copyWith(
                                         color: isSelected
                                             ? AppTheme.primaryColor
@@ -169,7 +175,7 @@ class _AppointmentDepartmentScreenState extends State<AppointmentDepartmentScree
               ),
               const SizedBox(height: 16),
               CommonButton(
-                text: 'Continue',
+                text: AppLocalizations.of(context).translate('continue_btn'),
                 onPressed: _selectedDepartment != null ? _proceedToNextStep : () {},
               ),
             ],

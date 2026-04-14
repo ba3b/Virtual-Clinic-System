@@ -9,6 +9,7 @@ import 'package:virtual_clinic_system/components/staff_appointment_card.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 import 'appointments_screen.dart';
 import 'profile_screen.dart';
@@ -41,31 +42,33 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       body: _getSelectedScreen(),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: const Icon(Icons.dashboard_outlined),
+            activeIcon: const Icon(Icons.dashboard),
+            label: l10n.translate('dashboard'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today_rounded),
-            label: 'Appointments',
+            icon: const Icon(Icons.calendar_today_outlined),
+            activeIcon: const Icon(Icons.calendar_today_rounded),
+            label: l10n.translate('appointments'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.healing_outlined),
-            activeIcon: Icon(Icons.healing),
-            label: 'Vaccination',
+            icon: const Icon(Icons.healing_outlined),
+            activeIcon: const Icon(Icons.healing),
+            label: l10n.translate('vaccination'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline_rounded),
+            activeIcon: const Icon(Icons.person_rounded),
+            label: l10n.translate('profile'),
           ),
         ],
       ),
@@ -143,11 +146,10 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SectionHeader(
-                      title: 'Pending Appointments',
-                      subtitle:
-                          'Appointments that need verification and doctor assignment',
+                      title: AppLocalizations.of(context).translate('pending_appointments'),
+                      subtitle: AppLocalizations.of(context).translate('need_verification'),
                       actionText:
-                          pendingAppointments.isEmpty ? null : 'See All',
+                          pendingAppointments.isEmpty ? null : AppLocalizations.of(context).translate('see_all'),
                       onActionTap: () {
                         setState(() {
                           _selectedIndex = 1;
@@ -240,7 +242,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Welcome, ${staff.name}',
+                            AppLocalizations.of(context).translate('welcome_user').replaceAll('{name}', staff.name),
                             style: AppTheme.subheadingStyle.copyWith(
                               color: Colors.white,
                               fontSize: 22,
@@ -249,7 +251,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Staff Administrator',
+                            AppLocalizations.of(context).translate('staff_administrator'),
                             style: AppTheme.bodyStyle.copyWith(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 16,
@@ -275,7 +277,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '$pendingCount Pending Appointments',
+                                  '$pendingCount ${AppLocalizations.of(context).translate('pending_appointments')}',
                                   style: AppTheme.bodySmallStyle.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -317,7 +319,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'No pending appointments',
+                AppLocalizations.of(context).translate('no_pending'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                   fontSize: 18,
@@ -325,7 +327,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'All appointments have been processed',
+                AppLocalizations.of(context).translate('all_processed'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -391,14 +393,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('No Available Doctors'),
+            title: Text(AppLocalizations.of(context).translate('no_available_doctors')),
             content: Text(
-              'No doctors found for ${appointment.department ?? appointment.type} specialty.',
+              AppLocalizations.of(context).translate('no_doctors_found'),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text(AppLocalizations.of(context).translate('close')),
               ),
             ],
           ),
@@ -422,15 +424,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content:
-                      Text('Doctor "${doctor.name}" assigned successfully'),
+                  content: Text(AppLocalizations.of(context).translate('doctor_assigned_success')),
                   backgroundColor: AppTheme.successColor,
                 ),
               );
             } catch (e) {
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content: Text('Error assigning doctor: $e'),
+                  content: Text('${AppLocalizations.of(context).translate('error')}: $e'),
                   backgroundColor: AppTheme.errorColor,
                 ),
               );
@@ -456,8 +457,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vaccination appointment verified successfully'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).translate('vaccination_verified')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -466,7 +467,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error verifying appointment: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error')}: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -497,24 +498,24 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         ),
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.warning_amber_rounded,
               color: AppTheme.errorColor,
               size: 28,
             ),
             const SizedBox(width: 12),
-            const Text('Reject Appointment'),
+            Text(AppLocalizations.of(context).translate('reject_appointment')),
           ],
         ),
-        content: const Text(
-          'Are you sure you want to reject this appointment? The patient will be notified of the rejection.',
+        content: Text(
+          AppLocalizations.of(context).translate('reject_confirm'),
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).translate('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -528,8 +529,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Appointment rejected successfully'),
+                    SnackBar(
+                      content: Text(AppLocalizations.of(context).translate('appointment_rejected')),
                       backgroundColor: AppTheme.errorColor,
                     ),
                   );
@@ -538,7 +539,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error rejecting appointment: $e'),
+                      content: Text('${AppLocalizations.of(context).translate('error')}: $e'),
                       backgroundColor: AppTheme.errorColor,
                     ),
                   );
@@ -549,7 +550,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               backgroundColor: AppTheme.errorColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reject'),
+            child: Text(AppLocalizations.of(context).translate('reject')),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:virtual_clinic_system/components/custom_app_bar.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 class VaccinationScreen extends StatefulWidget {
   const VaccinationScreen({Key? key}) : super(key: key);
@@ -67,8 +68,8 @@ class _VaccinationScreenState extends State<VaccinationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Vaccination Management',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('manage_vaccinations'),
         backgroundColor: AppTheme.primaryColor,
         showBackButton: false,
       ),
@@ -90,14 +91,14 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                 fontWeight: FontWeight.normal,
                 fontSize: 16,
               ),
-              tabs: const [
+              tabs: [
                 Tab(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.today_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('Today'),
+                      const Icon(Icons.today_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(AppLocalizations.of(context).translate('today')),
                     ],
                   ),
                 ),
@@ -105,9 +106,9 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('Completed'),
+                      const Icon(Icons.check_circle_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(AppLocalizations.of(context).translate('completed')),
                     ],
                   ),
                 ),
@@ -198,8 +199,8 @@ class _VaccinationScreenState extends State<VaccinationScreen>
               const SizedBox(height: 20),
               Text(
                 isToday
-                    ? 'No vaccinations scheduled for today'
-                    : 'No completed vaccinations',
+                    ? AppLocalizations.of(context).translate('no_vaccinations_today')
+                    : AppLocalizations.of(context).translate('no_completed_vaccinations'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                   fontSize: 18,
@@ -209,8 +210,8 @@ class _VaccinationScreenState extends State<VaccinationScreen>
               const SizedBox(height: 8),
               Text(
                 isToday
-                    ? 'All today\'s vaccinations have been completed'
-                    : 'Completed vaccinations will appear here',
+                    ? AppLocalizations.of(context).translate('all_vaccinations_completed')
+                    : AppLocalizations.of(context).translate('completed_vaccinations_appear_here'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -318,7 +319,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                       ),
                     ),
                     child: Text(
-                      isToday ? 'Today' : 'Completed',
+                      isToday ? AppLocalizations.of(context).translate('today') : AppLocalizations.of(context).translate('completed'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: cardColor,
                         fontWeight: FontWeight.w700,
@@ -384,8 +385,8 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                   controller:
                       _vaccineTypeControllers[appointment.appointmentId],
                   decoration: InputDecoration(
-                    labelText: 'Actual Vaccine Type *',
-                    hintText: 'e.g., Pfizer, AstraZeneca, Moderna',
+                    labelText: AppLocalizations.of(context).translate('actual_vaccine_type'),
+                    hintText: AppLocalizations.of(context).translate('vaccine_hint'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
@@ -414,7 +415,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                   child: ElevatedButton.icon(
                     onPressed: () => _markAsCompleted(appointment),
                     icon: const Icon(Icons.check_circle_outline, size: 20),
-                    label: const Text('Mark as Completed'),
+                    label: Text(AppLocalizations.of(context).translate('mark_completed')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.successColor,
                       foregroundColor: Colors.white,
@@ -470,14 +471,14 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Vaccination Details',
+                            AppLocalizations.of(context).translate('vaccination_details'),
                             style: AppTheme.headingStyle.copyWith(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'Appointment ID: ${appointment.appointmentId}',
+                            '${AppLocalizations.of(context).translate('appointment_id')}: ${appointment.appointmentId}',
                             style: AppTheme.bodySmallStyle.copyWith(
                               color: AppTheme.textSecondaryColor,
                             ),
@@ -504,16 +505,16 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                   ),
                   child: Column(
                     children: [
-                      _buildDetailRow('Patient Name',
+                      _buildDetailRow(AppLocalizations.of(context).translate('patient_name'),
                           patient?.name ?? 'Loading...', Icons.person),
                       const SizedBox(height: 12),
                       _buildDetailRow(
-                          'Email', patient?.email ?? 'Loading...', Icons.email),
+                          AppLocalizations.of(context).translate('email'), patient?.email ?? 'Loading...', Icons.email),
                       const SizedBox(height: 12),
-                      _buildDetailRow('Phone',
+                      _buildDetailRow(AppLocalizations.of(context).translate('phone'),
                           patient?.phoneNumber ?? 'Loading...', Icons.phone),
                       const SizedBox(height: 12),
-                      _buildDetailRow('Address',
+                      _buildDetailRow(AppLocalizations.of(context).translate('address'),
                           patient?.address ?? 'Loading...', Icons.location_on),
                     ],
                   ),
@@ -530,23 +531,23 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                   child: Column(
                     children: [
                       _buildDetailRow(
-                          'Vaccine Type',
+                          AppLocalizations.of(context).translate('vaccine_type'),
                           appointment.vaccinationType ?? 'Not specified',
                           Icons.healing),
                       const SizedBox(height: 12),
                       _buildDetailRow(
-                          'Date',
+                          AppLocalizations.of(context).translate('date'),
                           DateFormat('EEEE, MMMM dd, yyyy')
                               .format(appointment.dateTime),
                           Icons.calendar_today),
                       const SizedBox(height: 12),
                       _buildDetailRow(
-                          'Time',
+                          AppLocalizations.of(context).translate('time'), // I assume 'time' maps correctly or use raw translated
                           DateFormat('hh:mm a').format(appointment.dateTime),
                           Icons.access_time),
                       const SizedBox(height: 12),
                       _buildDetailRow(
-                          'Status',
+                          AppLocalizations.of(context).translate('status'),
                           appointment.status[0].toUpperCase() +
                               appointment.status.substring(1),
                           Icons.info),
@@ -567,9 +568,9 @@ class _VaccinationScreenState extends State<VaccinationScreen>
                       ),
                       elevation: 2,
                     ),
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).translate('close'),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -621,9 +622,9 @@ class _VaccinationScreenState extends State<VaccinationScreen>
     final actualVaccineType = controller?.text.trim() ?? '';
     if (actualVaccineType.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content:
-              Text('Please enter the actual vaccine type before completing'),
+              Text(AppLocalizations.of(context).translate('enter_actual_vaccine')),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -646,9 +647,9 @@ class _VaccinationScreenState extends State<VaccinationScreen>
       controller?.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-                'Vaccination marked as completed and record created successfully'),
+                AppLocalizations.of(context).translate('vaccination_completed_success')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -657,7 +658,7 @@ class _VaccinationScreenState extends State<VaccinationScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error completing vaccination: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error_colon')} $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );

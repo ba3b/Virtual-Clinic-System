@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:virtual_clinic_system/api/firestore_service.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 class VaccinationRecordsScreen extends StatelessWidget {
   const VaccinationRecordsScreen({Key? key}) : super(key: key);
@@ -13,7 +14,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
     final user = Provider.of<UserId?>(context);
 
     if (user == null) {
-      return const Center(child: Text('User not logged in'));
+      return Center(child: Text(AppLocalizations.of(context).translate('user_not_logged_in')));
     }
 
     return Scaffold(
@@ -150,7 +151,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Health Protection',
+                                        AppLocalizations.of(context).translate('health_protection'),
                                         style: TextStyle(
                                           color: Colors.white.withOpacity(0.9),
                                           fontSize: 12,
@@ -162,7 +163,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'My Vaccination',
+                                  AppLocalizations.of(context).translate('my_vaccination'),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.95),
                                     fontSize: 32,
@@ -172,7 +173,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Records',
+                                  AppLocalizations.of(context).translate('records'),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.95),
                                     fontSize: 32,
@@ -189,10 +190,10 @@ class VaccinationRecordsScreen extends StatelessWidget {
                                     final count = snapshot.data?.length ?? 0;
                                     return Text(
                                       count == 0
-                                          ? 'Start your vaccination journey'
+                                          ? AppLocalizations.of(context).translate('start_vaccination_journey')
                                           : count == 1
-                                              ? '1 vaccination completed'
-                                              : '$count vaccinations completed',
+                                              ? AppLocalizations.of(context).translate('one_vaccination_completed')
+                                              : '$count ${AppLocalizations.of(context).translate('vaccinations_completed')}',
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.8),
                                         fontSize: 14,
@@ -244,7 +245,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
               titlePadding: EdgeInsets.zero,
             ),
             title: Text(
-              'Vaccinations',
+              AppLocalizations.of(context).translate('vaccinations'),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.95),
                 fontSize: 20,
@@ -277,7 +278,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error loading vaccination records',
+                          AppLocalizations.of(context).translate('error_loading_vaccination_records'),
                           style: AppTheme.bodyStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -313,7 +314,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            'No Vaccination Records',
+                            AppLocalizations.of(context).translate('no_vaccination_records'),
                             style: AppTheme.headingStyle.copyWith(
                               color: AppTheme.textSecondaryColor,
                               fontSize: 24,
@@ -321,7 +322,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Your vaccination history will appear here once you receive vaccines',
+                            AppLocalizations.of(context).translate('vaccination_history_appear_here'),
                             style: AppTheme.bodyStyle.copyWith(
                               color: AppTheme.textSecondaryColor,
                             ),
@@ -342,7 +343,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                       final vaccination = vaccinations[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
-                        child: _buildVaccinationCard(vaccination, index),
+                        child: _buildVaccinationCard(context, vaccination, index),
                       );
                     },
                     childCount: vaccinations.length,
@@ -356,9 +357,9 @@ class VaccinationRecordsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVaccinationCard(Map<String, dynamic> vaccination, int index) {
-    final String vaccineType = vaccination['vaccineType'] ?? 'Unknown Vaccine';
-    final String actualVaccineType = vaccination['actualVaccineType'] ?? 'Not specified';
+  Widget _buildVaccinationCard(BuildContext context, Map<String, dynamic> vaccination, int index) {
+    final String vaccineType = vaccination['vaccineType'] ?? AppLocalizations.of(context).translate('unknown_vaccine');
+    final String actualVaccineType = vaccination['actualVaccineType'] ?? AppLocalizations.of(context).translate('not_specified');
     final DateTime? createdAt = vaccination['createdAt'];
 
     final List<LinearGradient> gradients = [
@@ -517,8 +518,8 @@ class VaccinationRecordsScreen extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             createdAt != null
-                                ? DateFormat('MMM dd, yyyy').format(createdAt)
-                                : 'Date not available',
+                                ? DateFormat('MMM dd, yyyy', Localizations.localeOf(context).languageCode).format(createdAt)
+                                : AppLocalizations.of(context).translate('date_not_available'),
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 14,
@@ -538,8 +539,8 @@ class VaccinationRecordsScreen extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             createdAt != null
-                                ? DateFormat('hh:mm a').format(createdAt)
-                                : 'Time not available',
+                                ? DateFormat('jm', Localizations.localeOf(context).languageCode).format(createdAt)
+                                : AppLocalizations.of(context).translate('time_not_available'),
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 14,
@@ -574,7 +575,7 @@ class VaccinationRecordsScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Completed',
+                        AppLocalizations.of(context).translate('completed'),
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 12,

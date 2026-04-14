@@ -3,6 +3,8 @@ import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
 import '../../components/date_picker_component.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../constants/departments.dart';
 import 'appointment_time_screen.dart';
 
 class AppointmentDateScreen extends StatefulWidget {
@@ -58,26 +60,26 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
     );
   }
 
-  String _getAppointmentTypeTitle() {
+  String _getAppointmentTypeTitle(BuildContext context) {
     if (widget.appointmentType == 'vaccination' &&
         widget.vaccinationType != null) {
-      return 'Vaccination: ${widget.vaccinationType}';
+      return '${AppLocalizations.of(context).translate('vaccination')}: ${AppLocalizations.of(context).translate(widget.vaccinationType!)}';
     } else if (widget.appointmentType == 'virtual' &&
         widget.department != null) {
-      return 'Virtual: ${widget.department}';
+      return '${AppLocalizations.of(context).translate('virtual')}: ${AppLocalizations.of(context).translate(DepartmentConstants.getTranslationKey(widget.department!))}';
     } else if (widget.appointmentType == 'physical' &&
         widget.department != null) {
-      return 'Physical: ${widget.department}';
+      return '${AppLocalizations.of(context).translate('physical')}: ${AppLocalizations.of(context).translate(DepartmentConstants.getTranslationKey(widget.department!))}';
     } else {
       switch (widget.appointmentType) {
         case 'virtual':
-          return 'Virtual Appointment';
+          return AppLocalizations.of(context).translate('virtual_appointment');
         case 'physical':
-          return 'Physical Appointment';
+          return AppLocalizations.of(context).translate('physical_appointment');
         case 'vaccination':
-          return 'Vaccination';
+          return AppLocalizations.of(context).translate('vaccination');
         default:
-          return 'Appointment';
+          return AppLocalizations.of(context).translate('book_appointment');
       }
     }
   }
@@ -86,7 +88,7 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: _getAppointmentTypeTitle(),
+        title: _getAppointmentTypeTitle(context),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SafeArea(
@@ -96,12 +98,12 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Select Date',
+                AppLocalizations.of(context).translate('select_date'),
                 style: AppTheme.headingStyle,
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose a preferred date for your appointment',
+                AppLocalizations.of(context).translate('choose_date_desc'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -118,7 +120,7 @@ class _AppointmentDateScreenState extends State<AppointmentDateScreen> {
               ),
               const SizedBox(height: 16),
               CommonButton(
-                text: 'Continue',
+                text: AppLocalizations.of(context).translate('continue_btn'),
                 onPressed: _proceedToNextStep,
               ),
             ],

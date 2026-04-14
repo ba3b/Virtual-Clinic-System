@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
 import '../../constants/vaccinations.dart';
+import '../../localization/app_localizations.dart';
 import '../../theme/theme.dart';
 import 'appointment_date_screen.dart';
 
@@ -40,8 +41,8 @@ class _AppointmentVaccinationScreenState extends State<AppointmentVaccinationScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Vaccination',
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).translate('vaccination'),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SafeArea(
@@ -51,12 +52,12 @@ class _AppointmentVaccinationScreenState extends State<AppointmentVaccinationScr
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Select Vaccination Type',
+                AppLocalizations.of(context).translate('select_vaccination'),
                 style: AppTheme.headingStyle,
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose the type of vaccination you need',
+                AppLocalizations.of(context).translate('choose_vaccination_desc'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -127,7 +128,7 @@ class _AppointmentVaccinationScreenState extends State<AppointmentVaccinationScr
               ),
               const SizedBox(height: 16),
               CommonButton(
-                text: 'Continue',
+                text: AppLocalizations.of(context).translate('continue_btn'),
                 onPressed: _selectedVaccination != null ? _proceedToNextStep : () {},
               ),
             ],

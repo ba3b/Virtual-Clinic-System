@@ -3,6 +3,7 @@ import 'package:virtual_clinic_system/screens/wrapper.dart';
 import 'dart:async';
 import '../../components/app_logo.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -63,7 +64,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
               ),
               const SizedBox(height: 24),
               Text(
-                'Loading...',
+                AppLocalizations.of(context).translate('loading'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),

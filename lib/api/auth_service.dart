@@ -115,11 +115,11 @@ class AuthService {
   Future<String?> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      return null; 
+      return null;
     } on FirebaseAuthException catch (e) {
-      return _getErrorMessage(e.code);
+      return _getErrorKey(e.code);
     } catch (e) {
-      return 'An unexpected error occurred. Please try again.';
+      return 'error_unknown';
     }
   }
 
@@ -128,49 +128,55 @@ class AuthService {
       await _auth.verifyPasswordResetCode(code);
       return null;
     } on FirebaseAuthException catch (e) {
-      return _getErrorMessage(e.code);
+      return _getErrorKey(e.code);
     } catch (e) {
-      return 'Invalid or expired code. Please try again.';
+      return 'error_unknown';
     }
   }
 
   Future<String?> confirmPasswordReset(String code, String newPassword) async {
     try {
       await _auth.confirmPasswordReset(code: code, newPassword: newPassword);
-      return null; 
+      return null;
     } on FirebaseAuthException catch (e) {
-      return _getErrorMessage(e.code);
+      return _getErrorKey(e.code);
     } catch (e) {
-      return 'Failed to reset password. Please try again.';
+      return 'error_unknown';
     }
   }
 
-  String _getErrorMessage(String code) {
+  /// Returns a translation key that screens can translate with
+  /// `AppLocalizations.of(context).translate(key)`.
+  String _getErrorKey(String code) {
     switch (code) {
       case 'user-not-found':
-        return 'No account found with this email address.';
+        return 'error_user_not_found';
       case 'wrong-password':
-        return 'Incorrect password. Please try again.';
+        return 'error_wrong_password';
       case 'invalid-email':
-        return 'Please enter a valid email address.';
+        return 'error_invalid_email_auth';
       case 'user-disabled':
-        return 'This account has been disabled.';
+        return 'error_user_disabled';
       case 'too-many-requests':
-        return 'Too many requests. Please try again later.';
+        return 'error_too_many_requests';
       case 'expired-action-code':
-        return 'The verification code has expired. Please request a new one.';
+        return 'error_expired_action_code';
       case 'invalid-action-code':
-        return 'The verification code is invalid. Please check and try again.';
+        return 'error_invalid_action_code';
       case 'weak-password':
-        return 'Password is too weak. Please choose a stronger password.';
+        return 'error_weak_password';
       case 'email-already-in-use':
-        return 'An account with this email already exists.';
+        return 'error_email_in_use';
       case 'invalid-credential':
-        return 'Invalid credentials. Please check your email and password.';
+        return 'error_invalid_credential';
       default:
-        return 'An error occurred. Please try again.';
+        return 'error_unknown';
     }
   }
+
+  /// Legacy helper kept for backwards compatibility — prefers translation keys
+  /// but falls back to the raw key string if not possible.
+  String _getErrorMessage(String code) => _getErrorKey(code);
 
   User? get currentUser => _auth.currentUser;
 

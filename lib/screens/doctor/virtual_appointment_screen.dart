@@ -8,6 +8,7 @@ import '../../models/appointment_model.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
 import '../call_screen.dart';
 
 class DoctorVirtualAppointmentScreen extends StatefulWidget {
@@ -135,15 +136,15 @@ class _DoctorVirtualAppointmentScreenState
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.access_time, color: Colors.orange),
-              SizedBox(width: 8),
-              Text('Session Expired'),
+              const Icon(Icons.access_time, color: Colors.orange),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context).translate('session_expired')),
             ],
           ),
-          content: const Text(
-            'The virtual appointment session has ended. You will be redirected back to the appointment details.',
+          content: Text(
+            AppLocalizations.of(context).translate('session_ended_redirect_msg'),
           ),
           actions: [
             TextButton(
@@ -151,7 +152,7 @@ class _DoctorVirtualAppointmentScreenState
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
               },
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context).translate('ok')),
             ),
           ],
         ),
@@ -183,8 +184,8 @@ class _DoctorVirtualAppointmentScreenState
   Future<void> _sendMessage() async {
     if (_sessionExpired) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Session has expired. Cannot send messages.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('session_expired_cannot_send_msg')),
           backgroundColor: Colors.red,
         ),
       );
@@ -222,7 +223,7 @@ class _DoctorVirtualAppointmentScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send message: $e'),
+            content: Text('${AppLocalizations.of(context).translate('failed_to_send_message')} $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -252,8 +253,8 @@ class _DoctorVirtualAppointmentScreenState
   void _startVideoCall() {
     if (_sessionExpired) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Session has expired. Cannot start video call.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('session_expired_cannot_start_video')),
           backgroundColor: Colors.red,
         ),
       );
@@ -264,9 +265,9 @@ class _DoctorVirtualAppointmentScreenState
 
     if (!_validateCallData(appointmentData)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content:
-              Text('Unable to start call: Invalid appointment configuration'),
+              Text(AppLocalizations.of(context).translate('invalid_appointment_config')),
           backgroundColor: Colors.red,
         ),
       );
@@ -293,8 +294,8 @@ class _DoctorVirtualAppointmentScreenState
   void _startAudioCall() {
     if (_sessionExpired) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Session has expired. Cannot start audio call.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('session_expired_cannot_start_audio')),
           backgroundColor: Colors.red,
         ),
       );
@@ -305,9 +306,9 @@ class _DoctorVirtualAppointmentScreenState
 
     if (!_validateCallData(appointmentData)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content:
-              Text('Unable to start call: Invalid appointment configuration'),
+              Text(AppLocalizations.of(context).translate('invalid_appointment_config')),
           backgroundColor: Colors.red,
         ),
       );
@@ -373,26 +374,26 @@ class _DoctorVirtualAppointmentScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.person, color: AppTheme.primaryColor),
-            SizedBox(width: 8),
-            Text('Patient Information'),
+            const Icon(Icons.person, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).translate('patient_information')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInfoRow('Name', widget.patientName),
-            _buildInfoRow('Patient ID', widget.appointment.patientId),
-            _buildInfoRow('Appointment Type', widget.appointment.type),
+            _buildInfoRow(AppLocalizations.of(context).translate('name_label'), widget.patientName),
+            _buildInfoRow(AppLocalizations.of(context).translate('patient_id_label'), widget.appointment.patientId),
+            _buildInfoRow(AppLocalizations.of(context).translate('appointment_type_label'), widget.appointment.type),
             if (widget.appointment.department != null)
-              _buildInfoRow('Department', widget.appointment.department!),
-            _buildInfoRow('Status', widget.appointment.status),
+              _buildInfoRow(AppLocalizations.of(context).translate('department'), widget.appointment.department!),
+            _buildInfoRow(AppLocalizations.of(context).translate('status'), widget.appointment.status),
             if (_patientUser != null) ...[
-              _buildInfoRow('Phone', _patientUser!.phoneNumber),
-              _buildInfoRow('Email', _patientUser!.email),
+              _buildInfoRow(AppLocalizations.of(context).translate('phone'), _patientUser!.phoneNumber),
+              _buildInfoRow(AppLocalizations.of(context).translate('email'), _patientUser!.email),
             ],
           ],
         ),
@@ -438,8 +439,8 @@ class _DoctorVirtualAppointmentScreenState
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.grey[50],
-        appBar: const CustomAppBar(
-          title: 'Virtual Consultation',
+        appBar: CustomAppBar(
+          title: AppLocalizations.of(context).translate('virtual_consultation'),
           backgroundColor: AppTheme.primaryColor,
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -449,8 +450,8 @@ class _DoctorVirtualAppointmentScreenState
     if (_error != null) {
       return Scaffold(
         backgroundColor: Colors.grey[50],
-        appBar: const CustomAppBar(
-          title: 'Virtual Consultation',
+        appBar: CustomAppBar(
+          title: AppLocalizations.of(context).translate('virtual_consultation'),
           backgroundColor: AppTheme.primaryColor,
         ),
         body: Center(
@@ -490,7 +491,7 @@ class _DoctorVirtualAppointmentScreenState
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: CustomAppBar(
-        title: 'Virtual Consultation',
+        title: AppLocalizations.of(context).translate('virtual_consultation'),
         backgroundColor: AppTheme.primaryColor,
         actions: [
           Container(
@@ -506,7 +507,7 @@ class _DoctorVirtualAppointmentScreenState
                 color: Colors.white,
                 size: 22,
               ),
-              tooltip: 'Patient Information',
+              tooltip: AppLocalizations.of(context).translate('patient_information'),
             ),
           ),
           Container(
@@ -524,7 +525,7 @@ class _DoctorVirtualAppointmentScreenState
                 color: _sessionExpired ? Colors.grey : Colors.white,
                 size: 22,
               ),
-              tooltip: _sessionExpired ? 'Session expired' : 'Start Audio Call',
+              tooltip: _sessionExpired ? AppLocalizations.of(context).translate('session_expired') : AppLocalizations.of(context).translate('start_audio_call'),
             ),
           ),
           Container(
@@ -542,7 +543,7 @@ class _DoctorVirtualAppointmentScreenState
                 color: _sessionExpired ? Colors.grey : Colors.white,
                 size: 22,
               ),
-              tooltip: _sessionExpired ? 'Session expired' : 'Start Video Call',
+              tooltip: _sessionExpired ? AppLocalizations.of(context).translate('session_expired') : AppLocalizations.of(context).translate('start_video_call'),
             ),
           ),
         ],
@@ -611,7 +612,7 @@ class _DoctorVirtualAppointmentScreenState
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _sessionExpired ? 'Session Ended' : 'Online',
+                      _sessionExpired ? AppLocalizations.of(context).translate('session_ended') : AppLocalizations.of(context).translate('online'),
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: _sessionExpired ? Colors.red : Colors.green,
                         fontWeight: FontWeight.w500,
@@ -649,7 +650,7 @@ class _DoctorVirtualAppointmentScreenState
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  _sessionExpired ? 'EXPIRED' : 'ACTIVE',
+                  _sessionExpired ? AppLocalizations.of(context).translate('expired_caps') : AppLocalizations.of(context).translate('active_caps'),
                   style: AppTheme.bodySmallStyle.copyWith(
                     color: _sessionExpired ? Colors.red : Colors.green,
                     fontWeight: FontWeight.w600,
@@ -686,7 +687,7 @@ class _DoctorVirtualAppointmentScreenState
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Error loading messages: ${snapshot.error}',
+                  '${AppLocalizations.of(context).translate('error_loading_messages')} ${snapshot.error}',
                   textAlign: TextAlign.center,
                   style: AppTheme.bodyStyle.copyWith(color: Colors.red),
                 ),
@@ -695,7 +696,7 @@ class _DoctorVirtualAppointmentScreenState
                   onPressed: () {
                     setState(() {});
                   },
-                  child: const Text('Retry'),
+                  child: Text(AppLocalizations.of(context).translate('retry')),
                 ),
               ],
             ),
@@ -717,8 +718,9 @@ class _DoctorVirtualAppointmentScreenState
                 const SizedBox(height: 16),
                 Text(
                   _sessionExpired
-                      ? 'Session has ended'
-                      : 'Start consultation with ${widget.patientName}',
+                      ? AppLocalizations.of(context).translate('session_has_ended')
+                      : '${AppLocalizations.of(context).translate('start_consultation_with')} ${widget.patientName}',
+                  textAlign: TextAlign.center,
                   style: AppTheme.subheadingStyle.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -726,8 +728,9 @@ class _DoctorVirtualAppointmentScreenState
                 const SizedBox(height: 8),
                 Text(
                   _sessionExpired
-                      ? 'This consultation session has expired'
-                      : 'Send a message or start a video call',
+                      ? AppLocalizations.of(context).translate('session_expired_msg')
+                      : AppLocalizations.of(context).translate('send_message_or_call'),
+                  textAlign: TextAlign.center,
                   style: AppTheme.bodyStyle.copyWith(
                     color: Colors.grey[500],
                   ),
@@ -926,8 +929,8 @@ class _DoctorVirtualAppointmentScreenState
                   enabled: !_sessionExpired,
                   decoration: InputDecoration(
                     hintText: _sessionExpired
-                        ? 'Session expired'
-                        : 'Type your message to ${widget.patientName}...',
+                        ? AppLocalizations.of(context).translate('session_expired')
+                        : '${AppLocalizations.of(context).translate('type_your_message_to')} ${widget.patientName}...',
                     hintStyle: AppTheme.bodyStyle.copyWith(
                       color: Colors.grey[500],
                     ),

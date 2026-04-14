@@ -37,9 +37,9 @@ class NotificationBadge extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               child,
-              Positioned(
+              PositionedDirectional(
                 top: -5,
-                right: -5,
+                end: -5,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(

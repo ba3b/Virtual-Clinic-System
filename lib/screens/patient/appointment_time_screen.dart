@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../api/firestore_service.dart';
 import '../../components/common_button.dart';
 import '../../components/custom_app_bar.dart';
 import '../../models/user_model.dart';
 import '../../theme/theme.dart';
+import '../../localization/app_localizations.dart';
+import '../../constants/departments.dart';
+import '../../constants/vaccinations.dart';
 import 'appointment_confirmation_screen.dart';
 
 class AppointmentTimeScreen extends StatefulWidget {
@@ -47,7 +51,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
       final user = Provider.of<UserId?>(context, listen: false);
       if (user == null) {
         setState(() {
-          _errorMessage = 'User not logged in';
+          _errorMessage = AppLocalizations.of(context).translate('user_not_logged_in');
           _isLoading = false;
         });
         return;
@@ -66,7 +70,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error loading time slots: $e';
+        _errorMessage = '${AppLocalizations.of(context).translate('error_loading_time_slots')}: $e';
         _isLoading = false;
       });
     }
@@ -89,7 +93,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
       final user = Provider.of<UserId?>(context, listen: false);
       if (user == null) {
         setState(() {
-          _errorMessage = 'User not logged in';
+          _errorMessage = AppLocalizations.of(context).translate('user_not_logged_in');
           _isLoading = false;
         });
         return;
@@ -131,19 +135,19 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
       );
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error booking appointment: $e';
+        _errorMessage = '${AppLocalizations.of(context).translate('error_booking_appointment')}: $e';
         _isLoading = false;
       });
     }
   }
 
-  String _getScreenTitle() {
+  String _getScreenTitle(BuildContext context) {
     if (widget.appointmentType == 'vaccination') {
-      return 'Vaccination: ${widget.vaccinationType}';
+      return '${AppLocalizations.of(context).translate('vaccination')}: ${AppLocalizations.of(context).translate(VaccinationConstants.getTranslationKey(widget.vaccinationType!))}';
     } else if (widget.appointmentType == 'virtual') {
-      return 'Virtual: ${widget.department}';
+      return '${AppLocalizations.of(context).translate('virtual')}: ${AppLocalizations.of(context).translate(DepartmentConstants.getTranslationKey(widget.department!))}';
     } else {
-      return 'Physical: ${widget.department}';
+      return '${AppLocalizations.of(context).translate('physical')}: ${AppLocalizations.of(context).translate(DepartmentConstants.getTranslationKey(widget.department!))}';
     }
   }
 
@@ -151,7 +155,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: _getScreenTitle(),
+        title: _getScreenTitle(context),
         backgroundColor: AppTheme.primaryColor,
       ),
       body: SafeArea(
@@ -161,19 +165,19 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Select Time',
+                AppLocalizations.of(context).translate('select_time'),
                 style: AppTheme.headingStyle,
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose an available time slot for your appointment',
+                AppLocalizations.of(context).translate('choose_time_desc'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Date: ${widget.appointmentDate.day}/${widget.appointmentDate.month}/${widget.appointmentDate.year}',
+                '${AppLocalizations.of(context).translate('date')}: ${DateFormat.yMd(Localizations.localeOf(context).languageCode).format(widget.appointmentDate)}',
                 style: AppTheme.subheadingStyle,
               ),
               const SizedBox(height: 24),
@@ -203,7 +207,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: _fetchAvailableTimeSlots,
-                          child: const Text('Retry'),
+                          child: Text(AppLocalizations.of(context).translate('retry')),
                         ),
                       ],
                     ),
@@ -222,7 +226,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No available time slots for this date.',
+                          AppLocalizations.of(context).translate('no_available_slots_desc'),
                           textAlign: TextAlign.center,
                           style: AppTheme.bodyStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
@@ -233,7 +237,7 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
                           onPressed: () {
                             Navigator.pop(context);
                           },
-                          child: const Text('Try another date'),
+                          child: Text(AppLocalizations.of(context).translate('try_another_date')),
                         ),
                       ],
                     ),
@@ -294,18 +298,18 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
               const SizedBox(height: 16),
               if (!_isLoading)
                 CommonButton(
-                  text: 'Book Appointment',
+                  text: AppLocalizations.of(context).translate('book_appointment'),
                   onPressed: _selectedTimeSlot != null ? _proceedToBookAppointment : () {},
                 )
               else
-                const SizedBox(
+                SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: null,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
@@ -313,8 +317,8 @@ class _AppointmentTimeScreenState extends State<AppointmentTimeScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
-                        SizedBox(width: 8),
-                        Text('Processing...'),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context).translate('processing')),
                       ],
                     ),
                   ),

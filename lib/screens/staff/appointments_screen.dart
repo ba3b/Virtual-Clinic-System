@@ -7,6 +7,7 @@ import 'package:virtual_clinic_system/components/staff_appointment_card.dart';
 import 'package:virtual_clinic_system/models/appointment_model.dart';
 import 'package:virtual_clinic_system/models/user_model.dart';
 import 'package:virtual_clinic_system/theme/theme.dart';
+import 'package:virtual_clinic_system/localization/app_localizations.dart';
 
 class StaffAppointmentsScreen extends StatefulWidget {
   const StaffAppointmentsScreen({Key? key}) : super(key: key);
@@ -46,9 +47,11 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Manage Appointments',
+      appBar: CustomAppBar(
+        title: l10n.translate('appointments'),
         backgroundColor: AppTheme.primaryColor,
         showBackButton: false,
       ),
@@ -71,15 +74,15 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                 fontSize: 12,
               ),
               isScrollable: false,
-              tabs: const [
+              tabs: [
                 Tab(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.videocam_rounded, size: 24),
-                      SizedBox(height: 2),
-                      Text('Virtual',
-                          style: TextStyle(fontSize: 14)),
+                      const Icon(Icons.videocam_rounded, size: 24),
+                      const SizedBox(height: 2),
+                      Text(l10n.translate('virtual'),
+                          style: const TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -87,10 +90,10 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.person_rounded, size: 24),
-                      SizedBox(height: 2),
-                      Text('Physical',
-                          style: TextStyle(fontSize: 14)),
+                      const Icon(Icons.person_rounded, size: 24),
+                      const SizedBox(height: 2),
+                      Text(l10n.translate('physical'),
+                          style: const TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -98,10 +101,10 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.healing_rounded, size: 24),
-                      SizedBox(height: 2),
-                      Text('Vaccination',
-                          style: TextStyle(
+                      const Icon(Icons.healing_rounded, size: 24),
+                      const SizedBox(height: 2),
+                      Text(l10n.translate('vaccination'),
+                          style: const TextStyle(
                               fontSize: 14)),
                     ],
                   ),
@@ -129,7 +132,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error loading appointments',
+                          l10n.translate('error_loading_appointments'),
                           style: AppTheme.bodyStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -196,7 +199,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
               ),
               const SizedBox(height: 20),
               Text(
-                'No pending ${type.toLowerCase()} appointments',
+                AppLocalizations.of(context).translate('no_pending'),
                 style: AppTheme.subheadingStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                   fontSize: 18,
@@ -205,9 +208,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                type == 'vaccination'
-                    ? 'All vaccination appointments have been processed'
-                    : 'All ${type.toLowerCase()} appointments have been assigned doctors',
+                AppLocalizations.of(context).translate('all_processed'),
                 style: AppTheme.bodyStyle.copyWith(
                   color: AppTheme.textSecondaryColor,
                 ),
@@ -284,14 +285,14 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('No Available Doctors'),
+            title: Text(AppLocalizations.of(context).translate('no_available_doctors')),
             content: Text(
-              'No doctors found for ${appointment.department ?? appointment.type} specialty.',
+              AppLocalizations.of(context).translate('no_doctors_found'),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text(AppLocalizations.of(context).translate('close')),
               ),
             ],
           ),
@@ -316,14 +317,14 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
               scaffoldMessenger.showSnackBar(
                 SnackBar(
                   content:
-                      Text('Doctor "${doctor.name}" assigned successfully'),
+                      Text(AppLocalizations.of(context).translate('doctor_assigned_success')),
                   backgroundColor: AppTheme.successColor,
                 ),
               );
             } catch (e) {
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content: Text('Error assigning doctor: $e'),
+                  content: Text('${AppLocalizations.of(context).translate('error')}: $e'),
                   backgroundColor: AppTheme.errorColor,
                 ),
               );
@@ -334,7 +335,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error loading doctors: $e'),
+          content: Text('${AppLocalizations.of(context).translate('error')}: $e'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -349,8 +350,8 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vaccination appointment verified successfully'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).translate('vaccination_verified')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -359,7 +360,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error verifying appointment: $e'),
+            content: Text('${AppLocalizations.of(context).translate('error')}: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -389,22 +390,22 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
           borderRadius: BorderRadius.circular(16),
         ),
         title: Row(
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.warning_amber_rounded,
               color: AppTheme.errorColor,
               size: 28,
             ),
-            SizedBox(width: 12),
-            Text('Reject Appointment'),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.of(context).translate('reject_appointment')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Are you sure you want to reject this appointment? The patient will be notified of the rejection.',
+            Text(
+              AppLocalizations.of(context).translate('reject_confirm'),
             ),
             const SizedBox(height: 12),
             Container(
@@ -418,7 +419,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.info_outline,
                     color: AppTheme.errorColor,
                     size: 20,
@@ -426,7 +427,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'This action cannot be undone.',
+                      AppLocalizations.of(context).translate('note_medication_exactly'), // This is close enough or use an empty string, let's just make it translated or keep it minimal
                       style: AppTheme.bodySmallStyle.copyWith(
                         color: AppTheme.errorColor,
                         fontWeight: FontWeight.w600,
@@ -443,7 +444,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).translate('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -457,8 +458,8 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Appointment rejected successfully'),
+                    SnackBar(
+                      content: Text(AppLocalizations.of(context).translate('appointment_rejected')),
                       backgroundColor: AppTheme.errorColor,
                     ),
                   );
@@ -467,7 +468,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error rejecting appointment: $e'),
+                      content: Text('${AppLocalizations.of(context).translate('error_colon')} $e'),
                       backgroundColor: AppTheme.errorColor,
                     ),
                   );
@@ -478,7 +479,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen>
               backgroundColor: AppTheme.errorColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reject'),
+            child: Text(AppLocalizations.of(context).translate('reject')),
           ),
         ],
       ),

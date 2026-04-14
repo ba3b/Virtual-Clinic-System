@@ -68,6 +68,20 @@ class UserModel {
   bool get isDoctor => userType == 'doctor';
   bool get isStaff => userType == 'staff';
 
+  /// Returns the translation key for the user role.
+  /// Use `AppLocalizations.of(context).translate(user.roleTranslationKey)`.
+  String get roleTranslationKey {
+    switch (userType.toLowerCase()) {
+      case 'doctor':
+        return 'doctor';
+      case 'staff':
+        return 'staff';
+      case 'patient':
+      default:
+        return 'patient';
+    }
+  }
+
   int get age {
     final now = DateTime.now();
     int age = now.year - dateOfBirth.year;

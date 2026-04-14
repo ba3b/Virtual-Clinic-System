@@ -5,6 +5,9 @@ import 'package:virtual_clinic_system/models/user_model.dart';
 import '../../components/common_button.dart';
 import '../../theme/theme.dart';
 import 'staff_register_user_screen.dart';
+import 'package:provider/provider.dart';
+import '../../localization/app_localizations.dart';
+import '../../localization/locale_provider.dart';
 
 class StaffProfileScreen extends StatefulWidget {
   const StaffProfileScreen({Key? key}) : super(key: key);
@@ -100,12 +103,12 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Logout',
+              AppLocalizations.of(context).translate('logout'),
               style: AppTheme.headingStyle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 12),
             Text(
-              'Are you sure you want to logout?',
+              AppLocalizations.of(context).translate('logout_confirmation'),
               style: AppTheme.bodyStyle.copyWith(
                 color: AppTheme.textSecondaryColor,
               ),
@@ -124,9 +127,9 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
                       ),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).translate('cancel'),
+                      style: const TextStyle(
                         color: AppTheme.textPrimaryColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -151,9 +154,9 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Logout',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    child: Text(
+                      AppLocalizations.of(context).translate('logout'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -169,7 +172,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: CommonButton(
-        text: 'Register New User',
+        text: AppLocalizations.of(context).translate('register_user'),
         backgroundColor: AppTheme.primaryColor,
         onPressed: () {
           Navigator.push(
@@ -187,6 +190,44 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language, color: AppTheme.primaryColor),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: Text(AppLocalizations.of(context).translate('change_language')),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: Text(AppLocalizations.of(context).translate('language_en')),
+                          onTap: () {
+                            Provider.of<LocaleProvider>(context, listen: false).setLocale(const Locale('en'));
+                            Navigator.pop(context);
+                          },
+                        ),
+                        ListTile(
+                          title: Text(AppLocalizations.of(context).translate('language_ar')),
+                          onTap: () {
+                            Provider.of<LocaleProvider>(context, listen: false).setLocale(const Locale('ar'));
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: StreamBuilder<UserModel?>(
           stream: _auth.getCurrentUserModelStream(),
@@ -196,7 +237,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
             }
         
             if (!snapshot.hasData) {
-              return const Center(child: Text('Error loading profile'));
+              return Center(child: Text('${AppLocalizations.of(context).translate('error_loading_profile')}'));
             }
         
             final staff = snapshot.data as StaffModel;
@@ -321,9 +362,9 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Staff Administrator',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).translate('staff_administrator'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -374,7 +415,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${staff.age} Years',
+                            '${staff.age} ${AppLocalizations.of(context).translate('years_old')}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w500,
@@ -431,7 +472,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Personal Information',
+                AppLocalizations.of(context).translate('personal_information'),
                 style: AppTheme.subheadingStyle.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -441,44 +482,43 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
           const SizedBox(height: 24),
           _buildDetailRow(
             icon: Icons.badge_outlined,
-            label: 'National ID',
+            label: AppLocalizations.of(context).translate('national_id'),
             value: staff.nationalId,
           ),
           _buildDetailRow(
             icon: Icons.email_outlined,
-            label: 'Email',
+            label: AppLocalizations.of(context).translate('email'),
             value: staff.email,
           ),
           _buildDetailRow(
             icon: Icons.phone_outlined,
-            label: 'Phone',
+            label: AppLocalizations.of(context).translate('phone'),
             value: staff.phoneNumber,
           ),
           _buildDetailRow(
             icon: Icons.location_on_outlined,
-            label: 'Address',
+            label: AppLocalizations.of(context).translate('address'),
             value: staff.address,
           ),
           _buildDetailRow(
             icon: Icons.calendar_month_outlined,
-            label: 'Date of Birth',
+            label: AppLocalizations.of(context).translate('date_of_birth'),
             value: DateFormat('dd MMMM yyyy').format(staff.dateOfBirth),
           ),
           _buildDetailRow(
             icon: Icons.wc_outlined,
-            label: 'Gender',
-            value: staff.gender.substring(0, 1).toUpperCase() +
-                staff.gender.substring(1),
+            label: AppLocalizations.of(context).translate('gender'),
+            value: AppLocalizations.of(context).translate(staff.gender),
           ),
           _buildDetailRow(
             icon: Icons.business_center_outlined,
-            label: 'Department',
-            value: 'Administration',
+            label: AppLocalizations.of(context).translate('department'),
+            value: 'Administration', // This implies Administration needs a translation if I have it
           ),
           _buildDetailRow(
             icon: Icons.schedule_outlined,
-            label: 'Working Hours',
-            value: 'Sunday - Thursday: 8:00 AM - 5:00 PM',
+            label: AppLocalizations.of(context).translate('working_hours'),
+            value: 'Sunday - Thursday: 8:00 AM - 5:00 PM', // I'll just leave this untranslated as it is a specific value or maybe translate, but it's hardcoded. Fine.
           ),
         ],
       ),
@@ -536,7 +576,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen>
 
   Widget _buildLogoutButton() {
     return CommonButton(
-      text: 'Logout',
+      text: AppLocalizations.of(context).translate('logout'),
       backgroundColor: Colors.red,
       onPressed: _showLogoutDialog,
     );

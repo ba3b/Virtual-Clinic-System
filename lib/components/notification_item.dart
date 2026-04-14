@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/notification_model.dart';
 import '../theme/theme.dart';
+import '../localization/app_localizations.dart';
 
 class NotificationItem extends StatelessWidget {
   final NotificationModel notification;
@@ -23,8 +24,8 @@ class NotificationItem extends StatelessWidget {
       key: Key(notification.notificationId),
       background: Container(
         color: AppTheme.errorColor,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 20),
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       direction: DismissDirection.endToStart,
@@ -73,7 +74,7 @@ class NotificationItem extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          _formatDateTime(notification.dateTime),
+                          _formatDateTime(context, notification.dateTime),
                           style: AppTheme.bodySmallStyle.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -88,7 +89,7 @@ class NotificationItem extends StatelessWidget {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               foregroundColor: AppTheme.primaryColor,
                             ),
-                            child: const Text('Mark as read'),
+                            child: Text(AppLocalizations.of(context).translate('mark_as_read')),
                           ),
                         ],
                       ],
@@ -103,20 +104,21 @@ class NotificationItem extends StatelessWidget {
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
+  String _formatDateTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
+    final loc = AppLocalizations.of(context);
 
     if (difference.inDays > 7) {
-      return DateFormat('MMM d, yyyy').format(dateTime);
+      return DateFormat('MMM d, yyyy', Localizations.localeOf(context).languageCode).format(dateTime);
     } else if (difference.inDays > 0) {
-      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+      return '${difference.inDays} ${loc.translate(difference.inDays == 1 ? 'day_ago' : 'days_ago')}';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+      return '${difference.inHours} ${loc.translate(difference.inHours == 1 ? 'hour_ago' : 'hours_ago')}';
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+      return '${difference.inMinutes} ${loc.translate(difference.inMinutes == 1 ? 'minute_ago' : 'minutes_ago')}';
     } else {
-      return 'Just now';
+      return loc.translate('just_now');
     }
   }
 }
