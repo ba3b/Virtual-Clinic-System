@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -46,7 +48,7 @@ dependencies:
 
   flutter_svg: ^2.0.7
   cached_network_image: ^3.2.3
-  intl: ^0.18.1
+  intl: ^0.20.2
   fluttertoast: ^8.2.2
 
   http: ^1.1.0
@@ -114,6 +116,17 @@ flutter:
         - asset: assets/fonts/Poppins-Medium.ttf
           weight: 500
         - asset: assets/fonts/Poppins-Light.ttf
+          weight: 300
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-Light.ttf
           weight: 300
   #
   # For details regarding fonts from package dependencies,

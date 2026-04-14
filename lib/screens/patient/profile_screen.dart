@@ -12,7 +12,7 @@ class PatientProfileScreen extends StatefulWidget {
   State<PatientProfileScreen> createState() => _PatientProfileScreenState();
 }
 
-class _PatientProfileScreenState extends State<PatientProfileScreen> 
+class _PatientProfileScreenState extends State<PatientProfileScreen>
     with SingleTickerProviderStateMixin {
   final AuthService _auth = AuthService();
   late AnimationController _animationController;
@@ -26,12 +26,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeIn,
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
@@ -39,7 +39,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
       parent: _animationController,
       curve: Curves.easeOutQuart,
     ));
-    
+
     _animationController.forward();
   }
 
@@ -166,7 +166,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           }
 
           if (!snapshot.hasData) {
-            return Center(child: Text('Error loading profile: ${snapshot.error}'));
+            return Center(
+                child: Text('Error loading profile: ${snapshot.error}'));
           }
 
           final user = snapshot.data as PatientModel;
@@ -451,14 +452,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
           _buildInfoRow(Icons.phone_outlined, 'Phone', user.phoneNumber),
           _buildInfoRow(Icons.location_on_outlined, 'Address', user.address),
           _buildInfoRow(
-            Icons.calendar_month_outlined, 
-            'Date of Birth', 
+            Icons.calendar_month_outlined,
+            'Date of Birth',
             DateFormat('dd MMMM yyyy').format(user.dateOfBirth),
           ),
           _buildInfoRow(
-            Icons.wc_outlined, 
-            'Gender', 
-            user.gender.substring(0, 1).toUpperCase() + user.gender.substring(1),
+            Icons.wc_outlined,
+            'Gender',
+            user.gender.substring(0, 1).toUpperCase() +
+                user.gender.substring(1),
           ),
         ],
       ),
@@ -506,7 +508,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildMedicalInfoRow('Eligible Departments', user.eligibility.join(', ')),
+          _buildMedicalInfoRow(
+              'Eligible Departments', user.eligibility.join(', ')),
         ],
       ),
     );
@@ -547,13 +550,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
     );
   }
 
-
   Widget _buildMedicalInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start, 
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -561,56 +563,18 @@ class _PatientProfileScreenState extends State<PatientProfileScreen>
               color: AppTheme.textSecondaryColor,
             ),
           ),
-          const SizedBox(width: 8), 
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
               style: AppTheme.bodyStyle.copyWith(
                 fontWeight: FontWeight.w600,
               ),
-              textAlign: TextAlign.end, 
+              textAlign: TextAlign.end,
               softWrap: true,
             ),
           ),
         ],
-      ),
-    );
-  }
-
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: AppTheme.bodySmallStyle.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

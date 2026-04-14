@@ -12,6 +12,13 @@ class AppTheme {
   static const Color textSecondaryColor = Color(0xFF757575); 
   static const Color dividerColor = Color(0xFFEEEEEE); 
 
+  /// Returns the appropriate font family based on locale.
+  /// Arabic → IBMPlexSansArabic, English → Poppins.
+  static String getFontFamily(Locale locale) {
+    return locale.languageCode == 'ar' ? 'IBMPlexSansArabic' : 'Poppins';
+  }
+
+  // ─── Text styles (use these with the fontFamily parameter or via theme) ───
 
   static const TextStyle headingStyle = TextStyle(
     fontSize: 24,
@@ -46,92 +53,102 @@ class AppTheme {
     fontFamily: 'Poppins',
   );
 
+  /// Generates the light theme with the correct font family for the given locale.
+  static ThemeData lightTheme([Locale locale = const Locale('en')]) {
+    final fontFamily = getFontFamily(locale);
 
-  static ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    primaryColor: primaryColor,
-    scaffoldBackgroundColor: backgroundColor,
-    colorScheme: const ColorScheme.light(
-      primary: primaryColor,
-      secondary: secondaryColor,
-      surface: surfaceColor,
-      background: backgroundColor,
-      error: errorColor,
-    ),
-    fontFamily: 'Poppins',
-    textTheme: const TextTheme(
-      displayLarge: headingStyle,
-      displayMedium: subheadingStyle,
-      bodyLarge: bodyStyle,
-      bodyMedium: bodySmallStyle,
-      labelLarge: buttonTextStyle,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
+    final heading = headingStyle.copyWith(fontFamily: fontFamily);
+    final subheading = subheadingStyle.copyWith(fontFamily: fontFamily);
+    final body = bodyStyle.copyWith(fontFamily: fontFamily);
+    final bodySmall = bodySmallStyle.copyWith(fontFamily: fontFamily);
+    final buttonText = buttonTextStyle.copyWith(fontFamily: fontFamily);
+
+    return ThemeData(
+      useMaterial3: true,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: backgroundColor,
+      colorScheme: const ColorScheme.light(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: surfaceColor,
+        background: backgroundColor,
+        error: errorColor,
+      ),
+      fontFamily: fontFamily,
+      textTheme: TextTheme(
+        displayLarge: heading,
+        displayMedium: subheading,
+        bodyLarge: body,
+        bodyMedium: bodySmall,
+        labelLarge: buttonText,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: buttonText,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primaryColor,
+          side: const BorderSide(color: primaryColor, width: 1.5),
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: buttonText.copyWith(color: primaryColor),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surfaceColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: dividerColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: dividerColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: errorColor, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: errorColor, width: 1.5),
+        ),
+        hintStyle: bodySmall,
+      ),
+      appBarTheme: AppBarTheme(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+        centerTitle: true,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          fontFamily: fontFamily,
         ),
-        textStyle: buttonTextStyle,
       ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: primaryColor,
-        side: const BorderSide(color: primaryColor, width: 1.5),
-        minimumSize: const Size(double.infinity, 56),
+      cardTheme: CardThemeData(
+        color: surfaceColor,
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
-        textStyle: buttonTextStyle.copyWith(color: primaryColor),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: surfaceColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: dividerColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: dividerColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: primaryColor, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: errorColor, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: errorColor, width: 1.5),
-      ),
-      hintStyle: bodySmallStyle,
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor,
-      foregroundColor: Colors.white,
-      centerTitle: true,
-      elevation: 0,
-      titleTextStyle: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-        fontFamily: 'Poppins',
-      ),
-    ),
-    cardTheme: CardTheme(
-      color: surfaceColor,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-    ),
-  );
+    );
+  }
 }

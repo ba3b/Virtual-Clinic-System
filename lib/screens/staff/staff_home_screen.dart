@@ -100,12 +100,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: NotificationBadge(
                   child: IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: AppTheme.primaryColor, size: 28),
+                    icon: const Icon(Icons.notifications_outlined,
+                        color: AppTheme.primaryColor, size: 28),
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const StaffNotificationsScreen()),
+                            builder: (context) =>
+                                const StaffNotificationsScreen()),
                       );
                     },
                   ),
@@ -113,7 +115,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const StaffNotificationsScreen()),
+                          builder: (context) =>
+                              const StaffNotificationsScreen()),
                     );
                   },
                 ),
@@ -127,22 +130,24 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-      
+
                 if (snapshot.hasError) {
                   return Center(
                     child: Text('Error: ${snapshot.error}'),
                   );
                 }
-      
+
                 final pendingAppointments = snapshot.data ?? [];
-      
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SectionHeader(
                       title: 'Pending Appointments',
-                      subtitle: 'Appointments that need verification and doctor assignment',
-                      actionText: pendingAppointments.isEmpty ? null : 'See All',
+                      subtitle:
+                          'Appointments that need verification and doctor assignment',
+                      actionText:
+                          pendingAppointments.isEmpty ? null : 'See All',
                       onActionTap: () {
                         setState(() {
                           _selectedIndex = 1;
@@ -187,12 +192,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           }
 
           final StaffModel staff = currentUser as StaffModel;
-          
+
           return StreamBuilder<List<AppointmentModel>>(
             stream: _databaseService.getPendingAppointments(),
             builder: (context, appointmentSnapshot) {
               final pendingCount = appointmentSnapshot.data?.length ?? 0;
-              
+
               return Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -344,25 +349,27 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             future: _databaseService.getUserDetails(appointment.patientId),
             builder: (context, patientSnapshot) {
               final patientName = patientSnapshot.data?.name ?? 'Loading...';
-              
+
               return FutureBuilder<UserModel?>(
-                future: appointment.doctorId != null 
+                future: appointment.doctorId != null
                     ? _databaseService.getUserDetails(appointment.doctorId!)
                     : Future.value(null),
                 builder: (context, doctorSnapshot) {
                   final doctorName = doctorSnapshot.data?.name;
-                  
+
                   return StaffAppointmentCard(
                     appointment: appointment,
                     patientName: patientName,
                     doctorName: doctorName,
                     onTap: () => _navigateToAppointmentDetails(appointment),
-                    onAssignDoctor: appointment.type != AppointmentModel.typeVaccination
-                        ? () => _showDoctorAssignmentDialog(appointment)
-                        : null,
-                    onVerify: appointment.type == AppointmentModel.typeVaccination
-                        ? () => _verifyVaccinationAppointment(appointment)
-                        : null,
+                    onAssignDoctor:
+                        appointment.type != AppointmentModel.typeVaccination
+                            ? () => _showDoctorAssignmentDialog(appointment)
+                            : null,
+                    onVerify:
+                        appointment.type == AppointmentModel.typeVaccination
+                            ? () => _verifyVaccinationAppointment(appointment)
+                            : null,
                     onReject: () => _showRejectConfirmationDialog(appointment),
                   );
                 },
@@ -374,81 +381,78 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     );
   }
 
-  void _navigateToAppointmentDetails(AppointmentModel appointment) {
-  }
+  void _navigateToAppointmentDetails(AppointmentModel appointment) {}
 
   Future<void> _showDoctorAssignmentDialog(AppointmentModel appointment) async {
-  try {
-    final filteredDoctors = await _getFilteredDoctors(appointment);
+    try {
+      final filteredDoctors = await _getFilteredDoctors(appointment);
 
-    if (filteredDoctors.isEmpty) {
+      if (filteredDoctors.isEmpty) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('No Available Doctors'),
+            content: Text(
+              'No doctors found for ${appointment.department ?? appointment.type} specialty.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('No Available Doctors'),
-          content: Text(
-            'No doctors found for ${appointment.department ?? appointment.type} specialty.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
+        builder: (context) => DoctorSelectorDialog(
+          doctors: filteredDoctors,
+          requiredSpecialty: appointment.department,
+          onDoctorSelected: (doctor) async {
+            Navigator.pop(context);
+
+            try {
+              await _databaseService.assignDoctorToAppointment(
+                  appointment.appointmentId, doctor.userId);
+
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content:
+                      Text('Doctor "${doctor.name}" assigned successfully'),
+                  backgroundColor: AppTheme.successColor,
+                ),
+              );
+            } catch (e) {
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('Error assigning doctor: $e'),
+                  backgroundColor: AppTheme.errorColor,
+                ),
+              );
+            }
+          },
         ),
       );
-      return;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading doctors: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
-
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    showDialog(
-      context: context,
-      builder: (context) => DoctorSelectorDialog(
-        doctors: filteredDoctors,
-        requiredSpecialty: appointment.department,
-        onDoctorSelected: (doctor) async {
-          Navigator.pop(context);
-          
-          try {
-            await _databaseService.assignDoctorToAppointment(
-              appointment.appointmentId, 
-              doctor.userId
-            );
-
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text('Doctor "${doctor.name}" assigned successfully'),
-                backgroundColor: AppTheme.successColor,
-              ),
-            );
-          } catch (e) {
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text('Error assigning doctor: $e'),
-                backgroundColor: AppTheme.errorColor,
-              ),
-            );
-          }
-        },
-      ),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error loading doctors: $e'),
-        backgroundColor: AppTheme.errorColor,
-      ),
-    );
   }
-}
 
-  Future<void> _verifyVaccinationAppointment(AppointmentModel appointment) async {
+  Future<void> _verifyVaccinationAppointment(
+      AppointmentModel appointment) async {
     try {
       await _databaseService.updateAppointmentStatus(
-        appointment.appointmentId, 
-        AppointmentModel.statusApproved
-      );
+          appointment.appointmentId, AppointmentModel.statusApproved);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -470,13 +474,15 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     }
   }
 
-  Future<List<DoctorModel>> _getFilteredDoctors(AppointmentModel appointment) async {
+  Future<List<DoctorModel>> _getFilteredDoctors(
+      AppointmentModel appointment) async {
     if (appointment.type.toLowerCase() == 'vaccination') {
       return await _databaseService.getAllDoctors();
     }
 
     if (appointment.department != null) {
-      return await _databaseService.getDoctorsBySpecialty(appointment.department!);
+      return await _databaseService
+          .getDoctorsBySpecialty(appointment.department!);
     }
 
     return await _databaseService.getAllDoctors();
